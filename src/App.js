@@ -1,9 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FaDiscord,
   FaLinkedin,
   FaGithub,
-  FaRegSmile
 } from "react-icons/fa";
 import { SiX } from "react-icons/si"; // Modern X (formerly Twitter) icon
 import { FaSearch } from "react-icons/fa";
@@ -21,16 +20,138 @@ function Button({ children, onClick, type = "button", className = "" }) {
   );
 }
 
+function DecryptingText({ text, speed = 30 }) {
+  const [displayed, setDisplayed] = useState('');
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+
+  useEffect(() => {
+    let i = 0;
+    const interval = setInterval(() => {
+      setDisplayed((prev) =>
+        text
+          .split('')
+          .map((char, idx) => {
+            if (idx < i) return text[idx];
+            return chars[Math.floor(Math.random() * chars.length)];
+          })
+          .join('')
+      );
+      i++;
+      if (i > text.length) clearInterval(interval);
+    }, speed);
+
+    return () => clearInterval(interval);
+  }, [text, speed]);
+
+  return <span className="font-mono text-green-600">{displayed}</span>;
+}
+
+function DecryptedRow({ index, isUser, username, dob, cc, canRead }) {
+  const [decrypted, setDecrypted] = useState(false);
+  const [decryptionStatus, setDecryptionStatus] = useState("");
+  const [animating, setAnimating] = useState(false);
+
+  const handleDecrypt = () => {
+    if (!isUser) {
+      setDecryptionStatus("Access denied: You don't have decryption rights.");
+      setTimeout(() => setDecryptionStatus(""), 3000);
+      return;
+    }
+
+    if (!canRead) {
+      setDecryptionStatus("Access denied: You lack read permission.");
+      setTimeout(() => setDecryptionStatus(""), 3000);
+      return;
+    }
+
+    setAnimating(true);
+    setTimeout(() => {
+      setDecrypted(true);
+      setAnimating(false);
+      setDecryptionStatus("Decrypted successfully!");
+      setTimeout(() => setDecryptionStatus(""), 3000);
+    }, 800);
+  };
+
+
+  return (
+    <div className="border border-gray-300 rounded p-4 bg-white shadow-sm space-y-2">
+      <div className="text-sm font-mono break-all">
+        <strong className="block text-gray-600 text-xs uppercase mb-1">Username</strong>
+        {username}
+      </div>
+
+      <div className="text-sm font-mono break-all">
+        <strong className="block text-gray-600 text-xs uppercase mb-1">Date of Birth</strong>
+        <span className={`inline-block transition-opacity duration-500 ${animating ? "opacity-0" : "opacity-100"}`}>
+          {isUser && decrypted && dob ? <DecryptingText text={dob} /> : "a3f9e4...92c0"}
+        </span>
+      </div>
+
+      <div className="text-sm font-mono break-all">
+        <strong className="block text-gray-600 text-xs uppercase mb-1">Credit Card</strong>
+        <span className={`inline-block transition-opacity duration-500 ${animating ? "opacity-0" : "opacity-100"}`}>
+          {isUser && decrypted && cc ? <DecryptingText text={cc} /> : "b7e8c1...e1af"}
+        </span>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <Button onClick={handleDecrypt} disabled={decrypted}>
+          {decrypted ? "✓ Decrypted" : "Decrypt"}
+        </Button>
+
+        {decryptionStatus && (
+          <span
+            className={`text-sm ${decryptionStatus.startsWith("Access") ? "text-red-600" : "text-green-600"}`}
+          >
+            {decryptionStatus}
+          </span>
+        )}
+      </div>
+
+    </div>
+  );
+}
+
+function DatabaseExposureTable({ jwt }) {
+
+  return (
+    <div className="mt-6 space-y-6 pb-24 md:pb-36">
+      {[0, 1, 2].map((i) => (
+        <DecryptedRow
+          key={i}
+          index={i}
+          isUser={i === 0}
+          username={`user_${"x".repeat(44)}${i}`}
+          dob={jwt?.permissions?.dob?.read ? "1990-05-21" : null}
+          cc={jwt?.permissions?.cc?.read ? "4111-xxxx-xxxx-1234" : null}
+          canRead={jwt?.permissions?.dob?.read || jwt?.permissions?.cc?.read}
+        />
+
+      ))}
+    </div>
+  );
+}
+
+
+// Main App Component
+
 function App() {
   const [jwt, setJwt] = useState(null);
   const [page, setPage] = useState("Landing");
   const [showExplainer, setShowExplainer] = useState(false);
   const [requests, setRequests] = useState([]);
   const [hasChanges, setHasChanges] = useState(false);
-  const [expandedRows, setExpandedRows] = useState({});
   const [activeRequest, setActiveRequest] = useState(null);
   const [expandedBlobs, setExpandedBlobs] = useState({});
   const [userFeedback, setUserFeedback] = useState("");
+  const [showUserInfoAccordion, setShowUserInfoAccordion] = useState(false);
+  const [showAdminAccordion, setShowAdminAccordion] = useState(false);
+  const [showLoginAccordion, setShowLoginAccordion] = useState(false);
+  const [showChangeRequestAccordion, setShowChangeRequestAccordion] = useState(false);
+  const [showExposureAccordion, setShowExposureAccordion] = useState(false);
+
+
 
 
 
@@ -56,8 +177,17 @@ function App() {
         cc: { read: false, write: true },
       },
     });
-    setFormData({ dob: "1990-05-21", cc: "" });
-    setSavedData({ dob: "1990-05-21", cc: "" });
+    const today = new Date().toISOString().split("T")[0];
+
+    setFormData({
+      dob: jwt?.permissions?.dob?.read ? "1990-05-21" : today,
+      cc: ""
+    });
+    setSavedData({
+      dob: jwt?.permissions?.dob?.read ? "1990-05-21" : "",
+      cc: ""
+    });
+
     setPage("User");
   };
 
@@ -83,7 +213,7 @@ function App() {
     setUserFeedback("Changes saved!");
     setTimeout(() => setUserFeedback(""), 3000); // clear after 3 seconds
   };
-  
+
 
   const handleAdminPermissionSubmit = (e) => {
     e.preventDefault();
@@ -163,6 +293,38 @@ function App() {
 
   const loggedIn = !!jwt;
 
+  useEffect(() => {
+    if (!jwt) return;
+
+    const today = new Date().toISOString().split("T")[0];
+
+    const newForm = { ...formData };
+    const newSaved = { ...savedData };
+
+    if (!jwt.permissions.dob.read) {
+      newSaved.dob = "";
+      if (!jwt.permissions.dob.write) {
+        newForm.dob = "";
+      } else {
+        newForm.dob = today;
+      }
+    }
+
+    if (!jwt.permissions.cc.read) {
+      newSaved.cc = "";
+      if (!jwt.permissions.cc.write) {
+        newForm.cc = "";
+      } else {
+        newForm.cc = "";
+      }
+    }
+
+    setFormData(newForm);
+    setSavedData(newSaved);
+  }, [jwt]);
+
+
+
   return (
     <div className="min-h-screen flex flex-col bg-white">
       {loggedIn && (
@@ -185,11 +347,41 @@ function App() {
         </nav>
       )}
 
-      <main className="flex-grow w-full pt-6">
-        <div className="w-full px-8 max-w-screen-2xl flex flex-col lg:flex-row items-start gap-8">
+      <main className="flex-grow w-full pt-6 pb-16">
+
+        <div className="w-full px-8 max-w-screen-md mx-auto flex flex-col items-start gap-8">
           <div className="w-full max-w-3xl">
             {page === "Landing" && (
-              <div className="space-y-10">
+              <div key="user" className="space-y-4 relative pb-32 md:pb-40">
+
+                {/* Accordion Toggle for Landing Page */}
+                <button
+                  onClick={() => setShowLoginAccordion(prev => !prev)}
+                  className="absolute -top-2 right-0 text-2xl hover:scale-110 transition-transform"
+                  aria-label="Toggle explainer"
+                >
+                  {showLoginAccordion ? "🤯" : "🤔"}
+                </button>
+
+                {/* Accordion Content */}
+                {showLoginAccordion && (
+                  <div className="bg-white border rounded shadow p-4 mb-4 text-sm space-y-2">
+                    <h4 className="font-semibold">Why is this login special?</h4>
+                    <p>
+                      This login page showcases <strong>TideCloak's decentralized IAM model</strong>.
+                    </p>
+                    <p>
+                      Admin powers, even login elevation, are <strong>quorum-controlled</strong> — not granted unilaterally.
+                    </p>
+                    <p>
+                      The system itself has no backdoor. That’s the point.
+                    </p>
+                  </div>
+                )}
+
+
+
+
                 <div className="bg-blue-50 rounded shadow p-6 space-y-4">
                   <h2 className="text-3xl font-bold">Welcome to your demo app</h2>
                   <h3 className="text-xl font-semibold">BYOiD</h3>
@@ -213,8 +405,33 @@ function App() {
             )}
 
             {page === "User" && (
-              <div className="space-y-4">
+              <div key="user" className="space-y-4 relative">
+                {/* Accordion toggle */}
+                <button
+                  onClick={() => setShowUserInfoAccordion(prev => !prev)}
+                  className="absolute -top-2 right-0 text-2xl hover:scale-110 transition-transform"
+                  aria-label="Toggle explanation"
+                >
+                  {showUserInfoAccordion ? "🤯" : "🤔"}
+                </button>
+
+                {/* Accordion content */}
+                {showUserInfoAccordion && (
+                  <div className="bg-white border rounded shadow p-4 mb-2 text-sm space-y-2">
+                    <h4 className="font-semibold">Why is this special?</h4>
+                    <p>
+                      You’re seeing <strong>dynamic user field access</strong> in action. The form respects granular permissions
+                      (read, write, none) in real time.
+                    </p>
+                    <p>
+                      Access is governed by <strong>immutable policy requests</strong>, and changes are enforced only through
+                      quorum approvals — including admin access itself.
+                    </p>
+                  </div>
+                )}
+
                 <h2 className="text-3xl font-bold mb-4">User Information</h2>
+
 
                 <form className="space-y-6" onSubmit={handleFormSubmit}>
 
@@ -223,7 +440,6 @@ function App() {
                     const canRead = perms?.read;
                     const canWrite = perms?.write;
                     const label = field === "dob" ? "Date of Birth" : "Credit Card Number";
-                    const encrypted = "0101ff7a9e3b1d...d5fbeea829c4"; // Simulated hash
 
                     if (!canRead && !canWrite) return null; // hide if no access
 
@@ -260,40 +476,42 @@ function App() {
                           />
                         )}
 
-                        <div className="flex gap-2 mt-2">
-                          <td className="p-2 text-right">
-                            <span
-                              className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${canRead ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                                }`}
-                            >
-                              {canRead ? "✓" : "✕"} Read
-                            </span>
-                          </td>
-                          <td className="p-2 text-right">
-                            <span
-                              className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${canWrite ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                                }`}
-                            >
-                              {canWrite ? "✓" : "✕"} Write
-                            </span>
-                          </td>
+                        {showUserInfoAccordion && (
+                          <div className="text-xs text-gray-600 mt-2 space-y-2 bg-gray-50 border border-gray-200 rounded p-3">
+                            <h5 className="font-semibold text-gray-700 text-xs uppercase tracking-wide mb-1">
+                              JWT Permissions & Encrypted Value
+                            </h5>
+                            <div className="flex gap-2">
+                              <span
+                                className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${canRead ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                                  }`}
+                              >
+                                {canRead ? "✓" : "✕"} Read
+                              </span>
+                              <span
+                                className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${canWrite ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                                  }`}
+                              >
+                                {canWrite ? "✓" : "✕"} Write
+                              </span>
+                            </div>
 
-                        </div>
-
-                        <p className="text-xs text-gray-500 mt-1">
-                          <span className="font-medium">Value in Database:</span>{" "}
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setExpandedBlobs((prev) => ({ ...prev, [field]: !prev[field] }))
-                            }
-                            className="text-blue-600 underline"
-                          >
-                            {expandedBlobs[field]
-                              ? "0101ff7a9e3b1d9adbeef8c3471a2c7e38cb43fcd74fdcadbea88d5fbeea829c4"
-                              : "0101ff7a9e...829c4"}
-                          </button>
-                        </p>
+                            <p>
+                              <span className="font-medium">Value in Database:</span>{" "}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setExpandedBlobs((prev) => ({ ...prev, [field]: !prev[field] }))
+                                }
+                                className="text-blue-600 underline"
+                              >
+                                {expandedBlobs[field]
+                                  ? "0101ff7a9e3b1d9adbeef8c3471a2c7e38cb43fcd74fdcadbea88d5fbeea829c4"
+                                  : "0101ff7a9e...829c4"}
+                              </button>
+                            </p>
+                          </div>
+                        )}
 
 
 
@@ -303,26 +521,79 @@ function App() {
 
                   {(jwt.permissions.dob.write || jwt.permissions.cc.write) && (
                     <div className="flex items-center gap-3">
-                    <Button type="submit">Save Changes</Button>
-                    {userFeedback && (
-                      <span className="text-sm text-green-600 font-medium">{userFeedback}</span>
-                    )}
-                  </div>
-                  
+                      <Button type="submit">Save Changes</Button>
+                      {userFeedback && (
+                        <span className="text-sm text-green-600 font-medium">{userFeedback}</span>
+                      )}
+                    </div>
+
                   )}
                 </form>
 
+                {/* NEW SECTION: Database Exposure Simulation */}
+                <div className="border-t pt-6">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-2xl font-semibold">Database Exposure Simulation</h3>
+                    <button
+                      onClick={() => setShowExposureAccordion(prev => !prev)}
+                      className="text-2xl hover:scale-110 transition-transform"
+                      aria-label="Toggle explanation"
+                    >
+                      {showExposureAccordion ? "🤯" : "🤔"}
+                    </button>
+                  </div>
+
+                  {showExposureAccordion && (
+                    <div className="bg-white border rounded shadow p-4 mb-4 text-sm space-y-2">
+                      <p>
+                        This simulation shows what happens when an encrypted user table is leaked.
+                        Try decrypting your own row — other rows will remain locked unless you have access.
+                      </p>
+                    </div>
+                  )}
+
+                  <DatabaseExposureTable jwt={jwt} />
+
+                </div>
 
               </div>
 
             )}
 
             {page === "Admin" && (
-              <div className="space-y-6">
-                <h2 className="text-3xl font-bold">User Admin Governance</h2>
+              <div key="admin" className="space-y-6 relative">
+
+                {/* Accordion Icon */}
+                <button
+                  onClick={() => setShowAdminAccordion(prev => !prev)}
+                  className="absolute -top-2 right-0 text-2xl hover:scale-110 transition-transform"
+                  aria-label="Toggle explanation"
+                >
+                  {showAdminAccordion ? "🤯" : "🤔"}
+                </button>
+
+                {/* Accordion Content */}
+                {showAdminAccordion && (
+                  <div className="bg-white border rounded shadow p-4 mb-2 text-sm space-y-2">
+                    <h4 className="font-semibold">What makes TideCloak special?</h4>
+                    <ul className="list-disc list-inside">
+                      <li><strong>Decentralized quorum-based approval</strong></li>
+                      <li>Immutable audit logs</li>
+                      <li>Granular control over sensitive fields</li>
+                    </ul>
+                    <p>
+                      So you don’t worry about{" "}
+                      <a href="#" className="text-blue-600 underline">permission sprawl</a>,{" "}
+                      <a href="#" className="text-blue-600 underline">forgotten admin accounts</a>, or{" "}
+                      <a href="#" className="text-blue-600 underline">over-permissioned users</a>.
+                    </p>
+                  </div>
+                )}
+
 
                 {jwt?.role === "Standard" && (
                   <div className="space-y-4">
+                    <h2 className="text-3xl font-bold mb-4">Administration</h2>
                     <p>This page demonstrates how user privileges can be managed in App, and how the app is uniquely protected against a compromised admin.</p>
                     {!showExplainer ? (
                       <Button onClick={handleElevateClick}>Elevate to Admin Role</Button>
@@ -342,6 +613,7 @@ function App() {
 
                 {jwt?.role === "Administrator" && (
                   <div className="space-y-6">
+                    <h2 className="text-3xl font-bold mb-4">Administration</h2>
                     <p className="text-sm text-gray-700">
                       Change your permissions to demo the quorum-enforced workflow for change requests, then check out how the permission changes affect the User experience on the User page.
                     </p>
@@ -390,10 +662,35 @@ function App() {
 
 
                     {requests.length > 0 && (
-                      <div>
+                      <div className="relative">
+                        {/* Accordion Toggle */}
+                        <button
+                          onClick={() => setShowChangeRequestAccordion(prev => !prev)}
+                          className="absolute -top-2 right-0 text-2xl hover:scale-110 transition-transform"
+                          aria-label="Toggle governance explainer"
+                        >
+                          {showChangeRequestAccordion ? "🤯" : "🤔"}
+                        </button>
+
+                        {/* Accordion Content */}
+                        {showChangeRequestAccordion && (
+                          <div className="bg-white border rounded shadow p-4 mb-4 text-sm space-y-2">
+                            <h4 className="font-semibold">What’s happening here?</h4>
+                            <p>
+                              These are <strong>immutable change requests</strong> — they track who proposed what, and require approval to take effect.
+                            </p>
+                            <p>
+                              TideCloak prevents silent privilege escalation by recording and requiring consensus for every change.
+                            </p>
+                            <p>
+                              <strong>Even you</strong> — the demo admin — can't apply changes without a review step.
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Existing Change Request Table Below */}
                         <h3 className="text-lg font-semibold mt-6 mb-2">Change Requests</h3>
                         <table className="text-left border border-gray-200 rounded overflow-hidden text-sm w-full">
-
                           <thead className="bg-gray-100">
                             <tr>
                               <th className="p-2 w-1/4">Date</th>
@@ -499,29 +796,11 @@ function App() {
             )}
           </div>
 
-          <aside className="w-full lg:w-96 shrink-0 mt-4 lg:mt-0">
-            <div className="p-6 bg-gray-100 rounded shadow-lg">
-              <h3 className="text-xl font-semibold mb-2">What makes TideCloak special?</h3>
-              <ul className="list-disc list-inside mb-4">
-                <li>Decentralized quorum-based approval</li>
-                <li>Immutable audit logs</li>
-                <li>Granular control over sensitive fields</li>
-              </ul>
-              <div className="bg-white p-4 border rounded flex gap-3 items-start">
-                <FaRegSmile className="text-blue-400 text-3xl mt-1" />
-                <p className="text-sm">
-                  So you don’t worry about
-                  <a href="#" className="text-blue-600 ml-1">permission sprawl</a>,
-                  <a href="#" className="text-blue-600 ml-1">forgotten admin accounts</a>, or
-                  <a href="#" className="text-blue-600 ml-1">over-permissioned users</a>.
-                </p>
-              </div>
-            </div>
-          </aside>
         </div>
       </main>
 
-      <footer className="p-4 bg-gray-100 flex flex-col md:flex-row justify-between items-center text-sm gap-2 md:gap-0">
+      <footer className="mt-auto p-4 bg-gray-100 flex flex-col md:flex-row justify-between items-center text-sm gap-2 md:gap-0">
+
         <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-4">
           <p>
             Secured by{" "}
