@@ -1,16 +1,16 @@
-2025-04-16 02:39:59.919545Z jdbc[3]: exception
+2025-04-16 03:21:15.484097Z jdbc[3]: exception
 org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "MIGRATION_MODEL" not found (this database is empty); SQL statement:
 SELECT ID, VERSION FROM MIGRATION_MODEL ORDER BY UPDATE_TIME DESC [42104-230]
-2025-04-16 02:40:00.253544Z jdbc[3]: exception
+2025-04-16 03:21:15.796009Z jdbc[3]: exception
 org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "DATABASECHANGELOG" not found (this database is empty); SQL statement:
 SELECT COUNT(*) FROM PUBLIC.DATABASECHANGELOG [42104-230]
-2025-04-16 02:40:00.363276Z jdbc[4]: exception
+2025-04-16 03:21:15.889542Z jdbc[4]: exception
 org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "DATABASECHANGELOGLOCK" not found (this database is empty); SQL statement:
 SELECT COUNT(*) FROM PUBLIC.DATABASECHANGELOGLOCK [42104-230]
-2025-04-16 02:40:00.381389Z jdbc[3]: exception
+2025-04-16 03:21:15.907583Z jdbc[3]: exception
 org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "DATABASECHANGELOG" not found; SQL statement:
 SELECT COUNT(*) FROM PUBLIC.DATABASECHANGELOG [42102-230]
-2025-04-16 02:40:01.576445Z jdbc[3]: exception
+2025-04-16 03:21:17.023131Z jdbc[3]: exception
 org.h2.jdbc.JdbcSQLSyntaxErrorException: Column "T.DETAILS_JSON" not found; SQL statement:
 select t.DETAILS_JSON from PUBLIC.ADMIN_EVENT_ENTITY t where 0=1 [42122-230]
 	at org.h2.message.DbException.getJdbcSQLException(DbException.java:514)
@@ -113,6 +113,6 @@ select t.DETAILS_JSON from PUBLIC.ADMIN_EVENT_ENTITY t where 0=1 [42122-230]
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 	at io.quarkus.bootstrap.runner.QuarkusEntryPoint.doRun(QuarkusEntryPoint.java:62)
 	at io.quarkus.bootstrap.runner.QuarkusEntryPoint.main(QuarkusEntryPoint.java:33)
-2025-04-16 02:40:01.604721Z jdbc[3]: exception
+2025-04-16 03:21:17.051146Z jdbc[3]: exception
 org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "DATABASECHANGELOG_TIDE_ENTIT" not found; SQL statement:
 SELECT COUNT(*) FROM PUBLIC.DATABASECHANGELOG_TIDE_ENTIT [42102-230]

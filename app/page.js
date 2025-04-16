@@ -9,6 +9,8 @@ import {
 import { SiX } from "react-icons/si"; // Modern X (formerly Twitter) icon
 import { FaSearch } from "react-icons/fa";
 
+import IAMService from "../lib/IAMService";
+
 function Button({ children, onClick, type = "button", className = "" }) {
   return (
     <button
@@ -149,6 +151,13 @@ export default function App() {
   const [showChangeRequestAccordion, setShowChangeRequestAccordion] = useState(false);
   const [showExposureAccordion, setShowExposureAccordion] = useState(false);
 
+  // Initiate Keycloak to handle token and Tide enclave
+  useEffect(() => {
+    IAMService.initIAM(() => {
+      
+    });
+  }, [])
+
   const [formData, setFormData] = useState({
     dob: "",
     cc: ""
@@ -163,28 +172,28 @@ export default function App() {
 
 
   const handleLogin = () => {
-    setJwt({
-      user: "you",
-      role: "Standard",
-      permissions: {
-        dob: { read: true, write: true },
-        cc: { read: false, write: true },
-      },
-    });
-    const today = new Date().toISOString().split("T")[0];
+    // setJwt({
+    //   user: "you",
+    //   role: "Standard",
+    //   permissions: {
+    //     dob: { read: true, write: true },
+    //     cc: { read: false, write: true },
+    //   },
+    // });
+    // const today = new Date().toISOString().split("T")[0];
 
-    setFormData({
-      dob: jwt?.permissions?.dob?.read ? "1990-05-21" : today,
-      cc: ""
-    });
-    setSavedData({
-      dob: jwt?.permissions?.dob?.read ? "1990-05-21" : "",
-      cc: ""
-    });
+    // setFormData({
+    //   dob: jwt?.permissions?.dob?.read ? "1990-05-21" : today,
+    //   cc: ""
+    // });
+    // setSavedData({
+    //   dob: jwt?.permissions?.dob?.read ? "1990-05-21" : "",
+    //   cc: ""
+    // });
 
+    IAMService.doLogin();
     setPage("User");
   };
-
 
   const handleLogout = () => {
     setJwt(null);
@@ -287,35 +296,35 @@ export default function App() {
 
   const loggedIn = !!jwt;
 
-  useEffect(() => {
-    if (!jwt) return;
+  // useEffect(() => {
+  //   if (!jwt) return;
 
-    const today = new Date().toISOString().split("T")[0];
+  //   const today = new Date().toISOString().split("T")[0];
 
-    const newForm = { ...formData };
-    const newSaved = { ...savedData };
+  //   const newForm = { ...formData };
+  //   const newSaved = { ...savedData };
 
-    if (!jwt.permissions.dob.read) {
-      newSaved.dob = "";
-      if (!jwt.permissions.dob.write) {
-        newForm.dob = "";
-      } else {
-        newForm.dob = today;
-      }
-    }
+  //   if (!jwt.permissions.dob.read) {
+  //     newSaved.dob = "";
+  //     if (!jwt.permissions.dob.write) {
+  //       newForm.dob = "";
+  //     } else {
+  //       newForm.dob = today;
+  //     }
+  //   }
 
-    if (!jwt.permissions.cc.read) {
-      newSaved.cc = "";
-      if (!jwt.permissions.cc.write) {
-        newForm.cc = "";
-      } else {
-        newForm.cc = "";
-      }
-    }
+  //   if (!jwt.permissions.cc.read) {
+  //     newSaved.cc = "";
+  //     if (!jwt.permissions.cc.write) {
+  //       newForm.cc = "";
+  //     } else {
+  //       newForm.cc = "";
+  //     }
+  //   }
 
-    setFormData(newForm);
-    setSavedData(newSaved);
-  }, [jwt]);
+  //   setFormData(newForm);
+  //   setSavedData(newSaved);
+  // }, [jwt]);
 
 
 

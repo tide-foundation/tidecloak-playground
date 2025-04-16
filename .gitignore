@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+.vscode/*
+!.vscode/extensions.json
+package-lock.json
+keycloak.json
+keys.json
+*Zone.Identifier
