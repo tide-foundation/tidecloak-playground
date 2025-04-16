@@ -1,22 +1,22 @@
 {
-    "realm": "nextjs-test",
-    "auth-server-url": "http://localhost:8080/",
-    "ssl-required": "external",
-    "resource": "myclient",
-    "public-client": true,
-    "confidential-port": 0,
-    "jwk": {
-      "keys": [
-        {
-          "kid": "htNiW0xTD9flY75VtVj3XvZ-Gyy_jNSYOwvYA0gs3ic",
-          "kty": "OKP",
-          "alg": "EdDSA",
-          "use": "sig",
-          "crv": "Ed25519",
-          "x": "_HlAT8nQkboX1hScjdL8Bw27sE9wGTKQJHSxrTwswpY"
-        }
-      ]
-    },
-    "vendorId": "4495788909640465404545016106337764694805245521070936974458435512603978824884",
-    "homeOrkUrl": "https://ork1.tideprotocol.com"
-  }
+  "realm": "nextjs-test",
+  "auth-server-url": "http://localhost:8080/",
+  "ssl-required": "external",
+  "resource": "myclient",
+  "public-client": true,
+  "confidential-port": 0,
+  "jwk": {
+    "keys": [
+      {
+        "kid": "htNiW0xTD9flY75VtVj3XvZ-Gyy_jNSYOwvYA0gs3ic",
+        "kty": "OKP",
+        "alg": "EdDSA",
+        "use": "sig",
+        "crv": "Ed25519",
+        "x": "_HlAT8nQkboX1hScjdL8Bw27sE9wGTKQJHSxrTwswpY"
+      }
+    ]
+  },
+  "vendorId": "4495788909640465404545016106337764694805245521070936974458435512603978824884",
+  "homeOrkUrl": "https://ork1.tideprotocol.com"
+}

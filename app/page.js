@@ -10,6 +10,7 @@ import { SiX } from "react-icons/si"; // Modern X (formerly Twitter) icon
 import { FaSearch } from "react-icons/fa";
 
 import IAMService from "../lib/IAMService";
+import { useAppContext } from "./context/context";
 
 function Button({ children, onClick, type = "button", className = "" }) {
   return (
@@ -138,7 +139,7 @@ function DatabaseExposureTable({ jwt }) {
 
 export default function App() {
   const [jwt, setJwt] = useState(null);
-  const [page, setPage] = useState("Landing");
+  //const [page, setPage] = useState("Landing");
   const [showExplainer, setShowExplainer] = useState(false);
   const [requests, setRequests] = useState([]);
   const [hasChanges, setHasChanges] = useState(false);
@@ -151,10 +152,18 @@ export default function App() {
   const [showChangeRequestAccordion, setShowChangeRequestAccordion] = useState(false);
   const [showExposureAccordion, setShowExposureAccordion] = useState(false);
 
+
+  const {realm, baseURL, page, setPage} = useAppContext();
+  const [loading, setLoading] = useState(true);
+
+
   // Initiate Keycloak to handle token and Tide enclave
   useEffect(() => {
     IAMService.initIAM(() => {
-      
+      if (IAMService.isLoggedIn()){
+        setPage("User"); 
+      }
+      setLoading(false);
     });
   }, [])
 
@@ -192,13 +201,14 @@ export default function App() {
     // });
 
     IAMService.doLogin();
-    setPage("User");
+    //setPage("User");
   };
 
   const handleLogout = () => {
-    setJwt(null);
-    setPage("Landing");
-    setRequests([]);
+    // setJwt(null);
+    // setPage("Landing");
+    // setRequests([]);
+    IAMService.doLogout();
   };
 
   const handleElevateClick = () => setShowExplainer(true);
@@ -329,8 +339,10 @@ export default function App() {
 
 
   return (
+    !loading
+    ?
     <div className="min-h-screen flex flex-col bg-white">
-      {loggedIn && (
+      {IAMService.isLoggedIn() && (
         <nav className="flex justify-start gap-4 px-8 py-4 border-b border-gray-200">
           <button
             onClick={() => setPage("User")}
@@ -438,7 +450,7 @@ export default function App() {
 
                 <form className="space-y-6" onSubmit={handleFormSubmit}>
 
-                  {["dob", "cc"].map((field) => {
+                  {/* {["dob", "cc"].map((field) => {
                     const perms = jwt.permissions[field];
                     const canRead = perms?.read;
                     const canWrite = perms?.write;
@@ -530,7 +542,7 @@ export default function App() {
                       )}
                     </div>
 
-                  )}
+                  )} */}
                 </form>
 
                 {/* NEW SECTION: Database Exposure Simulation */}
@@ -854,5 +866,6 @@ export default function App() {
       </footer>
 
     </div>
+  : null
   );
 }
