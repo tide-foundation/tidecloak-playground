@@ -1,3 +1,5 @@
+"use client"
+
 import React, { useState, useEffect } from "react";
 import {
   FaDiscord,
@@ -6,7 +8,6 @@ import {
 } from "react-icons/fa";
 import { SiX } from "react-icons/si"; // Modern X (formerly Twitter) icon
 import { FaSearch } from "react-icons/fa";
-
 
 function Button({ children, onClick, type = "button", className = "" }) {
   return (
@@ -133,10 +134,7 @@ function DatabaseExposureTable({ jwt }) {
   );
 }
 
-
-// Main App Component
-
-function App() {
+export default function App() {
   const [jwt, setJwt] = useState(null);
   const [page, setPage] = useState("Landing");
   const [showExplainer, setShowExplainer] = useState(false);
@@ -150,10 +148,6 @@ function App() {
   const [showLoginAccordion, setShowLoginAccordion] = useState(false);
   const [showChangeRequestAccordion, setShowChangeRequestAccordion] = useState(false);
   const [showExposureAccordion, setShowExposureAccordion] = useState(false);
-
-
-
-
 
   const [formData, setFormData] = useState({
     dob: "",
@@ -853,5 +847,3 @@ function App() {
     </div>
   );
 }
-
-export default App;
