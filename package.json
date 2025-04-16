@@ -12,7 +12,13 @@
     "next": "15.3.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-icons": "^5.5.0"
+    "react-icons": "^5.5.0",
+    "jose": "^5.9.6",
+    "buffer": "6.0.3",
+    "sqlite3": "5.1.7",
+    "sqlite": "5.1.1",
+    "tidecloak-js": "0.6.52"
+
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

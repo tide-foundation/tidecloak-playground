@@ -1,0 +1,170 @@
+{
+    "realm": "nextjs-test",
+    "enabled": true,
+    "sslRequired": "external",
+    "registrationAllowed": false,
+    "duplicateEmailsAllowed": true,
+    "roles": {
+      "realm": [
+        {
+          "name": "_tide_dob.selfencrypt",
+          "description": "Tide E2EE self-encrypt DoB data"
+        },
+        {
+          "name": "_tide_dob.selfdecrypt",
+          "description": "Tide E2EE self-decrypt DoB data"
+        },
+        {
+          "name": "default-roles-nextjs-test",
+          "description": "${role_default-roles}",
+          "composite": true,
+          "composites": {
+            "realm": [
+              "_tide_dob.selfencrypt",
+              "_tide_dob.selfdecrypt"
+            ]
+          }
+        }
+      ],
+      "client": {
+        "myclient": []
+      }
+    },
+    "defaultRole": {
+      "name": "default-roles-nextjs-test",
+      "description": "${role_default-roles}",
+      "composite": true,
+      "clientRole": false
+    },
+    "clients": [
+      {
+        "clientId": "myclient",
+        "enabled": true,
+        "redirectUris": [
+          "http://localhost:3000/silent-check-sso.html",
+          "http://localhost:3000/auth/redirect"
+        ],
+        "webOrigins": [
+          "http://localhost:3000"
+        ],
+        "standardFlowEnabled": true,
+        "implicitFlowEnabled": false,
+            "publicClient": true,
+        "fullScopeAllowed": true,
+        "protocolMappers": [
+          {
+            "name": "Tide User Key",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-usermodel-attribute-mapper",
+            "consentRequired": false,
+            "config": {
+              "introspection.token.claim": "true",
+              "userinfo.token.claim": "true",
+              "user.attribute": "tideUserKey",
+              "lightweight.claim": "true",
+              "id.token.claim": "true",
+              "access.token.claim": "true",
+              "claim.name": "tideuserkey",
+              "jsonType.label": "String"
+            }
+          },
+          {
+            "name": "Tide IGA Role Mapper",
+            "protocol": "openid-connect",
+            "protocolMapper": "tide-roles-mapper",
+            "consentRequired": false,
+            "config": {
+              "lightweight.claim": "true",
+              "access.token.claim": "true"
+            }
+          },
+          {
+            "name": "Tide vuid",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-usermodel-attribute-mapper",
+            "consentRequired": false,
+            "config": {
+              "introspection.token.claim": "true",
+              "userinfo.token.claim": "true",
+              "user.attribute": "vuid",
+              "lightweight.claim": "true",
+              "id.token.claim": "true",
+              "access.token.claim": "true",
+              "claim.name": "vuid",
+              "jsonType.label": "String"
+            }
+          }
+        ]
+      }
+    ],
+    "identityProviders": [
+      {
+        "alias": "tide",
+        "providerId": "tide",
+        "enabled": true,
+        "config": {
+          "changeSetEndpoint": "http://localhost:8080",
+          "LogoURL": "http://localhost:8080/realms/nextjs-test/tide-idp-resources/images/LOGO",
+          "syncMode": "LEGACY",
+          "ImageURL": "http://localhost:8080/realms/nextjs-test/tide-idp-resources/images/BACKGROUND_IMAGE",
+          "loginFormType": "cmkOnly",
+          "homeORKurl": "https://ork1.tideprotocol.com",
+          "clientSecret": "****"
+        }
+      }
+    ],
+    "components": {
+      "org.keycloak.userprofile.UserProfileProvider": [
+        {
+          "providerId": "declarative-user-profile",
+          "config": {
+            "kc.user.profile.config": [
+              "{\"attributes\":[{\"name\":\"username\",\"displayName\":\"${username}\",\"validations\":{\"length\":{\"min\":3,\"max\":255},\"username-prohibited-characters\":{},\"up-username-not-idn-homograph\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"email\",\"displayName\":\"${email}\",\"validations\":{\"email\":{},\"length\":{\"max\":255}},\"annotations\":{},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false}],\"groups\":[{\"name\":\"user-metadata\",\"displayHeader\":\"User metadata\",\"displayDescription\":\"Attributes, which refer to user metadata\"}]}"
+            ]
+          }
+        }
+      ]
+    },
+    "authenticationFlows": [
+      {
+        "alias": "tidebrowser",
+        "providerId": "basic-flow",
+        "topLevel": true,
+        "authenticationExecutions": [
+          {
+            "authenticator": "auth-cookie",
+            "authenticatorFlow": false,
+            "requirement": "ALTERNATIVE",
+            "priority": 10,
+            "userSetupAllowed": false
+          },
+          {
+            "authenticatorConfig": "tide browser",
+            "authenticator": "identity-provider-redirector",
+            "authenticatorFlow": false,
+            "requirement": "ALTERNATIVE",
+            "priority": 25,
+            "userSetupAllowed": false
+          }
+        ]
+      }
+    ],
+    "authenticatorConfig": [
+      {
+        "alias": "tide browser",
+        "config": {
+          "defaultProvider": "tide"
+        }
+      }
+    ],
+    "browserFlow": "tidebrowser",
+    "requiredActions": [
+      {
+        "alias": "link-tide-account-action",
+        "name": "Link Tide Account",
+        "providerId": "link-tide-account-action",
+        "enabled": true
+      }
+    ],
+    "keycloakVersion": "26.1.1"
+  }
