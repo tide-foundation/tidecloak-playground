@@ -156,7 +156,8 @@ export default function App() {
 
   const {realm, baseURL, page, setPage} = useAppContext();
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState();
+  const [loggedUser, setUser] = useState();
+  const [users, setUsers] = useState([]);
 
 
   // Initiate Keycloak to handle token and Tide enclave
@@ -168,7 +169,7 @@ export default function App() {
         // Set the access token if logged in on initial render
         const token = async () => {setJwt(await IAMService.getToken())};                    // TODO: Temporary
         token();
-        getLoggedUser();
+        getAllUsers();
       }
       setLoading(false);
     });
@@ -180,19 +181,6 @@ export default function App() {
       console.log(jwt)
     };
   }, [jwt])
-
-  // Get the logged in user's data based on the vuid from the token
-  const getLoggedUser = async () => { 
-    const token = await IAMService.getToken();
-    const users = await appService.getUsers(baseURL, realm, token);
-    const loggedVuid = IAMService.getValueFromToken("vuid");
-    const user = users.find(user => {
-      if (user.attributes.vuid[0] === loggedVuid){
-        return user;
-      }
-    });
-    setUser(user);
-  };
 
   const [formData, setFormData] = useState({
     dob: "",
@@ -206,6 +194,36 @@ export default function App() {
     console.log(formData["cc"]);
   };
 
+  // Get all users, and find the logged in user's data based on the vuid from the token
+  const getAllUsers = async () => { 
+    const token = await IAMService.getToken();
+    const users = await appService.getUsers(baseURL, realm, token);
+    setUsers(users);
+    const loggedVuid = IAMService.getValueFromToken("vuid");
+    const user = users.find(user => {
+      if (user.attributes.vuid[0] === loggedVuid){
+        return user;
+      }
+    });
+    console.log(user);
+    setUser(user);
+
+    // Fill the fields if logged user has the attributes
+    if (user.attributes.dob){
+      // DOB format in Keycloak needs to be "YYYY-MM-DD" to display
+      console.log(user.attributes.dob[0]);
+      setFormData(prev => ({...prev, dob: user.attributes.dob[0]}));
+      console.log(formData);
+      setSavedData(prev => ({...prev, dob: user.attributes.dob[0]}));
+    }
+
+    if (user.attributes.cc){
+      console.log(user.attributes.cc[0]);
+      setFormData(prev => ({...prev, cc: user.attributes.cc[0]}));
+      setSavedData(prev => ({...prev, cc: user.attributes.cc[0]}));
+    }
+
+  };
 
   const handleLogin = () => {
     // setJwt({
