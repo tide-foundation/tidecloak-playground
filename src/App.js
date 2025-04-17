@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useLayoutEffect, useEffect } from "react";
+
 import {
   FaDiscord,
   FaLinkedin,
   FaGithub,
+  FaCheckCircle,
 } from "react-icons/fa";
 import { SiX } from "react-icons/si"; // Modern X (formerly Twitter) icon
-import { FaSearch } from "react-icons/fa";
 
 
 function Button({ children, onClick, type = "button", className = "" }) {
@@ -24,7 +25,7 @@ function DecryptingText({ text, speed = 30 }) {
   const [displayed, setDisplayed] = useState('');
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     let i = 0;
     const interval = setInterval(() => {
       setDisplayed((prev) =>
@@ -42,6 +43,7 @@ function DecryptingText({ text, speed = 30 }) {
 
     return () => clearInterval(interval);
   }, [text, speed]);
+
 
   return <span className="font-mono text-green-600">{displayed}</span>;
 }
@@ -113,18 +115,239 @@ function DecryptedRow({ index, isUser, username, dob, cc, canRead }) {
   );
 }
 
-function DatabaseExposureTable({ jwt }) {
+function AccordionBox({ title, children, isOpen }) {
+  return (
+    <div
+      className={`transition-all duration-300 ease-in-out overflow-hidden ${isOpen ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
+        } bg-slate-50 border-l-4 border-blue-500 rounded-md shadow-inner px-5 py-0 mb-4 text-sm space-y-3 ring-1 ring-slate-300`}
+    >
+      {isOpen && (
+        <div className="py-5">
+          {title && (
+            <h4 className="text-base font-bold text-blue-900 tracking-wide uppercase">
+              {title}
+            </h4>
+          )}
+          <div className="text-slate-700 leading-relaxed">{children}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+function QuorumDashboard({ request, onCommit, setPage, setRequests }) {
+
+  if (request?.status === "Committed") {
+    return (
+      <div className="bg-white border rounded-lg p-6 shadow space-y-4 mt-8">
+
+        <div className="flex justify-between items-center">
+          <h3 className="text-xl font-bold text-gray-800">Change Request</h3>
+          <span className="inline-block text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide bg-blue-100 text-blue-800">
+            Committed
+          </span>
+        </div>
+
+        <pre className="bg-gray-50 border text-sm rounded p-4 overflow-auto">
+          {JSON.stringify(request.value, null, 2)}
+        </pre>
+        <div className="mt-4">
+          <div className="text-sm text-gray-700 flex items-center gap-2">
+            <FaCheckCircle className="text-green-500" />
+            <span>Done! You can now explore the updated permissions.</span>
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                setPage("User");
+              }}
+              className="text-blue-600 hover:underline font-medium whitespace-nowrap"
+            >
+              View on User Page →
+            </a>
+          </div>
+        </div>
+
+      </div>
+    );
+  }
+
+
+  const ADMIN_NAMES = ["You", "Alice", "Bob", "Carlos", "Dana"];
+  const isCommitted = request?.status === "Committed";
+  const isApproved = request?.status === "Approved" || isCommitted;
+  const [hasUserApproved, setHasUserApproved] = useState(isCommitted || isApproved);
+
+  const [approvals, setApprovals] = useState([false, false, false, false, false]);
+  const [canCommit, setCanCommit] = useState(false);
+
+  useEffect(() => {
+    const isCommitted = request?.status === "Committed";
+    const isApproved = request?.status === "Approved";
+
+    if (isCommitted) {
+      setHasUserApproved(true);
+      setApprovals([true, true, true, true, true]);
+      setCanCommit(false);
+      return;
+    }
+
+    if (isApproved) {
+      setHasUserApproved(true);
+      setApprovals([true, true, true, false, false]);
+      setCanCommit(true);
+      return;
+    }
+
+    // Reset for new request
+    setHasUserApproved(false);
+    setApprovals([false, false, false, false, false]);
+    setCanCommit(false);
+  }, [request?.id]);
+
+
+  useEffect(() => {
+    if (hasUserApproved) {
+      const others = [1, 2, 3, 4];
+      const shuffled = others.sort(() => 0.5 - Math.random()).slice(0, 2);
+
+      shuffled.forEach((index, i) => {
+        setTimeout(() => {
+          setApprovals(prev => {
+            const updated = [...prev];
+            updated[index] = true;
+
+            // 🟢 Check if quorum is reached and status needs to be bumped
+            const totalApproved = updated.filter(Boolean).length;
+            if (totalApproved >= 3 && request.status !== "Approved") {
+              setRequests(prev =>
+                prev.map(r => r.id === request.id ? { ...r, status: "Approved" } : r)
+              );
+            }
+
+
+            return updated;
+          });
+        }, (i + 1) * 900);
+      });
+
+      setTimeout(() => {
+        setCanCommit(true);
+      }, 3.2 * 1000);
+    }
+  }, [hasUserApproved]);
+
+
+
+
+  const handleUserApprove = () => {
+    setApprovals(prev => {
+      const updated = [...prev];
+      updated[0] = true;
+      return updated;
+    });
+
+    setHasUserApproved(true);
+
+    // Let parent know we're reviewing (mark as "Pending")
+    if (request?.status === "Draft") {
+      request.status = "Pending"; // this is ok temporarily for local display
+    }
+  };
+
 
   return (
-    <div className="mt-6 space-y-6 pb-24 md:pb-36">
+    <div className="bg-white border rounded-lg p-6 shadow space-y-4 mt-8">
+      <div className="flex justify-between items-center">
+        <h3 className="text-xl font-bold text-gray-800">Change Request</h3>
+        {request?.status && (
+          <span
+            className={`inline-block text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide
+        ${request.status === "Draft" ? "bg-gray-200 text-gray-800" :
+                request.status === "Pending" ? "bg-yellow-100 text-yellow-800" :
+                  request.status === "Approved" ? "bg-green-100 text-green-800" :
+                    request.status === "Committed" ? "bg-blue-100 text-blue-800" :
+                      "bg-red-100 text-red-800"
+              }`}
+          >
+            {request.status}
+          </span>
+        )}
+      </div>
+
+      <pre className="bg-gray-50 border text-sm rounded p-4 overflow-auto">
+        {JSON.stringify(request.value, null, 2)}
+      </pre>
+
+      <div className="flex justify-between items-center mt-6">
+        {ADMIN_NAMES.map((name, idx) => (
+          <div key={name} className="relative flex flex-col items-center">
+            <div
+              className={`w-14 h-14 flex items-center justify-center rounded-full border-4 transition-all duration-700 ease-in-out 
+        ${approvals[idx] ? "border-green-500 shadow-md shadow-green-200" : "border-gray-300"}
+      `}
+            >
+              <span className="font-semibold text-lg text-gray-700">{name[0]}</span>
+            </div>
+            <span className="text-xs mt-2 text-gray-600">{name}</span>
+
+            {/* Tick overlay – doesn't shift layout */}
+            {approvals[idx] && (
+              <FaCheckCircle className="absolute top-0 right-0 text-green-500 w-4 h-4 transition-opacity duration-500 translate-x-2 -translate-y-2" />
+            )}
+          </div>
+        ))}
+
+      </div>
+
+      <div className="pt-4">
+        {!hasUserApproved && !isCommitted ? (
+          <Button onClick={handleUserApprove}>
+            Review
+          </Button>
+
+        ) : request?.status === "Committed" ? (
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              setPage("User");
+            }}
+            className="text-blue-600 hover:underline text-sm font-medium"
+          >
+            View on User Page →
+          </a>
+
+        ) : canCommit ? (
+          <Button className="bg-green-600 hover:bg-green-700" onClick={onCommit}>
+            Commit
+          </Button>
+        ) : (
+          <p className="text-sm text-gray-500 italic">
+            Awaiting quorum: <strong>{approvals.filter(Boolean).length} / 3</strong> approved
+          </p>
+        )}
+      </div>
+
+    </div >
+  );
+}
+
+
+function DatabaseExposureTable({ jwt, formData }) {
+
+
+  return (
+    <div className="mt-6 space-y-6 pb-10 md:pb-16">
       {[0, 1, 2].map((i) => (
         <DecryptedRow
           key={i}
           index={i}
           isUser={i === 0}
           username={`user_${"x".repeat(44)}${i}`}
-          dob={jwt?.permissions?.dob?.read ? "1990-05-21" : null}
-          cc={jwt?.permissions?.cc?.read ? "4111-xxxx-xxxx-1234" : null}
+          dob={i === 0 ? formData.dob : jwt?.permissions?.dob?.read ? "1990-05-21" : null}
+          cc={i === 0 ? formData.cc : jwt?.permissions?.cc?.read ? "4111-xxxx-xxxx-1234" : null}
           canRead={jwt?.permissions?.dob?.read || jwt?.permissions?.cc?.read}
         />
 
@@ -150,7 +373,7 @@ function App() {
   const [showLoginAccordion, setShowLoginAccordion] = useState(false);
   const [showChangeRequestAccordion, setShowChangeRequestAccordion] = useState(false);
   const [showExposureAccordion, setShowExposureAccordion] = useState(false);
-
+  const [showDeepDive, setShowDeepDive] = useState(false);
 
 
 
@@ -238,56 +461,32 @@ function App() {
     });
 
     if (isDifferent) {
-      const bundledRequest = {
+      const newRequest = {
         id: Date.now() + Math.random(),
         date: new Date().toLocaleDateString(),
         type: `Permission Bundle`,
         value: updated,
         status: "Draft",
         json: JSON.stringify(updated, null, 2),
-        field: null // no individual field
+        field: null
       };
 
-      setRequests(prev => [bundledRequest, ...prev]);
+      setRequests([newRequest]); // overwrite previous request
       setHasChanges(false);
     }
+
 
   };
 
 
   const handleReview = (id) => {
-    setRequests(prev => {
-      const updated = prev.map(req => {
-        if (req.id !== id) return req;
-        let nextStatus = req.status === "Draft" ? "Pending" :
-          req.status === "Pending" ? "Approved" : req.status;
-        return { ...req, status: nextStatus };
-      });
-
-      const approvedRequest = updated.find(r => r.id === id && r.status === "Approved");
-
-      if (approvedRequest) {
-        const merged = { ...jwt.permissions };
-
-        if (approvedRequest.field) {
-          merged[approvedRequest.field] = approvedRequest.value;
-        } else {
-          // Bundled request — merge all fields
-          Object.entries(approvedRequest.value).forEach(([field, perms]) => {
-            merged[field] = perms;
-          });
-        }
-
-        setJwt(prev => ({
-          ...prev,
-          permissions: merged
-        }));
-
-        setTimeout(() => setPage("User"), 600);
-      }
-
-      return updated;
-    });
+    setRequests(prev =>
+      prev.map(req =>
+        req.id === id && req.status === "Draft"
+          ? { ...req, status: "Pending" }
+          : req
+      )
+    );
   };
 
 
@@ -314,8 +513,11 @@ function App() {
       newSaved.cc = "";
       if (!jwt.permissions.cc.write) {
         newForm.cc = "";
-      } else {
-        newForm.cc = "";
+      }
+    } else {
+      // If we now have read permission but no write, restore from formData
+      if (!jwt.permissions.cc.write && formData.cc && !newSaved.cc) {
+        newSaved.cc = formData.cc;
       }
     }
 
@@ -364,26 +566,23 @@ function App() {
                 </button>
 
                 {/* Accordion Content */}
-                {showLoginAccordion && (
-                  <div className="bg-white border rounded shadow p-4 mb-4 text-sm space-y-2">
-                    <h4 className="font-semibold">Why is this login special?</h4>
-                    <p>
-                      This login page showcases <strong>TideCloak's decentralized IAM model</strong>.
-                    </p>
-                    <p>
-                      Admin powers, even login elevation, are <strong>quorum-controlled</strong> — not granted unilaterally.
-                    </p>
-                    <p>
-                      The system itself has no backdoor. That’s the point.
-                    </p>
-                  </div>
-                )}
-
+                <AccordionBox title="Why is this login special?" isOpen={showLoginAccordion}>
+                  <p>
+                    This login page showcases <strong>TideCloak's decentralized IAM model</strong>.
+                  </p>
+                  <p>
+                    Admin powers, even login elevation, are <strong>quorum-controlled</strong> — not granted unilaterally.
+                  </p>
+                  <p>
+                    The system itself has no backdoor. That’s the point.
+                  </p>
+                </AccordionBox>
 
 
 
                 <div className="bg-blue-50 rounded shadow p-6 space-y-4">
                   <h2 className="text-3xl font-bold">Welcome to your demo app</h2>
+                  <p>Traditional IAM is only as secure as the admins and systems managing it. TideCloak fundamentally removes this risk, by ensuring no-one holds the keys to the kingdom. Explore to learn how.</p>
                   <h3 className="text-xl font-semibold">BYOiD</h3>
                   <p className="text-base">Login or create an account to see the user experience demo.</p>
                   <Button onClick={handleLogin}>Login</Button>
@@ -416,22 +615,21 @@ function App() {
                 </button>
 
                 {/* Accordion content */}
-                {showUserInfoAccordion && (
-                  <div className="bg-white border rounded shadow p-4 mb-2 text-sm space-y-2">
-                    <h4 className="font-semibold">Why is this special?</h4>
-                    <p>
-                      You’re seeing <strong>dynamic user field access</strong> in action. The form respects granular permissions
-                      (read, write, none) in real time.
-                    </p>
-                    <p>
-                      Access is governed by <strong>immutable policy requests</strong>, and changes are enforced only through
-                      quorum approvals — including admin access itself.
-                    </p>
-                  </div>
-                )}
+                <AccordionBox title="Why is this special?" isOpen={showUserInfoAccordion}>
+                  <p>
+                    You’re seeing <strong>dynamic user field access</strong> in action. The form respects granular permissions
+                    (read, write, none) in real time.
+                  </p>
+                  <p>
+                    Access is governed by <strong>immutable policy requests</strong>, and changes are enforced only through
+                    quorum approvals — including admin access itself.
+                  </p>
+                </AccordionBox>
+
 
                 <h2 className="text-3xl font-bold mb-4">User Information</h2>
 
+                <p className="text-sm text-gray-600 mb-6">This form is powered by real-time permission logic. Your ability to view or edit each field depends on your current access.</p>
 
                 <form className="space-y-6" onSubmit={handleFormSubmit}>
 
@@ -530,10 +728,10 @@ function App() {
                   )}
                 </form>
 
-                {/* NEW SECTION: Database Exposure Simulation */}
                 <div className="border-t pt-6">
                   <div className="flex justify-between items-center">
                     <h3 className="text-2xl font-semibold">Database Exposure Simulation</h3>
+
                     <button
                       onClick={() => setShowExposureAccordion(prev => !prev)}
                       className="text-2xl hover:scale-110 transition-transform"
@@ -543,16 +741,51 @@ function App() {
                     </button>
                   </div>
 
-                  {showExposureAccordion && (
-                    <div className="bg-white border rounded shadow p-4 mb-4 text-sm space-y-2">
-                      <p>
-                        This simulation shows what happens when an encrypted user table is leaked.
-                        Try decrypting your own row — other rows will remain locked unless you have access.
-                      </p>
-                    </div>
-                  )}
+                  <p className="text-sm text-gray-600 mb-4">This simulates a user table leak through unprotected API or misconfigured server.</p>
 
-                  <DatabaseExposureTable jwt={jwt} />
+                  <AccordionBox title="What does this simulate?" isOpen={showExposureAccordion}>
+                    <p>
+                      This simulation shows what happens when an encrypted user table is leaked.
+                      Try decrypting your own row — other rows will remain locked unless you have access.
+                    </p>
+
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => setShowDeepDive(prev => !prev)}
+                        className="flex items-center gap-2 ml-auto text-xs font-medium text-blue-700 hover:text-blue-900 transition"
+                        aria-label="Show technical explanation"
+                      >
+                        <span className="underline">Technical Deep Dive</span>
+                        <span className="text-xl">🤓</span>
+                      </button>
+                    </div>
+
+                    {showDeepDive && (
+                      <div className="mt-3 border-t pt-4 space-y-3 text-xs text-gray-700">
+                        <p>
+                          🔐 Each record is encrypted at rest. Even if the table is exfiltrated, fields like DOB and CC remain opaque unless a valid JWT with <code className="bg-gray-100 px-1 py-0.5 rounded">read</code> rights is presented.
+                          The decryption flow references permissions attached to the JWT — not role-based access.
+                        </p>
+                        <div className="w-full overflow-auto">
+                          <img
+                            src="/diagrams/db-decrypt-flow.svg"
+                            alt="Decryption permission flow diagram"
+                            className="w-full max-w-md border rounded shadow"
+                          />
+                        </div>
+                        <p className="italic text-gray-500">
+                          Excerpted from the <a href="https://github.com/tide-foundation/tidecloakspaces" className="underline text-blue-600" target="_blank" rel="noopener noreferrer">TideCloakSpaces</a> repo.
+                        </p>
+                      </div>
+                    )}
+                  </AccordionBox>
+
+
+
+
+
+                  <DatabaseExposureTable jwt={jwt} formData={formData} />
+
 
                 </div>
 
@@ -573,28 +806,26 @@ function App() {
                 </button>
 
                 {/* Accordion Content */}
-                {showAdminAccordion && (
-                  <div className="bg-white border rounded shadow p-4 mb-2 text-sm space-y-2">
-                    <h4 className="font-semibold">What makes TideCloak special?</h4>
-                    <ul className="list-disc list-inside">
-                      <li><strong>Decentralized quorum-based approval</strong></li>
-                      <li>Immutable audit logs</li>
-                      <li>Granular control over sensitive fields</li>
-                    </ul>
-                    <p>
-                      So you don’t worry about{" "}
-                      <a href="#" className="text-blue-600 underline">permission sprawl</a>,{" "}
-                      <a href="#" className="text-blue-600 underline">forgotten admin accounts</a>, or{" "}
-                      <a href="#" className="text-blue-600 underline">over-permissioned users</a>.
-                    </p>
-                  </div>
-                )}
+                <AccordionBox title="What makes TideCloak special?" isOpen={showAdminAccordion}>
+                  <ul className="list-disc list-inside">
+                    <li><strong>Decentralized quorum-based approval</strong></li>
+                    <li>Immutable audit logs</li>
+                    <li>Granular control over sensitive fields</li>
+                  </ul>
+                  <p>
+                    So you don’t worry about{" "}
+                    <a href="#" className="text-blue-600 underline">permission sprawl</a>,{" "}
+                    <a href="#" className="text-blue-600 underline">forgotten admin accounts</a>, or{" "}
+                    <a href="#" className="text-blue-600 underline">over-permissioned users</a>.
+                  </p>
+                </AccordionBox>
+
 
 
                 {jwt?.role === "Standard" && (
                   <div className="space-y-4">
                     <h2 className="text-3xl font-bold mb-4">Administration</h2>
-                    <p>This page demonstrates how user privileges can be managed in App, and how the app is uniquely protected against a compromised admin.</p>
+                    <p className="text-sm text-gray-600 mb-6">This page demonstrates how user privileges can be managed in App, and how the app is uniquely protected against a compromised admin.</p>
                     {!showExplainer ? (
                       <Button onClick={handleElevateClick}>Elevate to Admin Role</Button>
                     ) : (
@@ -623,7 +854,7 @@ function App() {
                       className="space-y-6"
                     >
                       <div className="border rounded-lg p-6 bg-white shadow-sm space-y-6">
-                        <h4 className="text-lg font-semibold text-gray-800">User Permissions</h4>
+                        <h4 className="text-xl font-bold text-gray-800">User Permissions</h4>
 
                         {/* Date of Birth */}
                         <div>
@@ -663,132 +894,42 @@ function App() {
 
                     {requests.length > 0 && (
                       <div className="relative">
-                        {/* Accordion Toggle */}
                         <button
                           onClick={() => setShowChangeRequestAccordion(prev => !prev)}
                           className="absolute -top-2 right-0 text-2xl hover:scale-110 transition-transform"
-                          aria-label="Toggle governance explainer"
+                          aria-label="Toggle change request explainer"
                         >
                           {showChangeRequestAccordion ? "🤯" : "🤔"}
                         </button>
 
-                        {/* Accordion Content */}
-                        {showChangeRequestAccordion && (
-                          <div className="bg-white border rounded shadow p-4 mb-4 text-sm space-y-2">
-                            <h4 className="font-semibold">What’s happening here?</h4>
-                            <p>
-                              These are <strong>immutable change requests</strong> — they track who proposed what, and require approval to take effect.
-                            </p>
-                            <p>
-                              TideCloak prevents silent privilege escalation by recording and requiring consensus for every change.
-                            </p>
-                            <p>
-                              <strong>Even you</strong> — the demo admin — can't apply changes without a review step.
-                            </p>
-                          </div>
-                        )}
+                        <AccordionBox title="Change Request Review" isOpen={showChangeRequestAccordion}>
+                          <p className="text-sm text-gray-600 mb-4">
+                            Admin privileges alone aren't enough. Permission changes are staged for review and must reach quorum before they can be committed.
+                          </p>
+                        </AccordionBox>
 
-                        {/* Existing Change Request Table Below */}
-                        <h3 className="text-lg font-semibold mt-6 mb-2">Change Requests</h3>
-                        <table className="text-left border border-gray-200 rounded overflow-hidden text-sm w-full">
-                          <thead className="bg-gray-100">
-                            <tr>
-                              <th className="p-2 w-1/4">Date</th>
-                              <th className="p-2 w-full">Change Type</th>
-                              <th className="p-2 text-right whitespace-nowrap w-32">Status</th>
-                            </tr>
-                          </thead>
+                        <QuorumDashboard
+                          request={requests[0]}
+                          setPage={setPage}
+                          setRequests={setRequests}
+                          onCommit={() => {
+                            const approved = requests[0].value;
+                            const merged = { ...jwt.permissions };
 
-                          <tbody className="divide-y">
-                            {requests.map((req) => (
-                              <tr
-                                key={req.id}
-                                className="hover:bg-gray-50 cursor-pointer"
-                                onClick={() => setActiveRequest(req)}
-                              >
-                                <td className="p-2">{req.date}</td>
-                                <td className="p-2">{req.type}</td>
-                                <td className="p-2 text-right">
-                                  <span
-                                    className={`inline-flex items-center gap-2 px-2 py-1 rounded text-xs font-semibold ${req.status === "Draft"
-                                      ? "bg-gray-200 text-gray-800"
-                                      : req.status === "Pending"
-                                        ? "bg-yellow-200 text-yellow-800"
-                                        : req.status === "Approved"
-                                          ? "bg-green-200 text-green-800"
-                                          : "bg-red-200 text-red-800"
-                                      }`}
-                                  >
-                                    {req.status}
-                                    {req.status === "Approved" ? (
-                                      <span className="text-sm">✓</span>
-                                    ) : req.status === "Rejected" ? (
-                                      <span className="text-sm">✕</span>
-                                    ) : (
-                                      <FaSearch className="text-sm" />
-                                    )}
-                                  </span>
-                                </td>
+                            Object.entries(approved).forEach(([field, perms]) => {
+                              merged[field] = perms;
+                            });
 
-                              </tr>
-                            ))}
-                          </tbody>
-
-                        </table>
-
-                        {activeRequest && (
-                          <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-                            <div className="bg-white rounded shadow-lg p-6 w-full max-w-md relative">
-                              <h3 className="text-lg font-semibold mb-2">Review Request</h3>
-                              <div className="bg-gray-100 p-3 rounded text-xs mb-4">
-                                <h4 className="font-semibold mb-2">Proposed Permissions:</h4>
-                                <ul className="space-y-1">
-                                  {Object.entries(activeRequest.value).map(([field, perms]) => (
-                                    <li key={field}>
-                                      <strong className="capitalize">{field}</strong>:
-                                      Read = {perms.read ? "✓" : "✕"},
-                                      Write = {perms.write ? "✓" : "✕"}
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                              <div className="flex justify-end gap-2">
-                                <Button
-                                  className="bg-gray-300 text-gray-800 hover:bg-gray-400"
-                                  onClick={() => setActiveRequest(null)}
-                                >
-                                  Cancel
-                                </Button>
-                                <Button
-                                  className="bg-green-600 hover:bg-green-700"
-                                  onClick={() => {
-                                    handleReview(activeRequest.id);
-                                    setActiveRequest(null);
-                                  }}
-                                >
-                                  Approve
-                                </Button>
-                                <Button
-                                  className="bg-red-600 hover:bg-red-700"
-                                  onClick={() => {
-                                    setRequests(prev =>
-                                      prev.map(req =>
-                                        req.id === activeRequest.id ? { ...req, status: "Rejected" } : req
-                                      )
-                                    );
-                                    setActiveRequest(null);
-                                  }}
-                                >
-                                  Reject
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
+                            setJwt(prev => ({ ...prev, permissions: merged }));
+                            setRequests(prev => [{
+                              ...prev[0],
+                              status: "Committed"
+                            }]);
+                            setPage("Admin"); // ensures return to Admin after commit
+                          }}
+                        />
                       </div>
                     )}
-
 
                   </div>
                 )}
