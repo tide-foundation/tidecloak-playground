@@ -10,6 +10,7 @@ export async function GET(){
 
     try {
         // Fetch a master token with the default admin and password (set in the command for setting up keycloak) from the default keycloak admin-cli client
+        // Master Token is only needed to assign the user the tide-realm-admin role
         const getMasterTokenFetch = await apiService.getMasterToken(baseURL);
         const getMasterTokenResp = await getMasterTokenFetch.json();
 
