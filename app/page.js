@@ -156,7 +156,7 @@ export default function App() {
 
   const {realm, baseURL, page, setPage} = useAppContext();
   const [loading, setLoading] = useState(true);
-  const [loggedUser, setUser] = useState();
+  const [loggedUser, setLoggedUser] = useState();
   const [users, setUsers] = useState([]);
 
 
@@ -191,7 +191,6 @@ export default function App() {
 
   const handleUserFieldChange = (field) => (e) => {
     setFormData({ ...formData, [field]: e.target.value });
-    console.log(formData["cc"]);
   };
 
   // Get all users, and find the logged in user's data based on the vuid from the token
@@ -206,7 +205,7 @@ export default function App() {
       }
     });
     console.log(user);
-    setUser(user);
+    setLoggedUser(user);
 
     // Fill the fields if logged user has the attributes
     if (user.attributes.dob){
@@ -226,33 +225,10 @@ export default function App() {
   };
 
   const handleLogin = () => {
-    // setJwt({
-    //   user: "you",
-    //   role: "Standard",
-    //   permissions: {
-    //     dob: { read: true, write: true },
-    //     cc: { read: false, write: true },
-    //   },
-    // });
-    // const today = new Date().toISOString().split("T")[0];
-
-    // setFormData({
-    //   dob: jwt?.permissions?.dob?.read ? "1990-05-21" : today,
-    //   cc: ""
-    // });
-    // setSavedData({
-    //   dob: jwt?.permissions?.dob?.read ? "1990-05-21" : "",
-    //   cc: ""
-    // });
-
     IAMService.doLogin();
-    //setPage("User");
   };
 
   const handleLogout = () => {
-    // setJwt(null);
-    // setPage("Landing");
-    // setRequests([]);
     IAMService.doLogout();
   };
 
@@ -265,11 +241,44 @@ export default function App() {
     }));
   };
 
-  const handleFormSubmit = (e) => {
-    e.preventDefault();
-    setSavedData({ ...formData });
-    setUserFeedback("Changes saved!");
-    setTimeout(() => setUserFeedback(""), 3000); // clear after 3 seconds
+  const handleFormSubmit = async (e) => {
+    try {
+      e.preventDefault();
+      if (formData["dob"] !== ""){
+        const encryptedDob = await IAMService.doEncrypt([
+          {
+            "data": formData["dob"],
+            "tags": ["dob"]
+          }
+        ]);
+        loggedUser.attributes["dob"] = [encryptedDob[0]];
+      }
+  
+      if (formData["cc"] !== ""){
+        const encryptedCc = await IAMService.doEncrypt([
+          {
+            "data": formData["cc"],
+            "tags": ["cc"]
+          }
+        ]);
+        loggedUser.attributes["cc"] = [encryptedCc[0]];
+      }
+  
+      const token = await IAMService.getToken();
+      const response = appService.updateUser(baseURL, realm, loggedUser, token);
+
+      if (response.ok){
+        setSavedData({ ...formData });
+        setUserFeedback("Changes saved!");
+        setTimeout(() => setUserFeedback(""), 3000); // clear after 3 seconds
+        console.log("Updated User!");
+      }
+
+    }
+    catch (error) {
+      console.log(error);
+    }
+    
   };
 
 
@@ -347,41 +356,6 @@ export default function App() {
       return updated;
     });
   };
-
-
-  const loggedIn = !!jwt;
-
-  // useEffect(() => {
-  //   if (!jwt) return;
-
-  //   const today = new Date().toISOString().split("T")[0];
-
-  //   const newForm = { ...formData };
-  //   const newSaved = { ...savedData };
-
-  //   if (!jwt.permissions.dob.read) {
-  //     newSaved.dob = "";
-  //     if (!jwt.permissions.dob.write) {
-  //       newForm.dob = "";
-  //     } else {
-  //       newForm.dob = today;
-  //     }
-  //   }
-
-  //   if (!jwt.permissions.cc.read) {
-  //     newSaved.cc = "";
-  //     if (!jwt.permissions.cc.write) {
-  //       newForm.cc = "";
-  //     } else {
-  //       newForm.cc = "";
-  //     }
-  //   }
-
-  //   setFormData(newForm);
-  //   setSavedData(newSaved);
-  // }, [jwt]);
-
-
 
   return (
     !loading
