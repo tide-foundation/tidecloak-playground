@@ -25,118 +25,6 @@ function Button({ children, onClick, type = "button", className = "" }) {
   );
 }
 
-function DecryptingText({ text, speed = 30 }) {
-  const [displayed, setDisplayed] = useState('');
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
-
-  useEffect(() => {
-    let i = 0;
-    const interval = setInterval(() => {
-      setDisplayed((prev) =>
-        text
-          .split('')
-          .map((char, idx) => {
-            if (idx < i) return text[idx];
-            return chars[Math.floor(Math.random() * chars.length)];
-          })
-          .join('')
-      );
-      i++;
-      if (i > text.length) clearInterval(interval);
-    }, speed);
-
-    return () => clearInterval(interval);
-  }, [text, speed]);
-
-  return <span className="font-mono text-green-600">{displayed}</span>;
-}
-
-function DecryptedRow({ index, isUser, username, dob, cc, canRead }) {
-  const [decrypted, setDecrypted] = useState(false);
-  const [decryptionStatus, setDecryptionStatus] = useState("");
-  const [animating, setAnimating] = useState(false);
-
-  const handleDecrypt = () => {
-    if (!isUser) {
-      setDecryptionStatus("Access denied: You don't have decryption rights.");
-      setTimeout(() => setDecryptionStatus(""), 3000);
-      return;
-    }
-
-    if (!canRead) {
-      setDecryptionStatus("Access denied: You lack read permission.");
-      setTimeout(() => setDecryptionStatus(""), 3000);
-      return;
-    }
-
-    setAnimating(true);
-    setTimeout(() => {
-      setDecrypted(true);
-      setAnimating(false);
-      setDecryptionStatus("Decrypted successfully!");
-      setTimeout(() => setDecryptionStatus(""), 3000);
-    }, 800);
-  };
-
-
-  return (
-    <div className="border border-gray-300 rounded p-4 bg-white shadow-sm space-y-2">
-      <div className="text-sm font-mono break-all">
-        <strong className="block text-gray-600 text-xs uppercase mb-1">Username</strong>
-        {username}
-      </div>
-
-      <div className="text-sm font-mono break-all">
-        <strong className="block text-gray-600 text-xs uppercase mb-1">Date of Birth</strong>
-        <span className={`inline-block transition-opacity duration-500 ${animating ? "opacity-0" : "opacity-100"}`}>
-          {isUser && decrypted && dob ? <DecryptingText text={dob} /> : "a3f9e4...92c0"}
-        </span>
-      </div>
-
-      <div className="text-sm font-mono break-all">
-        <strong className="block text-gray-600 text-xs uppercase mb-1">Credit Card</strong>
-        <span className={`inline-block transition-opacity duration-500 ${animating ? "opacity-0" : "opacity-100"}`}>
-          {isUser && decrypted && cc ? <DecryptingText text={cc} /> : "b7e8c1...e1af"}
-        </span>
-      </div>
-
-      <div className="flex items-center gap-3">
-        <Button onClick={handleDecrypt} disabled={decrypted}>
-          {decrypted ? "✓ Decrypted" : "Decrypt"}
-        </Button>
-
-        {decryptionStatus && (
-          <span
-            className={`text-sm ${decryptionStatus.startsWith("Access") ? "text-red-600" : "text-green-600"}`}
-          >
-            {decryptionStatus}
-          </span>
-        )}
-      </div>
-
-    </div>
-  );
-}
-
-function DatabaseExposureTable({ jwt }) {
-
-  return (
-    <div className="mt-6 space-y-6 pb-24 md:pb-36">
-      {[0, 1, 2].map((i) => (
-        <DecryptedRow
-          key={i}
-          index={i}
-          isUser={i === 0}
-          username={`user_${"x".repeat(44)}${i}`}
-          dob={jwt?.permissions?.dob?.read ? "1990-05-21" : null}
-          cc={jwt?.permissions?.cc?.read ? "4111-xxxx-xxxx-1234" : null}
-          canRead={jwt?.permissions?.dob?.read || jwt?.permissions?.cc?.read}
-        />
-
-      ))}
-    </div>
-  );
-}
 
 export default function App() {
   const [jwt, setJwt] = useState(null);
@@ -158,6 +46,8 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [loggedUser, setLoggedUser] = useState();
   const [users, setUsers] = useState([]);
+  const [encryptedDob, setEncryptedDob] = useState("");
+  const [encryptedCc, setEncryptedCc] = useState("");
 
 
   // Initiate Keycloak to handle token and Tide enclave
@@ -210,6 +100,8 @@ export default function App() {
   
       // Fill the fields if logged user has the attributes
       if (user.attributes.dob){
+        // Display this in accordion
+        setEncryptedDob(user.attributes.dob);
         // DOB format in Keycloak needs to be "YYYY-MM-DD" to display
         const decryptedDob = await IAMService.doDecrypt([
           {
@@ -217,19 +109,21 @@ export default function App() {
             "tags": ["dob"]
           }
         ])
-        user.attributes.dob[0] = decryptedDob; 
+        //user.attributes.dob = decryptedDob[0]; 
         setFormData(prev => ({...prev, dob: decryptedDob}));
         setSavedData(prev => ({...prev, dob: decryptedDob}));
       }
   
       if (user.attributes.cc){
+        // Display this in accordion
+        setEncryptedCc(user.attributes.cc);
         const decryptedCc = await IAMService.doDecrypt([
           {
             "encrypted": user.attributes.cc[0],
             "tags": ["cc"]
           }
         ])
-        user.attributes.cc[0] = decryptedCc;
+        //user.attributes.cc = decryptedCc[0];
         setFormData(prev => ({...prev, cc: decryptedCc}));
         setSavedData(prev => ({...prev, cc: decryptedCc}));
       }
@@ -246,6 +140,146 @@ export default function App() {
     IAMService.doLogout();
   };
 
+  const shortenString = (string) => {
+    const start = string.slice(0, 20);
+    const end = string.slice(20);
+    return `${start}...${end}`;
+  } 
+
+
+  // Animation
+  function DecryptingText({ text, speed = 30 }) {
+    const [displayed, setDisplayed] = useState('');
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+  
+    useEffect(() => {
+      let i = 0;
+      const interval = setInterval(() => {
+        setDisplayed((prev) =>
+          text
+            .split('')
+            .map((char, idx) => {
+              if (idx < i) return text[idx];
+              return chars[Math.floor(Math.random() * chars.length)];
+            })
+            .join('')
+        );
+        i++;
+        if (i > text.length) clearInterval(interval);
+      }, speed);
+  
+      return () => clearInterval(interval);
+    }, [text, speed]);
+  
+    return <span className="font-mono text-green-600">{displayed}</span>;
+  }
+  
+  
+  function DecryptedRow({ isUser, user, username, dob, cc, canRead }) {
+    const [decrypted, setDecrypted] = useState(false);
+    const [decryptionStatus, setDecryptionStatus] = useState("");
+    const [animating, setAnimating] = useState(false);
+    const [decryptedDob, setDecryptedDob] = useState("");
+    const [decryptedCc, setDecryptedCc] = useState("");
+    // Calls on Decrypt button being selected to update the fields
+    const handleDecrypt = () => {
+
+      if (!isUser) {
+        setDecryptionStatus("Access denied: You don't have decryption rights.");
+        setTimeout(() => setDecryptionStatus(""), 3000);
+        return;
+      }
+  
+      if (!canRead) {
+        setDecryptionStatus("Access denied: You lack read permission.");
+        setTimeout(() => setDecryptionStatus(""), 3000);
+        return;
+      }
+  
+      setAnimating(true);
+      setTimeout(async () => {
+        const decryptedDobData = await IAMService.doDecrypt([
+          {
+            "encrypted": user.attributes.dob[0],
+            "tags": ["dob"]
+          }
+        ])
+        setDecryptedDob(decryptedDobData[0]); 
+
+        const decryptedCcData = await IAMService.doDecrypt([
+          {
+            "encrypted": user.attributes.cc[0],
+            "tags": ["cc"]
+          }
+        ])
+        setDecryptedCc(decryptedCcData[0]); 
+
+        setDecrypted(true);
+        setAnimating(false);
+        setDecryptionStatus("Decrypted successfully!");
+        setTimeout(() => setDecryptionStatus(""), 3000);
+      }, 800);
+    };
+  
+  
+    return (
+      <div className="border border-gray-300 rounded p-4 bg-white shadow-sm space-y-2">
+        <div className="text-sm font-mono break-all">
+          <strong className="block text-gray-600 text-xs uppercase mb-1">Username</strong>
+          {username}
+        </div>
+  
+        <div className="text-sm font-mono break-all">
+          <strong className="block text-gray-600 text-xs uppercase mb-1">Date of Birth</strong>
+          <span className={`inline-block transition-opacity duration-500 ${animating ? "opacity-0" : "opacity-100"}`}>
+            {isUser && decrypted && dob ? <DecryptingText text={decryptedDob} /> : user.attributes.dob}
+          </span>
+        </div>
+  
+        <div className="text-sm font-mono break-all">
+          <strong className="block text-gray-600 text-xs uppercase mb-1">Credit Card</strong>
+          <span className={`inline-block transition-opacity duration-500 ${animating ? "opacity-0" : "opacity-100"}`}>
+            {isUser && decrypted && cc ? <DecryptingText text={decryptedCc} /> : user.attributes.dob}
+          </span>
+        </div>
+  
+        <div className="flex items-center gap-3">
+          <Button onClick={handleDecrypt} disabled={decrypted}>
+            {decrypted ? "✓ Decrypted" : "Decrypt"}
+          </Button>
+  
+          {decryptionStatus && (
+            <span
+              className={`text-sm ${decryptionStatus.startsWith("Access") ? "text-red-600" : "text-green-600"}`}
+            >
+              {decryptionStatus}
+            </span>
+          )}
+        </div>
+  
+      </div>
+    );
+  }
+
+  function DatabaseExposureTable() {
+
+    return (
+      <div className="mt-6 space-y-6 pb-24 md:pb-36">
+        {users.map((user, i) => (
+          <DecryptedRow key={i}
+            isUser={user.attributes.vuid[0] === IAMService.getValueFromToken("vuid")}
+            user={user}
+            username={user.username}
+            dob={IAMService.hasOneRole("_tide_dob.read") ? user.attributes.dob : null}
+            cc={IAMService.hasOneRole("_tide_cc.read") ? user.attributes.cc : null}
+            canRead={IAMService.hasOneRole("_tide_dob.read") || IAMService.hasOneRole("_tide_cc.read")}
+          />
+  
+        ))}
+      </div>
+    );
+  }
+
   const handleElevateClick = () => setShowExplainer(true);
 
   const confirmAdmin = () => {
@@ -258,28 +292,30 @@ export default function App() {
   const handleFormSubmit = async (e) => {
     try {
       e.preventDefault();
-      if (formData["dob"] !== ""){
+      if (formData.dob !== ""){
         const encryptedDob = await IAMService.doEncrypt([
           {
-            "data": formData["dob"],
+            "data": formData.dob,
             "tags": ["dob"]
           }
         ]);
-        loggedUser.attributes["dob"] = [encryptedDob[0]];
+        loggedUser.attributes.dob = encryptedDob[0];
+        setEncryptedDob(encryptedDob[0]);
       }
   
-      if (formData["cc"] !== ""){
+      if (formData.cc !== ""){
         const encryptedCc = await IAMService.doEncrypt([
           {
-            "data": formData["cc"],
+            "data": formData.cc,
             "tags": ["cc"]
           }
         ]);
-        loggedUser.attributes["cc"] = [encryptedCc[0]];
+        loggedUser.attributes.cc = encryptedCc[0];
+        setEncryptedCc(encryptedCc[0]);
       }
   
       const token = await IAMService.getToken();
-      const response = appService.updateUser(baseURL, realm, loggedUser, token);
+      const response = await appService.updateUser(baseURL, realm, loggedUser, token);
 
       if (response.ok){
         setSavedData({ ...formData });
@@ -551,9 +587,17 @@ export default function App() {
                                   }
                                   className="text-blue-600 underline"
                                 >
-                                  {expandedBlobs[field]
-                                    ? "0101ff7a9e3b1d9adbeef8c3471a2c7e38cb43fcd74fdcadbea88d5fbeea829c4"
-                                    : "0101ff7a9e...829c4"}
+                                  {
+                                    field === "dob" 
+                                    ? expandedBlobs[field]
+                                      ? encryptedDob
+                                      : shortenString(encryptedDob)
+                                    : expandedBlobs[field]
+                                      ? encryptedCc
+                                      : shortenString(encryptedCc)
+                                    
+                                    
+                                  }
                                 </button>
                               </p>
                             </div>
@@ -596,7 +640,7 @@ export default function App() {
                     </div>
                   )}
 
-                  <DatabaseExposureTable jwt={jwt} />
+                  <DatabaseExposureTable />
 
                 </div>
 
