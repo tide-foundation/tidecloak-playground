@@ -282,11 +282,23 @@ export default function App() {
 
   const handleElevateClick = () => setShowExplainer(true);
 
-  const confirmAdmin = () => {
-    setJwt(prev => ({
-      ...prev,
-      role: "Administrator",
-    }));
+  // Assign this initial user the tide-realm-admin client role managed by the default client Realm Management
+  const confirmAdmin = async () => {
+    const token = await IAMService.getToken();
+    // // Get Realm Management default client's ID
+    // const clientID = await appService.getRealmManagementId(baseURL, realm, token);
+    // console.log(clientID);
+
+    // // Get the tide-realm-admin role to assign
+    // const tideAdminRole = await appService.getTideAdminRole(baseURL, realm, loggedUser.id, clientID, token);
+    // console.log(tideAdminRole);
+
+    // // Assign the tide-realm-admin role to the logged in user
+    // const assignResponse = await appService.assignClientRole(baseURL, realm, loggedUser.id, clientID, tideAdminRole, token);
+    // console.log(assignResponse);
+
+    // Master Token is only needed to assign the user the tide-realm-admin role
+    const response = await fetch(`/api/commitAdminRole`);
   };
 
   const handleFormSubmit = async (e) => {
@@ -679,7 +691,7 @@ export default function App() {
                 )}
 
 
-                {jwt?.role === "Standard" && (
+                {!IAMService.hasOneRole("tide-realm-admin") && (
                   <div className="space-y-4">
                     <h2 className="text-3xl font-bold mb-4">Administration</h2>
                     <p>This page demonstrates how user privileges can be managed in App, and how the app is uniquely protected against a compromised admin.</p>
@@ -699,7 +711,7 @@ export default function App() {
                   </div>
                 )}
 
-                {jwt?.role === "Administrator" && (
+                {IAMService.hasOneRole("tide-realm-admin") && (
                   <div className="space-y-6">
                     <h2 className="text-3xl font-bold mb-4">Administration</h2>
                     <p className="text-sm text-gray-700">
