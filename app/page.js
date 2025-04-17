@@ -11,6 +11,7 @@ import { FaSearch } from "react-icons/fa";
 
 import IAMService from "../lib/IAMService";
 import { useAppContext } from "./context/context";
+import appService from "../lib/appService";
 
 function Button({ children, onClick, type = "button", className = "" }) {
   return (
@@ -155,17 +156,43 @@ export default function App() {
 
   const {realm, baseURL, page, setPage} = useAppContext();
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState();
 
 
   // Initiate Keycloak to handle token and Tide enclave
   useEffect(() => {
     IAMService.initIAM(() => {
       if (IAMService.isLoggedIn()){
-        setPage("User"); 
+        
+        setPage("User");                                                                    // TODO: Temporary
+        // Set the access token if logged in on initial render
+        const token = async () => {setJwt(await IAMService.getToken())};                    // TODO: Temporary
+        token();
+        getLoggedUser();
       }
       setLoading(false);
     });
   }, [])
+
+  // Checking for token
+  useEffect(() => {
+    if(jwt){
+      console.log(jwt)
+    };
+  }, [jwt])
+
+  // Get the logged in user's data based on the vuid from the token
+  const getLoggedUser = async () => { 
+    const token = await IAMService.getToken();
+    const users = await appService.getUsers(baseURL, realm, token);
+    const loggedVuid = IAMService.getValueFromToken("vuid");
+    const user = users.find(user => {
+      if (user.attributes.vuid[0] === loggedVuid){
+        return user;
+      }
+    });
+    setUser(user);
+  };
 
   const [formData, setFormData] = useState({
     dob: "",
@@ -174,9 +201,9 @@ export default function App() {
 
   const [savedData, setSavedData] = useState({ dob: "", cc: "" });
 
-
   const handleUserFieldChange = (field) => (e) => {
     setFormData({ ...formData, [field]: e.target.value });
+    console.log(formData["cc"]);
   };
 
 
@@ -449,92 +476,88 @@ export default function App() {
 
 
                 <form className="space-y-6" onSubmit={handleFormSubmit}>
+                  {
+                    ["dob", "cc"].map((field) => {
+                      const readPerms = IAMService.hasOneRole(field === "dob"? "_tide_dob.read" : "_tide_cc.read");
+                      const writePerms = IAMService.hasOneRole(field === "dob"? "_tide_dob.write" : "_tide_cc.write");
+                      const canRead = readPerms? true: false;
+                      const canWrite = writePerms? true: false;
+                      const label = field === "dob" ? "Date of Birth" : "Credit Card Number";
+                      if (!canRead && !canWrite) return null; // hide if no access
 
-                  {/* {["dob", "cc"].map((field) => {
-                    const perms = jwt.permissions[field];
-                    const canRead = perms?.read;
-                    const canWrite = perms?.write;
-                    const label = field === "dob" ? "Date of Birth" : "Credit Card Number";
+                      return (
+                        <div key={field}>
+                          <label className="block font-medium text-sm mb-1">{label}</label>
+                          {canRead && canWrite && (
+                            <input
+                              type={field === "dob" ? "date" : "text"}
+                              value={formData[field]}
+                              onChange={handleUserFieldChange(field)}
+                              className="border rounded px-3 py-2 w-full max-w-md"
+                            />
+                          )}
 
-                    if (!canRead && !canWrite) return null; // hide if no access
+                          {canRead && !canWrite && (
+                            <input
+                              type="text"
+                              value={savedData[field] || ""}
+                              readOnly
+                              className="border rounded px-3 py-2 w-full bg-gray-100 text-gray-700 max-w-md"
+                            />
+                          )}
 
-                    return (
-                      <div key={field}>
-                        <label className="block font-medium text-sm mb-1">{label}</label>
+                          {!canRead && canWrite && (
+                            <input
+                              type={field === "dob" ? "date" : "text"}
+                              placeholder={`Enter ${label.toLowerCase()}`}
+                              value={formData[field]}
+                              onChange={handleUserFieldChange(field)}
+                              className="border rounded px-3 py-2 w-full max-w-md"
+                            />
+                          )}
 
-                        {canRead && canWrite && (
-                          <input
-                            type={field === "dob" ? "date" : "text"}
-                            value={formData[field]}
-                            onChange={handleUserFieldChange(field)}
-                            className="border rounded px-3 py-2 w-full max-w-md"
-                          />
-                        )}
+                          {showUserInfoAccordion && (
+                            <div className="text-xs text-gray-600 mt-2 space-y-2 bg-gray-50 border border-gray-200 rounded p-3">
+                              <h5 className="font-semibold text-gray-700 text-xs uppercase tracking-wide mb-1">
+                                JWT Permissions & Encrypted Value
+                              </h5>
+                              <div className="flex gap-2">
+                                <span
+                                  className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${canRead ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                                    }`}
+                                >
+                                  {canRead ? "✓" : "✕"} Read
+                                </span>
+                                <span
+                                  className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${canWrite ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                                    }`}
+                                >
+                                  {canWrite ? "✓" : "✕"} Write
+                                </span>
+                              </div>
 
-                        {canRead && !canWrite && (
-                          <input
-                            type="text"
-                            value={savedData[field] || ""}
-                            readOnly
-                            className="border rounded px-3 py-2 w-full bg-gray-100 text-gray-700 max-w-md"
-                          />
-                        )}
-
-
-                        {!canRead && canWrite && (
-                          <input
-                            type={field === "dob" ? "date" : "text"}
-                            placeholder={`Enter ${label.toLowerCase()}`}
-                            value={formData[field]}
-                            onChange={handleUserFieldChange(field)}
-                            className="border rounded px-3 py-2 w-full max-w-md"
-                          />
-                        )}
-
-                        {showUserInfoAccordion && (
-                          <div className="text-xs text-gray-600 mt-2 space-y-2 bg-gray-50 border border-gray-200 rounded p-3">
-                            <h5 className="font-semibold text-gray-700 text-xs uppercase tracking-wide mb-1">
-                              JWT Permissions & Encrypted Value
-                            </h5>
-                            <div className="flex gap-2">
-                              <span
-                                className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${canRead ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                                  }`}
-                              >
-                                {canRead ? "✓" : "✕"} Read
-                              </span>
-                              <span
-                                className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${canWrite ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                                  }`}
-                              >
-                                {canWrite ? "✓" : "✕"} Write
-                              </span>
+                              <p>
+                                <span className="font-medium">Value in Database:</span>{" "}
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setExpandedBlobs((prev) => ({ ...prev, [field]: !prev[field] }))
+                                  }
+                                  className="text-blue-600 underline"
+                                >
+                                  {expandedBlobs[field]
+                                    ? "0101ff7a9e3b1d9adbeef8c3471a2c7e38cb43fcd74fdcadbea88d5fbeea829c4"
+                                    : "0101ff7a9e...829c4"}
+                                </button>
+                              </p>
                             </div>
-
-                            <p>
-                              <span className="font-medium">Value in Database:</span>{" "}
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setExpandedBlobs((prev) => ({ ...prev, [field]: !prev[field] }))
-                                }
-                                className="text-blue-600 underline"
-                              >
-                                {expandedBlobs[field]
-                                  ? "0101ff7a9e3b1d9adbeef8c3471a2c7e38cb43fcd74fdcadbea88d5fbeea829c4"
-                                  : "0101ff7a9e...829c4"}
-                              </button>
-                            </p>
-                          </div>
-                        )}
-
-
-
-                      </div>
-                    );
-                  })}
-
-                  {(jwt.permissions.dob.write || jwt.permissions.cc.write) && (
+                          )}
+                        </div>
+                      )
+                    })
+                  }
+                  {
+                  (IAMService.hasOneRole("_tide_dob.write") || IAMService.hasOneRole("_tide_cc.write")) && (
                     <div className="flex items-center gap-3">
                       <Button type="submit">Save Changes</Button>
                       {userFeedback && (
@@ -542,7 +565,7 @@ export default function App() {
                       )}
                     </div>
 
-                  )} */}
+                  )}
                 </form>
 
                 {/* NEW SECTION: Database Exposure Simulation */}
