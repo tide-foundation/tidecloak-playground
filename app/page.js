@@ -195,33 +195,47 @@ export default function App() {
 
   // Get all users, and find the logged in user's data based on the vuid from the token
   const getAllUsers = async () => { 
-    const token = await IAMService.getToken();
-    const users = await appService.getUsers(baseURL, realm, token);
-    setUsers(users);
-    const loggedVuid = IAMService.getValueFromToken("vuid");
-    const user = users.find(user => {
-      if (user.attributes.vuid[0] === loggedVuid){
-        return user;
+    try {
+      const token = await IAMService.getToken();
+      const users = await appService.getUsers(baseURL, realm, token);
+      setUsers(users);
+      const loggedVuid = IAMService.getValueFromToken("vuid");
+      const user = users.find(user => {
+        if (user.attributes.vuid[0] === loggedVuid){
+          return user;
+        }
+      });
+      console.log(user);
+      setLoggedUser(user);
+  
+      // Fill the fields if logged user has the attributes
+      if (user.attributes.dob){
+        // DOB format in Keycloak needs to be "YYYY-MM-DD" to display
+        const decryptedDob = await IAMService.doDecrypt([
+          {
+            "encrypted": user.attributes.dob[0],
+            "tags": ["dob"]
+          }
+        ])
+        user.attributes.dob[0] = decryptedDob; 
+        setFormData(prev => ({...prev, dob: decryptedDob}));
+        setSavedData(prev => ({...prev, dob: decryptedDob}));
       }
-    });
-    console.log(user);
-    setLoggedUser(user);
-
-    // Fill the fields if logged user has the attributes
-    if (user.attributes.dob){
-      // DOB format in Keycloak needs to be "YYYY-MM-DD" to display
-      console.log(user.attributes.dob[0]);
-      setFormData(prev => ({...prev, dob: user.attributes.dob[0]}));
-      console.log(formData);
-      setSavedData(prev => ({...prev, dob: user.attributes.dob[0]}));
+  
+      if (user.attributes.cc){
+        const decryptedCc = await IAMService.doDecrypt([
+          {
+            "encrypted": user.attributes.cc[0],
+            "tags": ["cc"]
+          }
+        ])
+        user.attributes.cc[0] = decryptedCc;
+        setFormData(prev => ({...prev, cc: decryptedCc}));
+        setSavedData(prev => ({...prev, cc: decryptedCc}));
+      }
+    } catch (error){
+      console.log(error);
     }
-
-    if (user.attributes.cc){
-      console.log(user.attributes.cc[0]);
-      setFormData(prev => ({...prev, cc: user.attributes.cc[0]}));
-      setSavedData(prev => ({...prev, cc: user.attributes.cc[0]}));
-    }
-
   };
 
   const handleLogin = () => {
