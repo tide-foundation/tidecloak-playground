@@ -598,6 +598,10 @@ video {
   margin-top: 0.75rem;
 }
 
+.mt-4 {
+  margin-top: 1rem;
+}
+
 .mt-6 {
   margin-top: 1.5rem;
 }
@@ -608,10 +612,6 @@ video {
 
 .mt-auto {
   margin-top: auto;
-}
-
-.mt-4 {
-  margin-top: 1rem;
 }
 
 .block {
@@ -1022,10 +1022,6 @@ video {
 
 .pt-6 {
   padding-top: 1.5rem;
-}
-
-.pt-2 {
-  padding-top: 0.5rem;
 }
 
 .font-mono {
