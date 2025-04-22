@@ -381,6 +381,8 @@ export default function App() {
   const [encryptedDob, setEncryptedDob] = useState("");
   const [encryptedCc, setEncryptedCc] = useState("");
   const [isTideAdmin, setIsTideAdmin] = useState(false);
+  // Realm Management client ID to check if user has the tide-realm-admin role yet
+  const [RMClientID, setRMClientID] = useState("");
 
 
   // Initiate Keycloak to handle token and Tide enclave
@@ -615,22 +617,29 @@ export default function App() {
 
   const handleElevateClick = () => setShowExplainer(true);
 
+  const handleAdminButton = async () => {
+    const token = await IAMService.getToken();
+    
+    // Get Realm Management default client's ID
+    const clientID = await appService.getRealmManagementId(baseURL, realm, token);
+    setRMClientID(clientID);
+    
+    // Check if user already has the role
+    setIsTideAdmin(await appService.checkUserAdminRole(baseURL, realm, loggedUser.id, clientID, token));
+    setPage("Admin");
+  };
+
   // Assign this initial user the tide-realm-admin client role managed by the default client Realm Management
   const confirmAdmin = async () => {
     const token = await IAMService.getToken();
-    // Get Realm Management default client's ID
-    const clientID = await appService.getRealmManagementId(baseURL, realm, token);
 
-    // Check if user already has the role
-    const isAdmin = await appService.checkUserAdminRole(baseURL, realm, loggedUser.id, clientID, token);
-
-    if (!isAdmin){
+    if (!isTideAdmin){
       // Get the tide-realm-admin role to assign
-      const tideAdminRole = await appService.getTideAdminRole(baseURL, realm, loggedUser.id, clientID, token);
+      const tideAdminRole = await appService.getTideAdminRole(baseURL, realm, loggedUser.id, RMClientID, token);
       console.log(tideAdminRole);
 
       // Assign the tide-realm-admin role to the logged in user
-      const assignResponse = await appService.assignClientRole(baseURL, realm, loggedUser.id, clientID, tideAdminRole, token);
+      const assignResponse = await appService.assignClientRole(baseURL, realm, loggedUser.id, RMClientID, tideAdminRole, token);
       console.log(assignResponse);
 
       // Back end functionality required to approve and commit user with tide-realm-admin role using a master token
@@ -745,16 +754,13 @@ export default function App() {
           const response = await appService.assignRealmRole(baseURL, realm, loggedUser.id, writeRole, token);
           console.log(response);
         }
+
+        const changeRequests = await appService.getUserRequests(baseURL, realm, token);
+        setRequests([changeRequests]); // overwrite previous request
+        console.log(changeRequests);
+        setHasChanges(false);
       });
-
-      //setRequests([newRequest]); // overwrite previous request
-
-      const changeRequests = await appService.getUserRequests(baseURL, realm, token);
-      console.log(changeRequests);
-      setHasChanges(false);
     }
-
-
   };
 
 
@@ -767,6 +773,7 @@ export default function App() {
       )
     );
   };
+
 
   return (
     !loading
@@ -782,7 +789,7 @@ export default function App() {
             User
           </button>
           <button
-            onClick={() => setPage("Admin")}
+            onClick={() => handleAdminButton()}
             className={`px-4 py-2 rounded transition ${page === "Admin" ? "bg-blue-100 text-blue-700" : "hover:bg-gray-100"
               }`}
           >
