@@ -14,8 +14,6 @@ import Button from "./components/button";
 import { SiX } from "react-icons/si"; // Modern X (formerly Twitter) icon
 
 import IAMService from "../lib/IAMService";
-import { useAppContext } from "./context/context";
-import appService from "../lib/appService";
 // Required for the Approval and Commit Tide Encalve to work in the admin console.
 
 import { useRouter, usePathname } from "next/navigation";
@@ -45,39 +43,27 @@ export default function Login() {
   // Initiate Keycloak to handle token and Tide enclave
   useEffect(() => {
     IAMService.initIAM(() => {
-    //   console.log("running");
-      if (IAMService.isLoggedIn()){
-        window.location.href = "/admin";
+        // Skip login screen if already logged in
+        if (IAMService.isLoggedIn()){
+            window.location.href = "/auth/redirect ";
     }
     setLoading(false);
     });
   }, [])
 
 
-  // Provide the context the logged in user object to be shared across components
-  const setLoggedInUser = async () => { 
-    const token = await IAMService.getToken();
-    const loggedVuid =  await IAMService.getValueFromToken("vuid");
-    const users = await appService.getUsers(baseURL, realm, token);
-    const user = users.find(user => {
-      if (user.attributes.vuid[0] === loggedVuid){
-        return user;
-      }
-    });
-    logUser(user); // Record to context 
-    
-  }
+  
 
-  // Checking for token (if exists then user is logged in) then share the user object
-  // useEffect(() => {
-  //   if(jwt){
-  //     setLoggedInUser();
+  //Checking for token (if exists then user is logged in) then share the user object
+//   useEffect(() => {
+//     if(jwt){
+//       setLoggedInUser();
       
-  //   };
-  // }, [jwt]
+//     };
+//   }, [jwt])
 
 
-  const handleLogin =  async () => {
+  const handleLogin = async () => {
     IAMService.doLogin();
   };
 
