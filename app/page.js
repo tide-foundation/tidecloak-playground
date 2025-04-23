@@ -14,6 +14,8 @@ import { SiX } from "react-icons/si"; // Modern X (formerly Twitter) icon
 import IAMService from "../lib/IAMService";
 import { useAppContext } from "./context/context";
 import appService from "../lib/appService";
+// Required for the Approval and Commit Tide Encalve to work in the admin console.
+import { Heimdall } from "../tide-modules/heimdall";
 
 function Button({ children, onClick, type = "button", className = "" }) {
   return (
@@ -114,224 +116,7 @@ function Button({ children, onClick, type = "button", className = "" }) {
 //   );
 // }
 
-function AccordionBox({ title, children, isOpen }) {
-  return (
-    <div
-      className={`transition-all duration-300 ease-in-out overflow-hidden ${isOpen ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
-        } bg-slate-50 border-l-4 border-blue-500 rounded-md shadow-inner px-5 py-0 mb-4 text-sm space-y-3 ring-1 ring-slate-300`}
-    >
-      {isOpen && (
-        <div className="py-5">
-          {title && (
-            <h4 className="text-base font-bold text-blue-900 tracking-wide uppercase">
-              {title}
-            </h4>
-          )}
-          <div className="text-slate-700 leading-relaxed">{children}</div>
-        </div>
-      )}
-    </div>
-  );
-}
 
-
-function QuorumDashboard({ request, onCommit, setPage, setRequests }) {
-
-  if (request?.status === "Committed") {
-    return (
-      <div className="bg-white border rounded-lg p-6 shadow space-y-4 mt-8">
-
-        <div className="flex justify-between items-center">
-          <h3 className="text-xl font-bold text-gray-800">Change Request</h3>
-          <span className="inline-block text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide bg-blue-100 text-blue-800">
-            Committed
-          </span>
-        </div>
-
-        <pre className="bg-gray-50 border text-sm rounded p-4 overflow-auto">
-          {JSON.stringify(request.value, null, 2)}
-        </pre>
-        <div className="mt-4">
-          <div className="text-sm text-gray-700 flex items-center gap-2">
-            <FaCheckCircle className="text-green-500" />
-            <span>Done! You can now explore the updated permissions.</span>
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                setPage("User");
-              }}
-              className="text-blue-600 hover:underline font-medium whitespace-nowrap"
-            >
-              View on User Page →
-            </a>
-          </div>
-        </div>
-
-      </div>
-    );
-  }
-
-
-  const ADMIN_NAMES = ["You", "Alice", "Bob", "Carlos", "Dana"];
-  const isCommitted = request?.status === "Committed";
-  const isApproved = request?.status === "Approved" || isCommitted;
-  const [hasUserApproved, setHasUserApproved] = useState(isCommitted || isApproved);
-
-  const [approvals, setApprovals] = useState([false, false, false, false, false]);
-  const [canCommit, setCanCommit] = useState(false);
-
-  useEffect(() => {
-    const isCommitted = request?.status === "Committed";
-    const isApproved = request?.status === "Approved";
-
-    if (isCommitted) {
-      setHasUserApproved(true);
-      setApprovals([true, true, true, true, true]);
-      setCanCommit(false);
-      return;
-    }
-
-    if (isApproved) {
-      setHasUserApproved(true);
-      setApprovals([true, true, true, false, false]);
-      setCanCommit(true);
-      return;
-    }
-
-    // Reset for new request
-    setHasUserApproved(false);
-    setApprovals([false, false, false, false, false]);
-    setCanCommit(false);
-  }, [request?.id]);
-
-
-  useEffect(() => {
-    if (hasUserApproved) {
-      const others = [1, 2, 3, 4];
-      const shuffled = others.sort(() => 0.5 - Math.random()).slice(0, 2);
-
-      shuffled.forEach((index, i) => {
-        setTimeout(() => {
-          setApprovals(prev => {
-            const updated = [...prev];
-            updated[index] = true;
-
-            // 🟢 Check if quorum is reached and status needs to be bumped
-            const totalApproved = updated.filter(Boolean).length;
-            if (totalApproved >= 3 && request.status !== "Approved") {
-              setRequests(prev =>
-                prev.map(r => r.id === request.id ? { ...r, status: "Approved" } : r)
-              );
-            }
-
-
-            return updated;
-          });
-        }, (i + 1) * 900);
-      });
-
-      setTimeout(() => {
-        setCanCommit(true);
-      }, 3.2 * 1000);
-    }
-  }, [hasUserApproved]);
-
-
-
-
-  const handleUserApprove = () => {
-    setApprovals(prev => {
-      const updated = [...prev];
-      updated[0] = true;
-      return updated;
-    });
-
-    setHasUserApproved(true);
-
-    // Let parent know we're reviewing (mark as "Pending")
-    if (request?.status === "Draft") {
-      request.status = "Pending"; // this is ok temporarily for local display
-    }
-  };
-
-
-  return (
-    <div className="bg-white border rounded-lg p-6 shadow space-y-4 mt-8">
-      <div className="flex justify-between items-center">
-        <h3 className="text-xl font-bold text-gray-800">Change Request</h3>
-        {request?.status && (
-          <span
-            className={`inline-block text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide
-        ${request.status === "Draft" ? "bg-gray-200 text-gray-800" :
-                request.status === "Pending" ? "bg-yellow-100 text-yellow-800" :
-                  request.status === "Approved" ? "bg-green-100 text-green-800" :
-                    request.status === "Committed" ? "bg-blue-100 text-blue-800" :
-                      "bg-red-100 text-red-800"
-              }`}
-          >
-            {request.status}
-          </span>
-        )}
-      </div>
-
-      <pre className="bg-gray-50 border text-sm rounded p-4 overflow-auto">
-        {JSON.stringify(request.value, null, 2)}
-      </pre>
-
-      <div className="flex justify-between items-center mt-6">
-        {ADMIN_NAMES.map((name, idx) => (
-          <div key={name} className="relative flex flex-col items-center">
-            <div
-              className={`w-14 h-14 flex items-center justify-center rounded-full border-4 transition-all duration-700 ease-in-out 
-        ${approvals[idx] ? "border-green-500 shadow-md shadow-green-200" : "border-gray-300"}
-      `}
-            >
-              <span className="font-semibold text-lg text-gray-700">{name[0]}</span>
-            </div>
-            <span className="text-xs mt-2 text-gray-600">{name}</span>
-
-            {/* Tick overlay – doesn't shift layout */}
-            {approvals[idx] && (
-              <FaCheckCircle className="absolute top-0 right-0 text-green-500 w-4 h-4 transition-opacity duration-500 translate-x-2 -translate-y-2" />
-            )}
-          </div>
-        ))}
-
-      </div>
-
-      <div className="pt-4">
-        {!hasUserApproved && !isCommitted ? (
-          <Button onClick={handleUserApprove}>
-            Review
-          </Button>
-
-        ) : request?.status === "Committed" ? (
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              setPage("User");
-            }}
-            className="text-blue-600 hover:underline text-sm font-medium"
-          >
-            View on User Page →
-          </a>
-
-        ) : canCommit ? (
-          <Button className="bg-green-600 hover:bg-green-700" onClick={onCommit}>
-            Commit
-          </Button>
-        ) : (
-          <p className="text-sm text-gray-500 italic">
-            Awaiting quorum: <strong>{approvals.filter(Boolean).length} / 3</strong> approved
-          </p>
-        )}
-      </div>
-
-    </div >
-  );
-}
 
 
 // function DatabaseExposureTable({ jwt, formData }) {
@@ -383,6 +168,8 @@ export default function App() {
   const [isTideAdmin, setIsTideAdmin] = useState(false);
   // Realm Management client ID to check if user has the tide-realm-admin role yet
   const [RMClientID, setRMClientID] = useState("");
+
+  
 
 
   // Initiate Keycloak to handle token and Tide enclave
@@ -756,7 +543,7 @@ export default function App() {
         }
 
         const changeRequests = await appService.getUserRequests(baseURL, realm, token);
-        setRequests([changeRequests]); // overwrite previous request
+        setRequests(changeRequests); // overwrite previous request
         console.log(changeRequests);
         setHasChanges(false);
       });
@@ -764,15 +551,300 @@ export default function App() {
   };
 
 
-  const handleReview = (id) => {
-    setRequests(prev =>
-      prev.map(req =>
-        req.id === id && req.status === "Draft"
-          ? { ...req, status: "Pending" }
-          : req
-      )
+  // const handleReview = (id) => {
+  //   setRequests(prev =>
+  //     prev.map(req =>
+  //       req.id === id && req.status === "Draft"
+  //         ? { ...req, status: "Pending" }
+  //         : req
+  //     )
+  //   );
+  // };
+
+  function AccordionBox({ title, children, isOpen }) {
+    return (
+      <div
+        className={`transition-all duration-300 ease-in-out overflow-hidden ${isOpen ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
+          } bg-slate-50 border-l-4 border-blue-500 rounded-md shadow-inner px-5 py-0 mb-4 text-sm space-y-3 ring-1 ring-slate-300`}
+      >
+        {isOpen && (
+          <div className="py-5">
+            {title && (
+              <h4 className="text-base font-bold text-blue-900 tracking-wide uppercase">
+                {title}
+              </h4>
+            )}
+            <div className="text-slate-700 leading-relaxed">{children}</div>
+          </div>
+        )}
+      </div>
     );
-  };
+  }
+  
+  
+  function QuorumDashboard({ request, onCommit, setPage, setRequests }) {
+    let requestStatus;
+    if (request.deleteStatus){
+      requestStatus = request.deleteStatus;
+    }
+    else { 
+      requestStatus = request.status
+    }
+  
+    if (requestStatus === "Committed") {
+      return (
+        <div className="bg-white border rounded-lg p-6 shadow space-y-4 mt-8">
+  
+          <div className="flex justify-between items-center">
+            <h3 className="text-xl font-bold text-gray-800">Change Request</h3>
+            <span className="inline-block text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide bg-blue-100 text-blue-800">
+              Committed
+            </span>
+          </div>
+  
+          <pre className="bg-gray-50 border text-sm rounded p-4 overflow-auto">
+            <p>test</p>
+          </pre>
+          <div className="mt-4">
+            <div className="text-sm text-gray-700 flex items-center gap-2">
+              <FaCheckCircle className="text-green-500" />
+              <span>Done! You can now explore the updated permissions.</span>
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setPage("User");
+                }}
+                className="text-blue-600 hover:underline font-medium whitespace-nowrap"
+              >
+                View on User Page →
+              </a>
+            </div>
+          </div>
+  
+        </div>
+      );
+    }
+  
+    const ADMIN_NAMES = ["You", "Alice", "Bob", "Carlos", "Dana"];
+    const isCommitted = requestStatus === "Committed";
+    const isApproved = requestStatus === "Approved" || isCommitted;
+    const [hasUserApproved, setHasUserApproved] = useState(isCommitted || isApproved);
+  
+    const [approvals, setApprovals] = useState([false, false, false, false, false]);
+    const [canCommit, setCanCommit] = useState(false);
+  
+    useEffect(() => {
+      const isCommitted = requestStatus === "Committed";
+      const isApproved = requestStatus === "Approved";
+  
+      if (isCommitted) {
+        setHasUserApproved(true);
+        setApprovals([true, true, true, true, true]);
+        setCanCommit(false);
+        return;
+      }
+  
+      if (isApproved) {
+        setHasUserApproved(true);
+        setApprovals([true, true, true, false, false]);
+        setCanCommit(true);
+        return;
+      }
+  
+      // Reset for new request
+      setHasUserApproved(false);
+      setApprovals([false, false, false, false, false]);
+      setCanCommit(false);
+    }, [request?.id]);
+  
+  
+    useEffect(() => {
+      if (hasUserApproved) {
+        const others = [1, 2, 3, 4];
+        const shuffled = others.sort(() => 0.5 - Math.random()).slice(0, 2);
+  
+        shuffled.forEach((index, i) => {
+          setTimeout(() => {
+            setApprovals(prev => {
+              const updated = [...prev];
+              updated[index] = true;
+  
+              // 🟢 Check if quorum is reached and status needs to be bumped
+              const totalApproved = updated.filter(Boolean).length;
+              if (totalApproved >= 3 && requestStatus !== "Approved") {
+                setRequests(prev =>
+                  prev.map(r => r.id === request.id ? { ...r, status: "Approved" } : r)
+                );
+              }
+  
+  
+              return updated;
+            });
+          }, (i + 1) * 900);
+        });
+  
+        setTimeout(() => {
+          setCanCommit(true);
+        }, 3.2 * 1000);
+      }
+    }, [hasUserApproved]);
+  
+    // POST /tideAdminResources/add-rejection
+    // Add denied status to change request 
+    const addRejection = async (action, draftId, type) => {
+      const token = await IAMService.getToken();    
+      
+      // Key value pairs
+      const formData = new FormData();
+      formData.append("actionType", action);
+      formData.append("changeSetId", draftId);
+      formData.append("changeSetType", type);
+
+      const response = await appService.denyEnclave(baseURL, realm, formData, token);
+      if (response.ok){
+        appService.getUserRequests(baseURL, realm, token);
+      } 
+    };
+
+    //POST /tideAdminResources/add-authorization
+    // Add approve status to change request
+    const addApproval = async (action, draftId, type, authorizerApproval, authorizerAuthentication) => {
+      const token = await IAMService.getToken();
+
+      // Key value pairs
+      const formData = new FormData();
+      formData.append("actionType", action);
+      formData.append("changeSetId", draftId);
+      formData.append("changeSetType", type);
+      formData.append("authorizerApproval", authorizerApproval);
+      formData.append("authorizerAuthentication", authorizerAuthentication);
+    
+      const response = await appService.approveEnclave(baseURL, realm, formData, token);
+      if (response.ok){
+        appService.getUserRequests(baseURL, realm, token);
+      }
+      
+    };
+
+    const handleUserApprove = async (changeRequest) => {
+      console.log(changeRequest);
+      const token = await IAMService.getToken();
+      // Get popup data for the change request to know that it requires the enclave and pass data to the popup
+      const response = await appService.reviewChangeRequest(baseURL, realm, changeRequest, token);
+      const popupData = await response.json();
+  
+      if (popupData.requiresApprovalPopup === "true") {
+        const vuid = await IAMService.getValueFromToken("vuid");
+        const heimdall = new Heimdall(popupData.customDomainUri, [vuid]);
+        await heimdall.openEnclave();
+      
+        // Waiting user response for auth approval
+        const authorizerApproval = await heimdall.getAuthorizerApproval(popupData.changeSetRequests, "UserContext:1", popupData.expiry, "base64url");
+        
+        // If Deny is clicked
+        if (authorizerApproval.accepted === false) {
+          addRejection(changeRequest.actionType, changeRequest.draftRecordId, changeRequest.changeSetType);
+          heimdall.closeEnclave(); 
+        } else if (authorizerApproval.accepted === true) { // If Approve is clicked
+          const authorizerAuthentication = await heimdall.getAuthorizerAuthentication();
+          addApproval(changeRequest.actionType, changeRequest.draftRecordId, changeRequest.changeSetType, authorizerApproval.data, authorizerAuthentication);
+          heimdall.closeEnclave();
+        }
+    };
+
+  
+      setApprovals(prev => {
+        const updated = [...prev];
+        updated[0] = true;
+        return updated;
+      });
+  
+      setHasUserApproved(true);
+  
+      // Let parent know we're reviewing (mark as "Pending")
+      if (requestStatus === "Draft") {
+        requestStatus = "Pending"; // this is ok temporarily for local display
+      }
+    };
+  
+  
+    return (
+      <div className="bg-white border rounded-lg p-6 shadow space-y-4 mt-8">
+        <div className="flex justify-between items-center">
+          <h3 className="text-xl font-bold text-gray-800">Change Request</h3>
+          {requestStatus && (
+            <span
+              className={`inline-block text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide
+          ${requestStatus === "Draft" ? "bg-gray-200 text-gray-800" :
+            requestStatus === "Pending" ? "bg-yellow-100 text-yellow-800" :
+            requestStatus === "Approved" ? "bg-green-100 text-green-800" :
+            requestStatus === "Committed" ? "bg-blue-100 text-blue-800" :
+                        "bg-red-100 text-red-800"
+                }`}
+            >
+              {requestStatus}
+            </span>
+          )}
+        </div>
+  
+        <pre className="bg-gray-50 border text-sm rounded p-4 overflow-auto">
+          {JSON.stringify(request.value, null, 2)}
+        </pre>
+  
+        <div className="flex justify-between items-center mt-6">
+          {ADMIN_NAMES.map((name, idx) => (
+            <div key={name} className="relative flex flex-col items-center">
+              <div
+                className={`w-14 h-14 flex items-center justify-center rounded-full border-4 transition-all duration-700 ease-in-out 
+          ${approvals[idx] ? "border-green-500 shadow-md shadow-green-200" : "border-gray-300"}
+        `}
+              >
+                <span className="font-semibold text-lg text-gray-700">{name[0]}</span>
+              </div>
+              <span className="text-xs mt-2 text-gray-600">{name}</span>
+  
+              {/* Tick overlay – doesn't shift layout */}
+              {approvals[idx] && (
+                <FaCheckCircle className="absolute top-0 right-0 text-green-500 w-4 h-4 transition-opacity duration-500 translate-x-2 -translate-y-2" />
+              )}
+            </div>
+          ))}
+  
+        </div>
+  
+        <div className="pt-4">
+          {!hasUserApproved && !isCommitted ? (
+            <Button onClick={() => handleUserApprove(request)}>
+              Review
+            </Button>
+  
+          ) : requestStatus === "Committed" ? (
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                setPage("User");
+              }}
+              className="text-blue-600 hover:underline text-sm font-medium"
+            >
+              View on User Page →
+            </a>
+  
+          ) : canCommit ? (
+            <Button className="bg-green-600 hover:bg-green-700" onClick={onCommit}>
+              Commit
+            </Button>
+          ) : (
+            <p className="text-sm text-gray-500 italic">
+              Awaiting quorum: <strong>{approvals.filter(Boolean).length} / 3</strong> approved
+            </p>
+          )}
+        </div>
+  
+      </div >
+    );
+  }
 
 
   return (
@@ -1157,27 +1229,31 @@ export default function App() {
                             Admin privileges alone aren't enough. Permission changes are staged for review and must reach quorum before they can be committed.
                           </p>
                         </AccordionBox>
+                        {
+                          requests.map((request, i) => (
+                            <QuorumDashboard
+                              key={i}
+                              request={request}
+                              setPage={setPage}
+                              setRequests={setRequests}
+                              onCommit={() => {
+                                const approved = request.value;
+                                // const merged = { ...jwt.permissions };
 
-                        <QuorumDashboard
-                          request={requests[0]}
-                          setPage={setPage}
-                          setRequests={setRequests}
-                          onCommit={() => {
-                            const approved = requests[0].value;
-                            const merged = { ...jwt.permissions };
+                                // Object.entries(approved).forEach(([field, perms]) => {
+                                //   merged[field] = perms;
+                                // });
 
-                            Object.entries(approved).forEach(([field, perms]) => {
-                              merged[field] = perms;
-                            });
-
-                            setJwt(prev => ({ ...prev, permissions: merged }));
-                            setRequests(prev => [{
-                              ...prev[0],
-                              status: "Committed"
-                            }]);
-                            setPage("Admin"); // ensures return to Admin after commit
-                          }}
-                        />
+                                // setJwt(prev => ({ ...prev, permissions: merged }));
+                                // setRequests(prev => [{
+                                //   ...prev[0],
+                                //   status: "Committed"
+                                // }]);
+                                setPage("Admin"); // ensures return to Admin after commit
+                              }}
+                            />
+                          ))
+                        }
                       </div>
                     )}
 
