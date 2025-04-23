@@ -544,7 +544,7 @@ export default function App() {
 
         const changeRequests = await appService.getUserRequests(baseURL, realm, token);
         setRequests(changeRequests); // overwrite previous request
-        console.log(changeRequests);
+      
         setHasChanges(false);
       });
     }
@@ -583,6 +583,8 @@ export default function App() {
   
   
   function QuorumDashboard({ request, onCommit, setPage, setRequests }) {
+    // const [requestStatus, setRequestStatus] = useState(""); 
+    
     let requestStatus;
     if (request.deleteStatus){
       requestStatus = request.deleteStatus;
@@ -603,7 +605,6 @@ export default function App() {
           </div>
   
           <pre className="bg-gray-50 border text-sm rounded p-4 overflow-auto">
-            <p>test</p>
           </pre>
           <div className="mt-4">
             <div className="text-sm text-gray-700 flex items-center gap-2">
@@ -669,14 +670,14 @@ export default function App() {
             setApprovals(prev => {
               const updated = [...prev];
               updated[index] = true;
-  
-              // 🟢 Check if quorum is reached and status needs to be bumped
-              const totalApproved = updated.filter(Boolean).length;
-              if (totalApproved >= 3 && requestStatus !== "Approved") {
-                setRequests(prev =>
-                  prev.map(r => r.id === request.id ? { ...r, status: "Approved" } : r)
-                );
-              }
+              //setRequests(appService.getUserRequests(baseURL, realm, jwt));
+              // // 🟢 Check if quorum is reached and status needs to be bumped
+              // const totalApproved = updated.filter(Boolean).length;
+              // if (totalApproved >= 3 && requestStatus === "Approved") {
+                
+              //   setRequests(appService.getUserRequests(baseURL, realm, jwt));
+                
+              // }
   
   
               return updated;
@@ -687,6 +688,7 @@ export default function App() {
         setTimeout(() => {
           setCanCommit(true);
         }, 3.2 * 1000);
+        //setRequests(appService.getUserRequests(baseURL, realm, jwt));
       }
     }, [hasUserApproved]);
   
@@ -746,10 +748,12 @@ export default function App() {
         if (authorizerApproval.accepted === false) {
           addRejection(changeRequest.actionType, changeRequest.draftRecordId, changeRequest.changeSetType);
           heimdall.closeEnclave(); 
+          setHasUserApproved(false);
         } else if (authorizerApproval.accepted === true) { // If Approve is clicked
           const authorizerAuthentication = await heimdall.getAuthorizerAuthentication();
           addApproval(changeRequest.actionType, changeRequest.draftRecordId, changeRequest.changeSetType, authorizerApproval.data, authorizerAuthentication);
           heimdall.closeEnclave();
+          setHasUserApproved(true);
         }
     };
 
@@ -760,7 +764,7 @@ export default function App() {
         return updated;
       });
   
-      setHasUserApproved(true);
+      //setHasUserApproved(true);
   
       // Let parent know we're reviewing (mark as "Pending")
       if (requestStatus === "Draft") {
