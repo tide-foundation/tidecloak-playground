@@ -144,10 +144,8 @@ function QuorumDashboard({ request, onCommit, setPage, setRequests }) {
 
         <div className="flex justify-between items-center">
           <h3 className="text-xl font-bold text-gray-800">Change Request</h3>
-          <span className="inline-block text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide bg-blue-100 text-blue-800">
-            Committed
-          </span>
         </div>
+
 
         <pre className="bg-gray-50 border text-sm rounded p-4 overflow-auto">
           {JSON.stringify(request.value, null, 2)}
@@ -242,39 +240,28 @@ function QuorumDashboard({ request, onCommit, setPage, setRequests }) {
 
 
   const handleUserApprove = () => {
+    // mark your own approval
     setApprovals(prev => {
       const updated = [...prev];
       updated[0] = true;
       return updated;
     });
-
     setHasUserApproved(true);
 
-    // Let parent know we're reviewing (mark as "Pending")
-    if (request?.status === "Draft") {
-      request.status = "Pending"; // this is ok temporarily for local display
-    }
+    // now push “Pending” back up into the parent requests array
+    setRequests(rs =>
+      rs.map(r =>
+        r.id === request.id && r.status === "Draft"
+          ? { ...r, status: "Pending" }
+          : r
+      )
+    );
   };
 
 
   return (
     <div className="bg-white border rounded-lg p-6 shadow space-y-4 mt-8">
-      <div className="flex justify-between items-center">
-        <h3 className="text-xl font-bold text-gray-800">Change Request</h3>
-        {request?.status && (
-          <span
-            className={`inline-block text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide
-        ${request.status === "Draft" ? "bg-gray-200 text-gray-800" :
-                request.status === "Pending" ? "bg-yellow-100 text-yellow-800" :
-                  request.status === "Approved" ? "bg-green-100 text-green-800" :
-                    request.status === "Committed" ? "bg-blue-100 text-blue-800" :
-                      "bg-red-100 text-red-800"
-              }`}
-          >
-            {request.status}
-          </span>
-        )}
-      </div>
+
 
       <pre className="bg-gray-50 border text-sm rounded p-4 overflow-auto">
         {JSON.stringify(request.value, null, 2)}
@@ -365,7 +352,9 @@ function App() {
   const [showExplainer, setShowExplainer] = useState(false);
   const [requests, setRequests] = useState([]);
   const [hasChanges, setHasChanges] = useState(false);
-  const [activeRequest, setActiveRequest] = useState(null);
+  const [activeRequestIndex, setActiveRequestIndex] = useState(0);
+  const [showChangeInfo, setShowChangeInfo] = useState(false);
+
   const [expandedBlobs, setExpandedBlobs] = useState({});
   const [userFeedback, setUserFeedback] = useState("");
   const [showUserInfoAccordion, setShowUserInfoAccordion] = useState(false);
@@ -438,45 +427,61 @@ function App() {
   };
 
 
-  const handleAdminPermissionSubmit = (e) => {
+  function handleAdminPermissionSubmit(e) {
     e.preventDefault();
-    const formData = new FormData(e.target);
+    const form = new FormData(e.target);
 
-    const updated = {
-      dob: { read: false, write: false },
-      cc: { read: false, write: false }
-    };
-
-    for (let [key] of formData.entries()) {
-      const [field, permission] = key.split(".");
-      updated[field][permission] = true;
+    // build the “updated” object from the form
+    const updated = { dob: { read: false, write: false }, cc: { read: false, write: false } };
+    for (let key of form.keys()) {
+      let [field, mode] = key.split('.');
+      updated[field][mode] = true;
     }
 
-    const current = jwt.permissions;
-    const isDifferent = Object.keys(updated).some(field => {
-      return (
-        updated[field].read !== current[field].read ||
-        updated[field].write !== current[field].write
-      );
-    });
+    // find which modes actually changed vs. the current JWT
+    const diffs = [];
+    for (let field of ['dob', 'cc']) {
+      for (let mode of ['read', 'write']) {
+        const newValue = updated[field][mode];
+        const oldValue = jwt.permissions[field][mode];
+        if (newValue !== oldValue) {
+          diffs.push({ field, mode, value: newValue });
+        }
+      }
+    }
 
-    if (isDifferent) {
-      const newRequest = {
+    if (diffs.length === 0) {
+      // no actual changes—drop any existing draft/pending/approved,
+      // keep only the ones already committed (or just clear all)
+      setRequests(rs => rs.filter(r => r.status === 'Committed'));
+      setHasChanges(false);
+      return;
+    }
+
+
+    setRequests(prev => {
+      // keep _only_ the committed ones, drop any old Draft/Pending/Approved
+      const committed = prev.filter(r => r.status === 'Committed');
+
+      // build exactly one draft per actual diff
+      const newDrafts = diffs.map(diff => ({
         id: Date.now() + Math.random(),
         date: new Date().toLocaleDateString(),
-        type: `Permission Bundle`,
-        value: updated,
-        status: "Draft",
-        json: JSON.stringify(updated, null, 2),
-        field: null
-      };
+        type: 'Permission Change',
+        value: { [diff.field]: { [diff.mode]: diff.value } },
+        status: 'Draft',
+        field: diff.field,
+        mode: diff.mode
+      }));
 
-      setRequests([newRequest]); // overwrite previous request
-      setHasChanges(false);
-    }
+      return [...committed, ...newDrafts];
+    });
 
 
-  };
+    setActiveRequestIndex(0);
+    setHasChanges(false);
+  }
+
 
 
   const handleReview = (id) => {
@@ -488,6 +493,50 @@ function App() {
       )
     );
   };
+
+  // commit one at activeIndex and bump the JWT, then move to next draft
+  const commitRequest = (index) => {
+    // merge this change into the JWT
+    const change = requests[index].value;
+    // pull out the single field/mode you changed:
+    const field = Object.keys(change)[0];           // e.g. "cc"
+    const mode = Object.keys(change[field])[0];    // e.g. "read"
+    const value = change[field][mode];              // e.g. true
+
+    // now merge just that bit back into permissions:
+    setJwt(prev => ({
+      ...prev,
+      permissions: {
+        ...prev.permissions,           // keep all other fields untouched
+        [field]: {
+          ...prev.permissions[field],  // keep the sibling flag (write or read)
+          [mode]: value                // override only the one you flipped
+        }
+      }
+    }));
+
+
+    // update the list and bump the active index
+    setRequests(prev => {
+      const updated = prev.map((r, i) =>
+        i === index ? { ...r, status: "Committed" } : r
+      );
+      const next = updated.findIndex((r, i) => i > index && r.status === "Draft");
+      setActiveRequestIndex(next >= 0 ? next : index);
+      return updated;
+    });
+  };
+
+
+  useEffect(() => {
+    // whenever we land on Admin, purge any requests 
+    // that have already been Committed (i.e. merged into the JWT)
+    if (page === 'Admin') {
+      setRequests(rs => rs.filter(r => r.status !== 'Committed'))
+      setActiveRequestIndex(0)
+      setHasChanges(false)
+    }
+  }, [page])
 
 
   const loggedIn = !!jwt;
@@ -549,12 +598,13 @@ function App() {
         </nav>
       )}
 
-      <main className="flex-grow w-full pt-6 pb-16">
+      <main className="flex-grow w-full pt-6">
+
 
         <div className="w-full px-8 max-w-screen-md mx-auto flex flex-col items-start gap-8">
           <div className="w-full max-w-3xl">
             {page === "Landing" && (
-              <div key="user" className="space-y-4 relative pb-32 md:pb-40">
+              <div key="user" className="space-y-4 relative">
 
                 {/* Accordion Toggle for Landing Page */}
                 <button
@@ -694,20 +744,20 @@ function App() {
                               </span>
                             </div>
 
-                            <p>
-                              <span className="font-medium">Value in Database:</span>{" "}
-                              <button
-                                type="button"
+                            <div className="break-words whitespace-pre-wrap text-sm">
+                              <span className="font-medium text-gray-700">Value in Database:</span>{" "}
+                              <span
                                 onClick={() =>
                                   setExpandedBlobs((prev) => ({ ...prev, [field]: !prev[field] }))
                                 }
-                                className="text-blue-600 underline"
+                                className="text-blue-600 underline cursor-pointer break-words"
                               >
                                 {expandedBlobs[field]
-                                  ? "0101ff7a9e3b1d9adbeef8c3471a2c7e38cb43fcd74fdcadbea88d5fbeea829c4"
-                                  : "0101ff7a9e...829c4"}
-                              </button>
-                            </p>
+                                  ? "AQAAAAEAAAABRgAAAGs2K+aWSljTs9MdFOkavrTwVIKfSVjrNDHkMaYhC7XJl15jANPOh1TL7zxbibcUA0HVJGISzjVNja6e4udEcBtVa+k4BRcIAAAAIwMHaAAAAAAAAAAAQAAAAAU3stMFMM2yTCcIjQd3KQcYa2xdaxlOe/5WxW1mkvaK0sIeFIBh+CFMLSmp2Sk518htnyJRMyfCdjsPZm7bYAc="
+                                  : "AQAAAAEAAA...bYAc="}
+                              </span>
+                            </div>
+
                           </div>
                         )}
 
@@ -893,53 +943,90 @@ function App() {
 
 
                     {requests.length > 0 && (
-                      <div className="relative">
-                        <button
-                          onClick={() => setShowChangeRequestAccordion(prev => !prev)}
-                          className="absolute -top-2 right-0 text-2xl hover:scale-110 transition-transform"
-                          aria-label="Toggle change request explainer"
-                        >
-                          {showChangeRequestAccordion ? "🤯" : "🤔"}
-                        </button>
+                      <>
+                        {/* Sub-heading + info toggle */}
+                        <div className="relative mb-2">
+                          <h3 className="text-xl font-semibold">Change Requests</h3>
+                          <button
+                            onClick={() => setShowChangeInfo(prev => !prev)}
+                            className="absolute -top-2 right-0 text-2xl hover:scale-110 transition-transform"
+                            aria-label="Toggle change-request info"
+                          >
+                            {showChangeInfo ? "🤯" : "🤔"}
+                          </button>
+                        </div>
 
-                        <AccordionBox title="Change Request Review" isOpen={showChangeRequestAccordion}>
-                          <p className="text-sm text-gray-600 mb-4">
-                            Admin privileges alone aren't enough. Permission changes are staged for review and must reach quorum before they can be committed.
-                          </p>
-                        </AccordionBox>
+                        {showChangeInfo && (
+                          <AccordionBox title="Quorum-enforced permission changes" isOpen>
+                            <p className="text-sm text-gray-600">
+                              Each individual permission change must be reviewed and committed in turn. Click “Review” to open the full approval workflow.
+                            </p>
+                          </AccordionBox>
+                        )}
+                        <div className="space-y-4">
 
-                        <QuorumDashboard
-                          request={requests[0]}
-                          setPage={setPage}
-                          setRequests={setRequests}
-                          onCommit={() => {
-                            const approved = requests[0].value;
-                            const merged = { ...jwt.permissions };
+                          {/* each draft as row */}
+                          {requests.map((req, idx) => {
+                            const isActive = idx === activeRequestIndex;
+                            return (
+                              <div key={req.id} className="border rounded p-3 bg-white">
+                                <div className="flex justify-between items-center">
+                                  {/* merged label */}
+                                  <div>
+                                    <span className="font-medium">Change:</span> {req.field} to {req.mode}
+                                  </div>
+                                  {/* status + action */}
+                                  <div className="flex justify-end">
+                                    <span
+                                      className={`px-2 py-1 rounded-full text-xs ${req.status === "Draft"
+                                        ? "bg-gray-200 text-gray-800"
+                                        : req.status === "Pending"
+                                          ? "bg-yellow-100 text-yellow-800"
+                                          : req.status === "Approved"
+                                            ? "bg-green-100 text-green-800"
+                                            : "bg-blue-100 text-blue-800"
+                                        }`}
+                                    >
+                                      {req.status}
+                                    </span>
+                                  </div>
 
-                            Object.entries(approved).forEach(([field, perms]) => {
-                              merged[field] = perms;
-                            });
+                                </div>
 
-                            setJwt(prev => ({ ...prev, permissions: merged }));
-                            setRequests(prev => [{
-                              ...prev[0],
-                              status: "Committed"
-                            }]);
-                            setPage("Admin"); // ensures return to Admin after commit
-                          }}
-                        />
-                      </div>
+                                {/* accordion detail */}
+                                <div
+                                  className={`mt-2 overflow-hidden transition-all ${isActive ? "max-h-full" : "max-h-0"
+                                    }`}
+                                >
+                                  {isActive && (
+                                    <QuorumDashboard
+                                      request={req}
+                                      setPage={setPage}
+                                      setRequests={setRequests}
+                                      onCommit={() => commitRequest(idx)}
+                                    />
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+
+                        </div>
+                      </>
                     )}
 
                   </div>
                 )}
+
+
               </div>
             )}
           </div>
-
         </div>
-      </main>
 
+      </main >
+
+      <div className="h-10" />
       <footer className="mt-auto p-4 bg-gray-100 flex flex-col md:flex-row justify-between items-center text-sm gap-2 md:gap-0">
 
         <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-4">
@@ -991,7 +1078,7 @@ function App() {
         </div>
       </footer>
 
-    </div>
+    </div >
   );
 }
 
