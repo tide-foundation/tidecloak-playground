@@ -42,7 +42,6 @@ export default function User(){
         IAMService.initIAM(() => {
             if (IAMService.isLoggedIn()){
                 setLoggedInUser();
-                getUsers();
             }
         });
     }, [])
@@ -52,11 +51,20 @@ export default function User(){
         getUserData();
     }, [loggedUser])
 
+    // Show the contents only after the user data is ready
+    useEffect(() => {
+        if (formData.dob !== "" || formData.cc !== ""){
+            setLoading(false);  
+        }
+    }, [formData])
+
     // Provide the context the logged in user object to be shared across components
     const setLoggedInUser = async () => { 
         const token = await IAMService.getToken();
         const loggedVuid =  await IAMService.getValueFromToken("vuid");
         const users = await appService.getUsers(baseURL, realm, token);
+        // Populate the Database Exposure cards
+        setUsers(users);
         const user = users.find(user => {
         if (user.attributes.vuid[0] === loggedVuid){
             return user;
@@ -64,53 +72,45 @@ export default function User(){
     });
         logUser(user); // Record to context 
     }
-    
-    // Populate the Database Exposure cards
-    const getUsers = async () => {
-        const token = await IAMService.getToken();
-        const users = await appService.getUsers(baseURL, realm, token)
-        setUsers(users);
-    }
 
     // Decrypt the logged in user's data
       const getUserData = async () => { 
-        try {
-            // Fill the fields if logged user has the attributes
-            if (loggedUser.attributes.dob){
-                // Display this in accordion
-                setEncryptedDob(loggedUser.attributes.dob);
-                // DOB format in Keycloak needs to be "YYYY-MM-DD" to display
-                const decryptedDob = await IAMService.doDecrypt([
-                    {
-                        "encrypted": loggedUser.attributes.dob[0],
-                        "tags": ["dob"]
-                    }
-                ])
-                //user.attributes.dob = decryptedDob[0]; 
-                setFormData(prev => ({...prev, dob: decryptedDob}));
-                setSavedData(prev => ({...prev, dob: decryptedDob}));
-            }
-        
-            if (loggedUser.attributes.cc){
-                // Display this in accordion
-                setEncryptedCc(loggedUser.attributes.cc);
-                const decryptedCc = await IAMService.doDecrypt([
-                {
-                    "encrypted": loggedUser.attributes.cc[0],
-                    "tags": ["cc"]
+        // Let context data load first
+        if (loggedUser){
+            try {
+                // Fill the fields if logged user has the attributes
+                if (loggedUser.attributes.dob && IAMService.hasOneRole("_tide_dob.selfdecrypt")){
+                    // Display this in accordion
+                    setEncryptedDob(loggedUser.attributes.dob);
+                    // DOB format in Keycloak needs to be "YYYY-MM-DD" to display
+                    const decryptedDob = await IAMService.doDecrypt([
+                        {
+                            "encrypted": loggedUser.attributes.dob[0],
+                            "tags": ["dob"]
+                        }
+                    ])
+                    //user.attributes.dob = decryptedDob[0]; 
+                    setFormData(prev => ({...prev, dob: decryptedDob}));
+                    setSavedData(prev => ({...prev, dob: decryptedDob}));
                 }
-                ])
-                //user.attributes.cc = decryptedCc[0];
-                setFormData(prev => ({...prev, cc: decryptedCc}));
-                setSavedData(prev => ({...prev, cc: decryptedCc}));
-            }
-            // Show the contents only after the user data is ready
-            setLoading(false);
             
-        } catch (error){
-            console.log(error);
-        }
-        
+                if (loggedUser.attributes.cc && IAMService.hasOneRole("_tide_cc.selfdecrypt")){
+                    // Display this in accordion
+                    setEncryptedCc(loggedUser.attributes.cc);
+                    const decryptedCc = await IAMService.doDecrypt([
+                    {
+                        "encrypted": loggedUser.attributes.cc[0],
+                        "tags": ["cc"]
+                    }
+                    ])
+                    //user.attributes.cc = decryptedCc[0];
+                    setFormData(prev => ({...prev, cc: decryptedCc}));
+                    setSavedData(prev => ({...prev, cc: decryptedCc}));
+                }       
+            } catch (error){
+                console.log(error);
+            }
+        } 
     };
     
     const shortenString = (string) => {
@@ -154,7 +154,6 @@ export default function User(){
         const [decryptedCc, setDecryptedCc] = useState("");
         // Calls on Decrypt button being selected to update the fields
         const handleDecrypt = () => {
-    
             if (!isUser) {
                 setDecryptionStatus("Access denied: You don't have decryption rights.");
                 setTimeout(() => setDecryptionStatus(""), 3000);
