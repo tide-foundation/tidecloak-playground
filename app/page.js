@@ -18,10 +18,6 @@ import IAMService from "../lib/IAMService";
 
 import { useRouter, usePathname } from "next/navigation";
 
-
-
-
-
 // Main App Component
 
 export default function Login() {
