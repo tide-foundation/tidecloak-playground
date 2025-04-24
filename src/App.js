@@ -5,6 +5,7 @@ import {
   FaLinkedin,
   FaGithub,
   FaCheckCircle,
+  FaChevronRight,
 } from "react-icons/fa";
 import { SiX } from "react-icons/si"; // Modern X (formerly Twitter) icon
 
@@ -353,6 +354,7 @@ function App() {
   const [requests, setRequests] = useState([]);
   const [hasChanges, setHasChanges] = useState(false);
   const [activeRequestIndex, setActiveRequestIndex] = useState(0);
+  const [expandedIndex, setExpandedIndex] = useState(0);
   const [showChangeInfo, setShowChangeInfo] = useState(false);
 
   const [expandedBlobs, setExpandedBlobs] = useState({});
@@ -459,10 +461,7 @@ function App() {
     }
 
 
-    setRequests(prev => {
-      // keep _only_ the committed ones, drop any old Draft/Pending/Approved
-      const committed = prev.filter(r => r.status === 'Committed');
-
+    setRequests(() => {
       // build exactly one draft per actual diff
       const newDrafts = diffs.map(diff => ({
         id: Date.now() + Math.random(),
@@ -474,8 +473,10 @@ function App() {
         mode: diff.mode
       }));
 
-      return [...committed, ...newDrafts];
+      // discard *everything* else and show only the new drafts
+      return newDrafts;
     });
+
 
 
     setActiveRequestIndex(0);
@@ -522,9 +523,12 @@ function App() {
         i === index ? { ...r, status: "Committed" } : r
       );
       const next = updated.findIndex((r, i) => i > index && r.status === "Draft");
-      setActiveRequestIndex(next >= 0 ? next : index);
+      const newActive = next >= 0 ? next : index;
+      setActiveRequestIndex(newActive);
+      setExpandedIndex(newActive);
       return updated;
     });
+
   };
 
 
@@ -968,48 +972,56 @@ function App() {
                           {/* each draft as row */}
                           {requests.map((req, idx) => {
                             const isActive = idx === activeRequestIndex;
+                            const isExpanded = idx === expandedIndex;
+
                             return (
-                              <div key={req.id} className="border rounded p-3 bg-white">
+                              <div
+                                key={req.id}
+                                onClick={() => setExpandedIndex(idx)}
+                                className={`
+        cursor-pointer border rounded p-3
+        ${isActive ? "border-l-4 border-blue-500 bg-blue-50" : "border-gray-200 bg-white"}
+        transition-colors
+      `}
+                              >
+                                {/* ─── Header Row ───────────────────────────────────────── */}
                                 <div className="flex justify-between items-center">
-                                  {/* merged label */}
-                                  <div>
-                                    <span className="font-medium">Change:</span> {req.field} to {req.mode}
-                                  </div>
-                                  {/* status + action */}
-                                  <div className="flex justify-end">
-                                    <span
-                                      className={`px-2 py-1 rounded-full text-xs ${req.status === "Draft"
-                                        ? "bg-gray-200 text-gray-800"
-                                        : req.status === "Pending"
-                                          ? "bg-yellow-100 text-yellow-800"
-                                          : req.status === "Approved"
-                                            ? "bg-green-100 text-green-800"
-                                            : "bg-blue-100 text-blue-800"
-                                        }`}
-                                    >
-                                      {req.status}
+                                  <div className="flex items-center gap-2">
+                                    {isActive && <FaChevronRight className="text-blue-500" />}
+                                    <span className="font-medium">
+                                      Change: {req.field} {req.mode} permission
                                     </span>
                                   </div>
-
+                                  <span className={`
+          px-2 py-1 rounded-full text-xs
+          ${req.status === "Draft" ? "bg-gray-200 text-gray-800" :
+                                      req.status === "Pending" ? "bg-yellow-100 text-yellow-800" :
+                                        req.status === "Approved" ? "bg-green-100 text-green-800" :
+                                          "bg-blue-100 text-blue-800"}
+        `}>
+                                    {req.status}
+                                  </span>
                                 </div>
 
-                                {/* accordion detail */}
-                                <div
-                                  className={`mt-2 overflow-hidden transition-all ${isActive ? "max-h-full" : "max-h-0"
-                                    }`}
-                                >
-                                  {isActive && (
-                                    <QuorumDashboard
-                                      request={req}
-                                      setPage={setPage}
-                                      setRequests={setRequests}
-                                      onCommit={() => commitRequest(idx)}
-                                    />
-                                  )}
-                                </div>
+                                {/* ─── Expanded Content ─────────────────────────────────── */}
+                                {isExpanded && (
+                                  isActive
+                                    ? <div className="mt-2">
+                                      <QuorumDashboard
+                                        request={req}
+                                        setPage={setPage}
+                                        setRequests={setRequests}
+                                        onCommit={() => commitRequest(idx)}
+                                      />
+                                    </div>
+                                    : <pre className="mt-2 bg-gray-50 border text-sm rounded p-4 overflow-auto">
+                                      {JSON.stringify(req.value, null, 2)}
+                                    </pre>
+                                )}
                               </div>
                             );
                           })}
+
 
                         </div>
                       </>
