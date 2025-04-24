@@ -32,7 +32,7 @@ export default function User(){
     const [encryptedDob, setEncryptedDob] = useState("");
     const [encryptedCc, setEncryptedCc] = useState("");
     
-    const [savedData, setSavedData] = useState({ dob: "", cc: "" });
+    //const [savedData, setSavedData] = useState({ dob: "", cc: "" });
         
     const handleUserFieldChange = (field) => (e) => {
         setFormData({ ...formData, [field]: e.target.value });
@@ -41,7 +41,9 @@ export default function User(){
     useEffect(() => {
         IAMService.initIAM(() => {
             if (IAMService.isLoggedIn()){
-                setLoggedInUser();
+                // Provide the context the logged in user object to be shared across components
+                logUser();
+                getAllUsers();
             }
         });
     }, [])
@@ -58,19 +60,11 @@ export default function User(){
         }
     }, [formData])
 
-    // Provide the context the logged in user object to be shared across components
-    const setLoggedInUser = async () => { 
-        const token = await IAMService.getToken();
-        const loggedVuid =  await IAMService.getValueFromToken("vuid");
+    // Populate the Database Exposure cards
+    const getAllUsers = async () => {
+        const token = await IAMService.getToken(); 
         const users = await appService.getUsers(baseURL, realm, token);
-        // Populate the Database Exposure cards
         setUsers(users);
-        const user = users.find(user => {
-        if (user.attributes.vuid[0] === loggedVuid){
-            return user;
-        }
-    });
-        logUser(user); // Record to context 
     }
 
     // Decrypt the logged in user's data
@@ -81,7 +75,7 @@ export default function User(){
                 // Fill the fields if logged user has the attributes
                 if (loggedUser.attributes.dob && IAMService.hasOneRole("_tide_dob.selfdecrypt")){
                     // Display this in accordion
-                    setEncryptedDob(loggedUser.attributes.dob);
+                    setEncryptedDob(loggedUser.attributes.dob[0]);
                     // DOB format in Keycloak needs to be "YYYY-MM-DD" to display
                     const decryptedDob = await IAMService.doDecrypt([
                         {
@@ -89,23 +83,38 @@ export default function User(){
                             "tags": ["dob"]
                         }
                     ])
-                    //user.attributes.dob = decryptedDob[0]; 
-                    setFormData(prev => ({...prev, dob: decryptedDob}));
-                    setSavedData(prev => ({...prev, dob: decryptedDob}));
+                    console.log(loggedUser.attributes.dob[0]);
+                    console.log(loggedUser.attributes.cc[0]);
+
+                    if (loggedUser.attributes.dob[0]){
+                        setFormData(prev => ({...prev, dob: decryptedDob[0]}));
+                    }
+                    else {
+                        setFormData(prev => ({...prev, dob: decryptedDob}));
+                    }
+                    
+                    
+                    //setSavedData(prev => ({...prev, dob: decryptedDob}));
                 }
             
                 if (loggedUser.attributes.cc && IAMService.hasOneRole("_tide_cc.selfdecrypt")){
                     // Display this in accordion
-                    setEncryptedCc(loggedUser.attributes.cc);
+                    setEncryptedCc(loggedUser.attributes.cc[0]);
                     const decryptedCc = await IAMService.doDecrypt([
-                    {
-                        "encrypted": loggedUser.attributes.cc[0],
-                        "tags": ["cc"]
-                    }
+                        {
+                            "encrypted": loggedUser.attributes.cc[0],
+                            "tags": ["cc"]
+                        }
                     ])
-                    //user.attributes.cc = decryptedCc[0];
-                    setFormData(prev => ({...prev, cc: decryptedCc}));
-                    setSavedData(prev => ({...prev, cc: decryptedCc}));
+
+                    if (loggedUser.attributes.cc[0]){
+                        setFormData(prev => ({...prev, cc: decryptedCc[0]}));
+                    }
+                    else {
+                        setFormData(prev => ({...prev, cc: decryptedCc}));
+                    }
+
+                    //setSavedData(prev => ({...prev, cc: decryptedCc}));
                 }       
             } catch (error){
                 console.log(error);
@@ -154,6 +163,28 @@ export default function User(){
         const [decryptedCc, setDecryptedCc] = useState("");
         // Calls on Decrypt button being selected to update the fields
         const handleDecrypt = () => {
+
+            let dob;
+            let cc;
+
+            if (Array.isArray(user.attributes.dob)){
+                dob = user.attributes.dob[0];
+                console.log(dob);
+            }
+            else {
+                dob = user.attributes.dob;
+                console.log(dob);
+            }
+
+            if (Array.isArray(user.attributes.cc)){
+                cc = user.attributes.cc[0];
+                console.log(cc);
+            }
+            else {
+                cc = user.attributes.cc;
+                console.log(cc);
+            }
+
             if (!isUser) {
                 setDecryptionStatus("Access denied: You don't have decryption rights.");
                 setTimeout(() => setDecryptionStatus(""), 3000);
@@ -170,18 +201,20 @@ export default function User(){
             setTimeout(async () => {
             const decryptedDobData = await IAMService.doDecrypt([
                 {
-                "encrypted": user.attributes.dob[0],
+                "encrypted": dob,
                 "tags": ["dob"]
                 }
             ])
+            
             setDecryptedDob(decryptedDobData[0]); 
 
             const decryptedCcData = await IAMService.doDecrypt([
                 {
-                "encrypted": user.attributes.cc[0],
+                "encrypted": cc,
                 "tags": ["cc"]
                 }
             ])
+            
             setDecryptedCc(decryptedCcData[0]); 
 
             setDecrypted(true);
@@ -233,6 +266,7 @@ export default function User(){
     
     // The Decryptable Cards
     function DatabaseExposureTable() {
+        
         return (
             <div className="mt-6 space-y-6 pb-24 md:pb-36">
                 {
@@ -267,6 +301,7 @@ export default function User(){
                 ]);
                 loggedUser.attributes.dob = encryptedDob[0];
                 setEncryptedDob(encryptedDob[0]);
+                console.log(encryptedDob[0])
             }
 
             if (formData.cc !== ""){
@@ -278,15 +313,16 @@ export default function User(){
                 ]);
                 loggedUser.attributes.cc = encryptedCc[0];
                 setEncryptedCc(encryptedCc[0]);
+                console.log(encryptedCc[0])
             }
 
             const token = await IAMService.getToken();
             const response = await appService.updateUser(baseURL, realm, loggedUser, token);
             // Update for the Data Exposure table too
-            setUsers(await appService.getUsers(baseURL, realm, token));
+            //setUsers(await appService.getUsers(baseURL, realm, token));
 
             if (response.ok){
-                setSavedData({ ...formData });
+                //setSavedData({ ...formData });
                 setUserFeedback("Changes saved!");
                 setTimeout(() => setUserFeedback(""), 3000); // clear after 3 seconds
                 console.log("Updated User!");
@@ -358,7 +394,7 @@ export default function User(){
                           {canRead && !canWrite && (
                             <input
                               type="text"
-                              value={savedData[field] || ""}
+                              value={formData[field] || ""}
                               readOnly
                               className="border rounded px-3 py-2 w-full bg-gray-100 text-gray-700 max-w-md"
                             />

@@ -22,6 +22,8 @@ export const Provider = ({ children }) => {
     const [RMClientID, setRMClientID] = useState("");
     const [isTideAdmin, setIsTideAdmin] = useState(false);
 
+
+    
     useEffect(() => {
         // Get the stored user even on refresh of a page 
         const storedUser = localStorage.getItem("user");
@@ -38,21 +40,31 @@ export const Provider = ({ children }) => {
         }
     }, [])
     
-    const logUser = async (user) => {
-        setLoggedUser(user);
+    const logUser = async () => {
         const token = await IAMService.getToken();
+        const loggedVuid =  await IAMService.getValueFromToken("vuid");
+        const users = await appService.getUsers(baseURL, realm, token);
+        const loggedInUser = users.find(user => {
+            if (user.attributes.vuid[0] === loggedVuid){
+                return user;
+            }
+        });
+        setLoggedUser(loggedInUser);
+        console.log(loggedUser);
         // Get Realm Management default client's ID
         const clientID = await appService.getRealmManagementId(baseURL, realm, token);
         setRMClientID(clientID);
         // Check if user already has the role
-        setIsTideAdmin(await appService.checkUserAdminRole(baseURL, realm, user.id, clientID, token));
+        setIsTideAdmin(await appService.checkUserAdminRole(baseURL, realm, loggedInUser.id, clientID, token));
         // Store for incase the page gets refreshed
-        localStorage.setItem("user", JSON.stringify(user));
+        localStorage.setItem("user", JSON.stringify(loggedInUser));
         // Store for incase the page gets refreshed
         localStorage.setItem("RMClientID", JSON.stringify(RMClientID));
         // Store for incase the page gets refreshed
         localStorage.setItem("isTideAdmin", JSON.stringify(isTideAdmin));
     }
+
+    
  
     return (
         <Context.Provider value={{realm, baseURL, logUser, loggedUser, RMClientID, isTideAdmin, setIsTideAdmin}}>

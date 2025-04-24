@@ -18,7 +18,7 @@ export default function Admin() {
   const searchParams = useSearchParams();
   // Realm Management client ID to assign user the tide-realm-admin role if not yet assigned
   const RMClientID = searchParams.get("clientID");
-  const {baseURL, realm, loggedUser, isTideAdmin, setIsTideAdmin} = useAppContext();
+  const {baseURL, realm, loggedUser, isTideAdmin, setIsTideAdmin, logUser} = useAppContext();
 
   const [showAdminAccordion, setShowAdminAccordion] = useState(false);
   const [showChangeRequestAccordion, setShowChangeRequestAccordion] = useState(false);
@@ -70,6 +70,9 @@ export default function Admin() {
   function QuorumDashboard({ request, onCommit }) {
       // const [requestStatus, setRequestStatus] = useState(""); 
       
+
+
+
       let requestStatus;
       if (request.deleteStatus){
         requestStatus = request.deleteStatus;
@@ -112,7 +115,7 @@ export default function Admin() {
         );
       }
     
-      const ADMIN_NAMES = ["You", "Alice", "Bob", "Carlos", "Dana"];
+      const ADMIN_NAMES = ["You", "Alice", "Ben", "Carlos", "Dana"];
       const isCommitted = requestStatus === "Committed";
       const isApproved = requestStatus === "Approved" || isCommitted;
       const [hasUserApproved, setHasUserApproved] = useState(isCommitted || isApproved);
@@ -196,9 +199,9 @@ export default function Admin() {
   
       //POST /tideAdminResources/add-authorization
       // Add approve status to change request
-      const addApproval = async (action, draftId, type, authorizerApproval, authorizerAuthentication) => {
+        const addApproval = async (action, draftId, type, authorizerApproval, authorizerAuthentication) => {
         const token = await IAMService.getToken();
-  
+
         // Key value pairs
         const formData = new FormData();
         formData.append("actionType", action);
@@ -206,13 +209,16 @@ export default function Admin() {
         formData.append("changeSetType", type);
         formData.append("authorizerApproval", authorizerApproval);
         formData.append("authorizerAuthentication", authorizerAuthentication);
-      
+    
         const response = await appService.approveEnclave(baseURL, realm, formData, token);
         if (response.ok){
-          appService.getUserRequests(baseURL, realm, token);
+            appService.getUserRequests(baseURL, realm, token);
+            
         }
         
-      };
+        };
+
+        
   
       const handleUserApprove = async (changeRequest) => {
         console.log(changeRequest);
@@ -240,11 +246,10 @@ export default function Admin() {
             heimdall.closeEnclave();
             setHasUserApproved(true);
 
-            appService.getUserRequests();
+            appService.getUserRequests(baseURL, realm, token);
           }
-      };
+        };
   
-    
         setApprovals(prev => {
           const updated = [...prev];
           updated[0] = true;
@@ -258,6 +263,8 @@ export default function Admin() {
           requestStatus = "Pending"; // this is ok temporarily for local display
         }
       };
+
+      
     
       return (
         <div className="bg-white border rounded-lg p-6 shadow space-y-4 mt-8">
@@ -387,6 +394,23 @@ export default function Admin() {
       }
     };
 
+    const addCommit = async (request) => {
+        const token = await IAMService.getToken();
+
+        // Key value pairs
+        const body = JSON.stringify({
+            "actionType": request.actionType,
+            "changeSetId": request.draftRecordId,
+            "changeSetType": request.changeSetType
+        });
+        
+        const response = appService.commitChange(baseURL, realm, body, token);
+        if (response.ok){
+            console.log("COMMITED!");
+            
+        }
+    };
+
     return (
       !loading && IAMService.isLoggedIn()
       ?
@@ -514,20 +538,14 @@ export default function Admin() {
                             key={i}
                             request={request}
                             setRequests={setRequests}
-                            onCommit={() => {
-                              const approved = request.value;
-                              // const merged = { ...jwt.permissions };
-
-                              // Object.entries(approved).forEach(([field, perms]) => {
-                              //   merged[field] = perms;
-                              // });
-
-                              // setJwt(prev => ({ ...prev, permissions: merged }));
-                              // setRequests(prev => [{
-                              //   ...prev[0],
-                              //   status: "Committed"
-                              // }]);
-                              router.push("/admin"); // ensures return to Admin after commit
+                            onCommit={async () => {
+                                await addCommit(request);
+                                await IAMService.getToken();
+                                console.log(await IAMService.hasOneRole("_tide_cc.write"));
+                                // Update the logged in user's details to be shared across the application
+                                //logUser();
+                                
+                              //router.push("/user"); // ensures return to Admin after commit
                             }}
                           />
                         ))
