@@ -42,13 +42,14 @@ export default function User(){
         IAMService.initIAM(() => {
             if (IAMService.isLoggedIn()){
                 setLoggedInUser();
+                getUsers();
             }
         });
     }, [])
 
     // Perform only when the context receives the logged user details
     useEffect(() => {
-        getPageData();
+        getUserData();
     }, [loggedUser])
 
     // Provide the context the logged in user object to be shared across components
@@ -63,58 +64,55 @@ export default function User(){
     });
         logUser(user); // Record to context 
     }
+    
+    // Populate the Database Exposure cards
+    const getUsers = async () => {
+        const token = await IAMService.getToken();
+        const users = await appService.getUsers(baseURL, realm, token)
+        setUsers(users);
+    }
 
-    // Get all users, and decrypt the logged in user's data
-      const getPageData = async () => { 
+    // Decrypt the logged in user's data
+      const getUserData = async () => { 
         try {
-            const token = await IAMService.getToken();
-            console.log(token);
-            console.log(baseURL);
-            console.log(realm);
-            const users = await appService.getUsers(baseURL, realm, token)
-            console.log(users);
-            setUsers(users);
-      
             // Fill the fields if logged user has the attributes
             if (loggedUser.attributes.dob){
-            // Display this in accordion
-            setEncryptedDob(loggedUser.attributes.dob);
-            // DOB format in Keycloak needs to be "YYYY-MM-DD" to display
-            const decryptedDob = await IAMService.doDecrypt([
+                // Display this in accordion
+                setEncryptedDob(loggedUser.attributes.dob);
+                // DOB format in Keycloak needs to be "YYYY-MM-DD" to display
+                const decryptedDob = await IAMService.doDecrypt([
+                    {
+                        "encrypted": loggedUser.attributes.dob[0],
+                        "tags": ["dob"]
+                    }
+                ])
+                //user.attributes.dob = decryptedDob[0]; 
+                setFormData(prev => ({...prev, dob: decryptedDob}));
+                setSavedData(prev => ({...prev, dob: decryptedDob}));
+            }
+        
+            if (loggedUser.attributes.cc){
+                // Display this in accordion
+                setEncryptedCc(loggedUser.attributes.cc);
+                const decryptedCc = await IAMService.doDecrypt([
                 {
-                    "encrypted": loggedUser.attributes.dob[0],
-                    "tags": ["dob"]
+                    "encrypted": loggedUser.attributes.cc[0],
+                    "tags": ["cc"]
                 }
-            ])
-            //user.attributes.dob = decryptedDob[0]; 
-            setFormData(prev => ({...prev, dob: decryptedDob}));
-            setSavedData(prev => ({...prev, dob: decryptedDob}));
-          }
-      
-          if (loggedUser.attributes.cc){
-            // Display this in accordion
-            setEncryptedCc(loggedUser.attributes.cc);
-            const decryptedCc = await IAMService.doDecrypt([
-              {
-                "encrypted": loggedUser.attributes.cc[0],
-                "tags": ["cc"]
-              }
-            ])
-            //user.attributes.cc = decryptedCc[0];
-            setFormData(prev => ({...prev, cc: decryptedCc}));
-            setSavedData(prev => ({...prev, cc: decryptedCc}));
-          }
+                ])
+                //user.attributes.cc = decryptedCc[0];
+                setFormData(prev => ({...prev, cc: decryptedCc}));
+                setSavedData(prev => ({...prev, cc: decryptedCc}));
+            }
+            // Show the contents only after the user data is ready
+            setLoading(false);
+            
         } catch (error){
             console.log(error);
         }
-        // Show the contents only after the user data is ready
-        setLoading(false);
+        
     };
     
-      
-    
-
-
     const shortenString = (string) => {
         const start = string.slice(0, 50);
         const end = string.slice(50);
@@ -285,6 +283,8 @@ export default function User(){
 
             const token = await IAMService.getToken();
             const response = await appService.updateUser(baseURL, realm, loggedUser, token);
+            // Update for the Data Exposure table too
+            setUsers(await appService.getUsers(baseURL, realm, token));
 
             if (response.ok){
                 setSavedData({ ...formData });
