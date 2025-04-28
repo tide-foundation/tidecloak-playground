@@ -7,7 +7,7 @@ import { Heimdall } from "../../tide-modules/heimdall";
 
 import AccordionBox from "../components/accordionBox";
 import Button from "../components/button";
-import { FaCheckCircle } from "react-icons/fa";
+import { FaCheckCircle, FaChevronRight } from "react-icons/fa";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
@@ -18,29 +18,65 @@ export default function Admin() {
   const searchParams = useSearchParams();
   // Realm Management client ID to assign user the tide-realm-admin role if not yet assigned
   const RMClientID = searchParams.get("clientID");
-  const {baseURL, realm, loggedUser, isTideAdmin, setIsTideAdmin, logUser} = useAppContext();
+  const {baseURL, realm } = useAppContext();
+
+  const [isTideAdmin, setIsTideAdmin] = useState(false);
+
+
+  const [loggedUser, setLoggedUser] = useState(null);
 
   const [showAdminAccordion, setShowAdminAccordion] = useState(false);
-  const [showChangeRequestAccordion, setShowChangeRequestAccordion] = useState(false);
+  const [showChangeInfo, setShowChangeInfo] = useState(false);
+  const [activeRequestIndex, setActiveRequestIndex] = useState(0);
+  const [expandedIndex, setExpandedIndex] = useState(0);
+
+  const [requestStatus, setRequestStatus ] = useState("Draft");
+
   const [loading, setLoading] = useState(true);
 
   const [hasChanges, setHasChanges] = useState(false);
   const [requests, setRequests] = useState([]);
+  const [currentPermissions, setCurrentPermissions] = useState();
   
   const [showExplainer, setShowExplainer] = useState(false);
   const handleElevateClick = () => setShowExplainer(true);
 
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  //const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     IAMService.initIAM(() => {
       if (IAMService.isLoggedIn()){
-        console.log(isTideAdmin);
-        console.log(loggedUser);
+        getLoggedUser();
       }
       setLoading(false);
     });
   }, [])
+
+  // Get the currently assigned realm roles of the logged in user after they've been identified 
+  useEffect(() => {
+    if (loggedUser){ 
+      checkAdminRole();  
+    }
+  }, [loggedUser])
+
+
+  useEffect(() => {
+      // Shouldn't need to get permissions if logged in user isn't an Admin; will need to elevate instead
+      if (isTideAdmin){
+        getUserPermissions();
+      }
+    
+  }, [isTideAdmin])
+
+
+  // On initial render check if logged user is admin to decide which components to show
+  const checkAdminRole = async () => {
+      const token = await IAMService.getToken();
+      // Get Realm Management default client's ID
+      const clientID = await appService.getRealmManagementId(baseURL, realm, token);
+      // Check if user already has the role
+      setIsTideAdmin(await appService.checkUserAdminRole(baseURL, realm, loggedUser.id, clientID, token));
+  }
 
   // Assign this initial user the tide-realm-admin client role managed by the default client Realm Management
   const confirmAdmin = async () => {
@@ -67,12 +103,31 @@ export default function Admin() {
     }
   };
 
+  // Get current logged in user
+  const getLoggedUser = async () => { 
+    const token = await IAMService.getToken();
+    const loggedVuid =  await IAMService.getValueFromToken("vuid");
+    const users = await appService.getUsers(baseURL, realm, token);
+    const loggedInUser = users.find(user => {
+      if (user.attributes.vuid[0] === loggedVuid){
+          return user;
+      }
+    });
+    setLoggedUser(loggedInUser);
+  };
+  
+ 
+  
+  // Get the current user realm roles to prefill the boxes and for updating the permissions
+  const getUserPermissions = async () => { 
+    const token = await IAMService.getToken();
+    const permissions = await appService.getAssignedRealmRoles(baseURL, realm, loggedUser.id, token);
+    setCurrentPermissions(permissions.realmMappings);
+  };
+
   function QuorumDashboard({ request, onCommit }) {
       // const [requestStatus, setRequestStatus] = useState(""); 
       
-
-
-
       let requestStatus;
       if (request.deleteStatus){
         requestStatus = request.deleteStatus;
@@ -84,34 +139,33 @@ export default function Admin() {
       if (requestStatus === "Committed") {
         return (
           <div className="bg-white border rounded-lg p-6 shadow space-y-4 mt-8">
-    
-            <div className="flex justify-between items-center">
-              <h3 className="text-xl font-bold text-gray-800">Change Request</h3>
-              <span className="inline-block text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide bg-blue-100 text-blue-800">
-                Committed
-              </span>
-            </div>
-    
-            <pre className="bg-gray-50 border text-sm rounded p-4 overflow-auto">
-            </pre>
-            <div className="mt-4">
-              <div className="text-sm text-gray-700 flex items-center gap-2">
-                <FaCheckCircle className="text-green-500" />
-                <span>Done! You can now explore the updated permissions.</span>
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    router.push("/user");
-                  }}
-                  className="text-blue-600 hover:underline font-medium whitespace-nowrap"
-                >
-                  View on User Page →
-                </a>
-              </div>
-            </div>
-    
+
+          <div className="flex justify-between items-center">
+            <h3 className="text-xl font-bold text-gray-800">Change Request</h3>
           </div>
+  
+  
+          <pre className="bg-gray-50 border text-sm rounded p-4 overflow-auto">
+            {JSON.stringify(request.value, null, 2)}
+          </pre>
+          <div className="mt-4">
+            <div className="text-sm text-gray-700 flex items-center gap-2">
+              <FaCheckCircle className="text-green-500" />
+              <span>Done! You can now explore the updated permissions.</span>
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  router.push("/user");
+                }}
+                className="text-blue-600 hover:underline font-medium whitespace-nowrap"
+              >
+                View on User Page →
+              </a>
+            </div>
+          </div>
+  
+        </div>
         );
       }
     
@@ -193,7 +247,7 @@ export default function Admin() {
   
         const response = await appService.denyEnclave(baseURL, realm, formData, token);
         if (response.ok){
-          appService.getUserRequests(baseURL, realm, token);
+          //appService.getUserRequests(baseURL, realm, token);
         } 
       };
   
@@ -212,7 +266,7 @@ export default function Admin() {
     
         const response = await appService.approveEnclave(baseURL, realm, formData, token);
         if (response.ok){
-            appService.getUserRequests(baseURL, realm, token);
+            //appService.getUserRequests(baseURL, realm, token);
             
         }
         
@@ -246,7 +300,8 @@ export default function Admin() {
             heimdall.closeEnclave();
             setHasUserApproved(true);
 
-            appService.getUserRequests(baseURL, realm, token);
+            //appService.getUserRequests(baseURL, realm, token);
+            //requestStatus = "Pending";
           }
         };
   
@@ -268,85 +323,119 @@ export default function Admin() {
     
       return (
         <div className="bg-white border rounded-lg p-6 shadow space-y-4 mt-8">
-          <div className="flex justify-between items-center">
-            <h3 className="text-xl font-bold text-gray-800">Change Request</h3>
-            {requestStatus && (
-              <span
-                className={`inline-block text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide
-            ${requestStatus === "Draft" ? "bg-gray-200 text-gray-800" :
-              requestStatus === "Pending" ? "bg-yellow-100 text-yellow-800" :
-              requestStatus === "Approved" ? "bg-green-100 text-green-800" :
-              requestStatus === "Committed" ? "bg-blue-100 text-blue-800" :
-                          "bg-red-100 text-red-800"
-                  }`}
+
+
+        <pre className="bg-gray-50 border text-sm rounded p-4 overflow-auto">
+          {JSON.stringify(request.value, null, 2)}
+        </pre>
+
+        <div className="flex justify-between items-center mt-6">
+          {ADMIN_NAMES.map((name, idx, j) => (
+            <div key={j} className="relative flex flex-col items-center">
+              <div
+                className={`w-14 h-14 flex items-center justify-center rounded-full border-4 transition-all duration-700 ease-in-out 
+          ${approvals[idx] ? "border-green-500 shadow-md shadow-green-200" : "border-gray-300"}
+        `}
               >
-                {requestStatus}
-              </span>
-            )}
-          </div>
-    
-          <pre className="bg-gray-50 border text-sm rounded p-4 overflow-auto">
-            {JSON.stringify(request.value, null, 2)}
-          </pre>
-    
-          <div className="flex justify-between items-center mt-6">
-            {ADMIN_NAMES.map((name, idx) => (
-              <div key={name} className="relative flex flex-col items-center">
-                <div
-                  className={`w-14 h-14 flex items-center justify-center rounded-full border-4 transition-all duration-700 ease-in-out 
-            ${approvals[idx] ? "border-green-500 shadow-md shadow-green-200" : "border-gray-300"}
-          `}
-                >
-                  <span className="font-semibold text-lg text-gray-700">{name[0]}</span>
-                </div>
-                <span className="text-xs mt-2 text-gray-600">{name}</span>
-    
-                {/* Tick overlay – doesn't shift layout */}
-                {approvals[idx] && (
-                  <FaCheckCircle className="absolute top-0 right-0 text-green-500 w-4 h-4 transition-opacity duration-500 translate-x-2 -translate-y-2" />
-                )}
+                <span className="font-semibold text-lg text-gray-700">{name[0]}</span>
               </div>
-            ))}
-    
-          </div>
-    
-          <div className="pt-4">
-            {!hasUserApproved && !isCommitted ? (
-              <Button onClick={() => handleUserApprove(request)}>
-                Review
-              </Button>
-    
-            ) : requestStatus === "Committed" ? (
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setPage("User");
-                }}
-                className="text-blue-600 hover:underline text-sm font-medium"
-              >
-                View on User Page →
-              </a>
-    
-            ) : canCommit ? (
-              <Button className="bg-green-600 hover:bg-green-700" onClick={onCommit}>
-                Commit
-              </Button>
-            ) : (
-              <p className="text-sm text-gray-500 italic">
-                Awaiting quorum: <strong>{approvals.filter(Boolean).length} / 3</strong> approved
-              </p>
-            )}
-          </div>
-    
-        </div >
-      );
-    }
+              <span className="text-xs mt-2 text-gray-600">{name}</span>
+
+              {/* Tick overlay – doesn't shift layout */}
+              {approvals[idx] && (
+                <FaCheckCircle className="absolute top-0 right-0 text-green-500 w-4 h-4 transition-opacity duration-500 translate-x-2 -translate-y-2" />
+              )}
+            </div>
+          ))}
+
+        </div>
+
+        <div className="pt-4">
+          {!hasUserApproved && !isCommitted ? (
+            <Button onClick={() => {handleUserApprove(request)}}>
+              Review
+            </Button>
+
+          ) : request?.status === "Committed" ? (
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                setPage("User");
+              }}
+              className="text-blue-600 hover:underline text-sm font-medium"
+            >
+              View on User Page →
+            </a>
+
+          ) : canCommit ? (
+            <Button className="bg-green-600 hover:bg-green-700" onClick={onCommit}>
+              Commit
+            </Button>
+          ) : (
+            <p className="text-sm text-gray-500 italic">
+              Awaiting quorum: <strong>{approvals.filter(Boolean).length} / 3</strong> approved
+            </p>
+          )}
+        </div>
+
+      </div >
+    );
+  }
+
+
+  
 
     const handleAdminPermissionSubmit = async (e) => {
       e.preventDefault();
       const formData = new FormData(e.target);
   
+      // // build the “updated” object from the form
+      // const updated = { dob: { read: false, write: false }, cc: { read: false, write: false } };
+      // for (let key of form.keys()) {
+      //   let [field, mode] = key.split('.');
+      //   updated[field][mode] = true;
+      // }
+
+      // // find which modes actually changed vs. the current assigned permissions
+      // const diffs = [];
+      // for (let field of ['dob', 'cc']) {
+      //   for (let mode of ['read', 'write']) {
+      //     const newValue = updated[field][mode];
+      //     const oldValue = currentPermissions.some(perm => perm.name === `_tide_${field}.${mode}`);
+      //     if (newValue !== oldValue) {
+      //       diffs.push({ field, mode, value: newValue });
+      //     }
+      //   }
+      // }
+
+      // if (diffs.length === 0) {
+      //   // no actual changes—drop any existing draft/pending/approved,
+      //   // keep only the ones already committed (or just clear all)
+      //   setRequests(rs => rs.filter(r => r.status === 'Committed'));
+      //   setHasChanges(false);
+      //   return;
+      // }
+
+      // setRequests(() => {
+      //   // build exactly one draft per actual diff
+      //   const newDrafts = diffs.map(diff => ({
+      //     id: Date.now() + Math.random(),
+      //     date: new Date().toLocaleDateString(),
+      //     type: 'Permission Change',
+      //     value: { [diff.field]: { [diff.mode]: diff.value } },
+      //     status: 'Draft',
+      //     field: diff.field,
+      //     mode: diff.mode
+      //   }));
+  
+      //   // discard *everything* else and show only the new drafts
+      //   return newDrafts;
+      // });
+
+      // setActiveRequestIndex(0);
+      // setHasChanges(false);
+
       const updated = {
         dob: { read: false, write: false },
         cc: { read: false, write: false }
@@ -388,7 +477,9 @@ export default function Admin() {
   
           const changeRequests = await appService.getUserRequests(baseURL, realm, token);
           setRequests(changeRequests); // overwrite previous request
-        
+          console.log(changeRequests);
+
+          setActiveRequestIndex(0);
           setHasChanges(false);
         });
       }
@@ -404,10 +495,10 @@ export default function Admin() {
             "changeSetType": request.changeSetType
         });
         
-        const response = appService.commitChange(baseURL, realm, body, token);
+        const response = await appService.commitChange(baseURL, realm, body, token);
+        //setActiveRequestIndex(1);
         if (response.ok){
             console.log("COMMITED!");
-            
         }
     };
 
@@ -415,7 +506,7 @@ export default function Admin() {
       !loading && IAMService.isLoggedIn()
       ?
       <div className="min-h-screen flex flex-col bg-white">
-      <main className="flex-grow w-full pt-6 pb-16">
+      <main className="flex-grow w-full pt-6">
       <div className="w-full px-8 max-w-screen-md mx-auto flex flex-col items-start gap-8">
       <div className="w-full max-w-3xl">
         {pathname === "/admin" && (
@@ -517,7 +608,7 @@ export default function Admin() {
 
 
 
-                  {requests.length > 0 && (
+                  {/* {requests.length > 0 && (
                     <div className="relative">
                       <button
                         onClick={() => setShowChangeRequestAccordion(prev => !prev)}
@@ -551,7 +642,101 @@ export default function Admin() {
                         ))
                       }
                     </div>
+                  )} */}
+                  {requests.length > 0 && (
+                    <>
+                      {/* Sub-heading + info toggle */}
+                      <div className="relative mb-2">
+                        <h3 className="text-xl font-semibold">Change Requests</h3>
+                        <button
+                          onClick={() => setShowChangeInfo(prev => !prev)}
+                          className="absolute -top-2 right-0 text-2xl hover:scale-110 transition-transform"
+                          aria-label="Toggle change-request info"
+                        >
+                          {showChangeInfo ? "🤯" : "🤔"}
+                        </button>
+                      </div>
+
+                      {showChangeInfo && (
+                        <AccordionBox title="Quorum-enforced permission changes" isOpen>
+                          <p className="text-sm text-gray-600">
+                            Each individual permission change must be reviewed and committed in turn. Click “Review” to open the full approval workflow.
+                          </p>
+                        </AccordionBox>
+                      )}
+                      <div className="space-y-4">
+
+                        {/* each draft as row */}
+                        {requests.map((req, idx, i) => {
+                          const isActive = idx === activeRequestIndex;
+                          const isExpanded = idx === expandedIndex;
+
+                          return (
+                            <div
+                              key={i}
+                              onClick={() => setExpandedIndex(idx)}
+                              className={`
+      cursor-pointer border rounded p-3
+      ${isActive ? "border-l-4 border-blue-500 bg-blue-50" : "border-gray-200 bg-white"}
+      transition-colors
+    `}
+                            >
+                              {/* ─── Header Row ───────────────────────────────────────── */}
+                              <div className="flex justify-between items-center">
+                                <div className="flex items-center gap-2">
+                                  {isActive && <FaChevronRight className="text-blue-500" />}
+                                  <span className="font-medium">
+                                    Change: {req.role} permission
+                                  </span>
+                                </div>
+                                {
+                                  req.deleteStatus
+                                  ?
+                                  <span className={`
+                                    px-2 py-1 rounded-full text-xs
+                                    ${req.deleteStatus === "Draft" ? "bg-gray-200 text-gray-800" :
+                                      req.deleteStatus === "Pending" ? "bg-yellow-100 text-yellow-800" :
+                                        req.deleteStatus === "Approved" ? "bg-green-100 text-green-800" :
+                                          "bg-blue-100 text-blue-800"}
+                                  `}>
+                                    {req.deleteStatus}
+                                  </span>
+                                  :
+                                  <span className={`
+                                    px-2 py-1 rounded-full text-xs
+                                    ${req.status === "Draft" ? "bg-gray-200 text-gray-800" :
+                                      req.status === "Pending" ? "bg-yellow-100 text-yellow-800" :
+                                        req.status === "Approved" ? "bg-green-100 text-green-800" :
+                                          "bg-blue-100 text-blue-800"}
+                                  `}>
+                                    {req.status}
+                                  </span>
+                                }
+                              </div>
+
+                              {/* ─── Expanded Content ─────────────────────────────────── */}
+                              {isExpanded && (
+                                isActive
+                                  ? <div className="mt-2">
+                                    <QuorumDashboard
+                                      request={req}
+                                      onCommit={async () => await addCommit(req)}
+                                    />
+                                  </div>
+                                  : <pre className="mt-2 bg-gray-50 border text-sm rounded p-4 overflow-auto">
+                                    {req.userRecord[0].accessDraft}
+                                  </pre>
+                              )}
+                            </div>
+                          );
+                        })}
+
+
+                      </div>
+                    </>
                   )}
+
+                  
 
                 </div>
               )}

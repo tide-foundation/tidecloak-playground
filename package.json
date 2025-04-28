@@ -14,7 +14,7 @@
     "buffer": "6.0.3",
     "sqlite3": "5.1.7",
     "sqlite": "5.1.1",
-    "tidecloak-js": "0.6.52"
+    "tidecloak-js": "0.6.64"
   },
   "scripts": {
     "dev": "next dev",

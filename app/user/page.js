@@ -50,7 +50,10 @@ export default function User(){
 
     // Perform only when the context receives the logged user details
     useEffect(() => {
+      if (loggedUser){
         getUserData();
+        getCurrentRoles();
+      }
     }, [loggedUser])
 
     // Show the contents only after the user data is ready
@@ -65,7 +68,17 @@ export default function User(){
         const token = await IAMService.getToken(); 
         const users = await appService.getUsers(baseURL, realm, token);
         setUsers(users);
-    }
+    };
+
+    // Get currently assigned roles to the logged in user to check permissions, not just via token
+    const getCurrentRoles = async () => {
+      if (loggedUser){
+        const token = await IAMService.getToken();
+        const currentRoles = await appService.getAssignedRealmRoles(baseURL, realm, loggedUser.id, token);
+        console.log(currentRoles);
+      }
+        
+    };
 
     // Decrypt the logged in user's data
       const getUserData = async () => { 
@@ -78,21 +91,18 @@ export default function User(){
                     setEncryptedDob(loggedUser.attributes.dob[0]);
                     // DOB format in Keycloak needs to be "YYYY-MM-DD" to display
                     const decryptedDob = await IAMService.doDecrypt([
-                        {
-                            "encrypted": loggedUser.attributes.dob[0],
-                            "tags": ["dob"]
-                        }
+                      {
+                        "encrypted": loggedUser.attributes.dob[0],
+                        "tags": ["dob"]
+                      }
                     ])
-                    console.log(loggedUser.attributes.dob[0]);
-                    console.log(loggedUser.attributes.cc[0]);
 
                     if (loggedUser.attributes.dob[0]){
-                        setFormData(prev => ({...prev, dob: decryptedDob[0]}));
+                      setFormData(prev => ({...prev, dob: decryptedDob[0]}));
                     }
                     else {
-                        setFormData(prev => ({...prev, dob: decryptedDob}));
+                      setFormData(prev => ({...prev, dob: decryptedDob}));
                     }
-                    
                     
                     //setSavedData(prev => ({...prev, dob: decryptedDob}));
                 }
@@ -102,8 +112,8 @@ export default function User(){
                     setEncryptedCc(loggedUser.attributes.cc[0]);
                     const decryptedCc = await IAMService.doDecrypt([
                         {
-                            "encrypted": loggedUser.attributes.cc[0],
-                            "tags": ["cc"]
+                          "encrypted": loggedUser.attributes.cc[0],
+                          "tags": ["cc"]
                         }
                     ])
 
@@ -117,6 +127,44 @@ export default function User(){
                     //setSavedData(prev => ({...prev, cc: decryptedCc}));
                 }       
             } catch (error){
+              // Revisit this if deciding to account of user data being changed manually in Keycloak
+                // Data in Keycloak is not encrypted yet, so do this instead
+                // setFormData(prev => ({...prev, cc: loggedUser.attributes.dob[0]})); // ????????????????????????????? cause of the bug? they're both using the formData hence why one refreshes beeccause of the other
+                // setFormData(prev => ({...prev, cc: loggedUser.attributes.cc[0]}));
+                // console.log("reached");
+                // console.log(loggedUser.attributes.dob);
+                // console.log(loggedUser.attributes.cc);
+                // const encryptedDob = await IAMService.doEncrypt([
+                //   {
+                //     "data": "1999/11/11",
+                //     "tags": ["dob"]
+                //   }
+                // ])
+                
+                // //setEncryptedDob(encryptedDob);
+                // console.log(encryptedDob);
+                // loggedUser.attributes.dob = encryptedDob[0];
+
+                // const encryptedCc = await IAMService.doEncrypt([
+                //   {
+                //     "data": "53534534534",
+                //     "tags": ["cc"]
+                //   }
+                // ])
+
+                // // const encryptedDob = await IAMService.doEncrypt([
+                // //   {
+                // //       "data": formData.dob,
+                // //       "tags": ["dob"]
+                // //   }
+                // // ]}
+                // // setEncryptedCc(encryptedCc);
+                // loggedUser.attributes.cc = encryptedCc[0];
+
+                // // // Update the user with the encrypted data to prevent storage as raw
+                // const token = await  IAMService.getToken();
+                // const response = await appService.updateUser(baseURL, realm, loggedUser, token);
+
                 console.log(error);
             }
         } 
@@ -164,64 +212,64 @@ export default function User(){
         // Calls on Decrypt button being selected to update the fields
         const handleDecrypt = () => {
 
-            let dob;
-            let cc;
+          let dob;
+          let cc;
 
-            if (Array.isArray(user.attributes.dob)){
-                dob = user.attributes.dob[0];
-                console.log(dob);
-            }
-            else {
-                dob = user.attributes.dob;
-                console.log(dob);
-            }
+          if (Array.isArray(user.attributes.dob)){
+              dob = user.attributes.dob[0];
+              console.log(dob);
+          }
+          else {
+              dob = user.attributes.dob;
+              console.log(dob);
+          }
 
-            if (Array.isArray(user.attributes.cc)){
-                cc = user.attributes.cc[0];
-                console.log(cc);
-            }
-            else {
-                cc = user.attributes.cc;
-                console.log(cc);
-            }
+          if (Array.isArray(user.attributes.cc)){
+              cc = user.attributes.cc[0];
+              console.log(cc);
+          }
+          else {
+              cc = user.attributes.cc;
+              console.log(cc);
+          }
 
-            if (!isUser) {
-                setDecryptionStatus("Access denied: You don't have decryption rights.");
-                setTimeout(() => setDecryptionStatus(""), 3000);
-                return;
-            }
-        
-            if (!canRead) {
-                setDecryptionStatus("Access denied: You lack read permission.");
-                setTimeout(() => setDecryptionStatus(""), 3000);
-                return;
-            }
-        
-            setAnimating(true);
-            setTimeout(async () => {
-            const decryptedDobData = await IAMService.doDecrypt([
-                {
-                "encrypted": dob,
-                "tags": ["dob"]
-                }
-            ])
-            
-            setDecryptedDob(decryptedDobData[0]); 
+          if (!isUser) {
+              setDecryptionStatus("Access denied: You don't have decryption rights.");
+              setTimeout(() => setDecryptionStatus(""), 3000);
+              return;
+          }
+      
+          if (!canRead) {
+              setDecryptionStatus("Access denied: You lack read permission.");
+              setTimeout(() => setDecryptionStatus(""), 3000);
+              return;
+          }
+      
+          setAnimating(true);
+          setTimeout(async () => {
+          const decryptedDobData = await IAMService.doDecrypt([
+              {
+              "encrypted": dob,
+              "tags": ["dob"]
+              }
+          ])
+          
+          setDecryptedDob(decryptedDobData[0]); 
 
-            const decryptedCcData = await IAMService.doDecrypt([
-                {
-                "encrypted": cc,
-                "tags": ["cc"]
-                }
-            ])
-            
-            setDecryptedCc(decryptedCcData[0]); 
+          const decryptedCcData = await IAMService.doDecrypt([
+              {
+              "encrypted": cc,
+              "tags": ["cc"]
+              }
+          ])
+          
+          setDecryptedCc(decryptedCcData[0]); 
 
-            setDecrypted(true);
-            setAnimating(false);
-            setDecryptionStatus("Decrypted successfully!");
-            setTimeout(() => setDecryptionStatus(""), 3000);
-            }, 800);
+          setDecrypted(true);
+          setAnimating(false);
+          setDecryptionStatus("Decrypted successfully!");
+          setTimeout(() => setDecryptionStatus(""), 3000);
+          }, 800);
         };
       
       
@@ -301,7 +349,7 @@ export default function User(){
                 ]);
                 loggedUser.attributes.dob = encryptedDob[0];
                 setEncryptedDob(encryptedDob[0]);
-                console.log(encryptedDob[0])
+         
             }
 
             if (formData.cc !== ""){
@@ -313,7 +361,6 @@ export default function User(){
                 ]);
                 loggedUser.attributes.cc = encryptedCc[0];
                 setEncryptedCc(encryptedCc[0]);
-                console.log(encryptedCc[0])
             }
 
             const token = await IAMService.getToken();
@@ -325,7 +372,9 @@ export default function User(){
                 //setSavedData({ ...formData });
                 setUserFeedback("Changes saved!");
                 setTimeout(() => setUserFeedback(""), 3000); // clear after 3 seconds
+                getAllUsers();
                 console.log("Updated User!");
+                
             }
         }
         catch (error) {
@@ -437,7 +486,7 @@ export default function User(){
                                   onClick={() =>
                                     setExpandedBlobs((prev) => ({ ...prev, [field]: !prev[field] }))
                                   }
-                                  className="text-blue-600 underline"
+                                  className="text-blue-600 underline cursor-pointer break-words"
                                 >
                                   {
                                     field === "dob" 

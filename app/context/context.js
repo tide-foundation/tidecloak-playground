@@ -19,26 +19,6 @@ const baseURL = "http://localhost:8080";
 export const Provider = ({ children }) => {
 
     const [loggedUser, setLoggedUser] = useState(null);
-    const [RMClientID, setRMClientID] = useState("");
-    const [isTideAdmin, setIsTideAdmin] = useState(false);
-
-
-    
-    useEffect(() => {
-        // Get the stored user even on refresh of a page 
-        const storedUser = localStorage.getItem("user");
-        const storedRMClientID = localStorage.getItem("RMClientID");
-        const storedIsTideAdmin = localStorage.getItem("isTideAdmin");
-        if (storedUser){
-            setLoggedUser(JSON.parse(storedUser));
-        }
-        if (storedRMClientID){
-            setRMClientID(JSON.parse(storedRMClientID));
-        }
-        if (storedIsTideAdmin){
-            setIsTideAdmin(JSON.parse(storedIsTideAdmin));
-        }
-    }, [])
     
     const logUser = async () => {
         const token = await IAMService.getToken();
@@ -50,24 +30,12 @@ export const Provider = ({ children }) => {
             }
         });
         setLoggedUser(loggedInUser);
-        console.log(loggedUser);
-        // Get Realm Management default client's ID
-        const clientID = await appService.getRealmManagementId(baseURL, realm, token);
-        setRMClientID(clientID);
-        // Check if user already has the role
-        setIsTideAdmin(await appService.checkUserAdminRole(baseURL, realm, loggedInUser.id, clientID, token));
-        // Store for incase the page gets refreshed
-        localStorage.setItem("user", JSON.stringify(loggedInUser));
-        // Store for incase the page gets refreshed
-        localStorage.setItem("RMClientID", JSON.stringify(RMClientID));
-        // Store for incase the page gets refreshed
-        localStorage.setItem("isTideAdmin", JSON.stringify(isTideAdmin));
     }
 
     
  
     return (
-        <Context.Provider value={{realm, baseURL, logUser, loggedUser, RMClientID, isTideAdmin, setIsTideAdmin}}>
+        <Context.Provider value={{realm, baseURL, logUser, loggedUser}}>
             {children}
         </Context.Provider>
     )
