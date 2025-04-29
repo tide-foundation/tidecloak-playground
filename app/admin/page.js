@@ -30,16 +30,22 @@ export default function Admin() {
   const [activeRequestIndex, setActiveRequestIndex] = useState(0);
   const [expandedIndex, setExpandedIndex] = useState(0);
 
-  const [requestStatus, setRequestStatus ] = useState("Draft");
+  //const [requestStatus, setRequestStatus ] = useState("Draft");
 
   const [loading, setLoading] = useState(true);
 
   const [hasChanges, setHasChanges] = useState(false);
   const [requests, setRequests] = useState([]);
-  const [currentPermissions, setCurrentPermissions] = useState();
+  const [currentPermissions, setCurrentPermissions] = useState([]);
   
   const [showExplainer, setShowExplainer] = useState(false);
   const handleElevateClick = () => setShowExplainer(true);
+
+  // Check Boxes
+  const [hasDobReadPerm, setHasDobReadPerm] = useState(false);
+  const [hasDobWritePerm, setHasDobWritePerm] = useState(false);
+  const [hasCcReadPerm, setHasCcReadPerm] = useState(false);
+  const [hasCcWritePerm, setHasCcWritePerm] = useState(false);
 
   //const [isLoggedIn, setIsLoggedIn] = useState(false);
 
@@ -67,6 +73,14 @@ export default function Admin() {
       }
     
   }, [isTideAdmin])
+
+  useEffect(() => {
+    setHasDobReadPerm(currentPermissions.some(perm => perm.name === "_tide_dob.read"));
+    setHasDobWritePerm(currentPermissions.some(perm => perm.name === "_tide_dob.write"));
+
+    setHasCcReadPerm(currentPermissions.some(perm => perm.name === "_tide_dob.cc"));
+    setHasCcWritePerm(currentPermissions.some(perm => perm.name === "_tide_dob.write"));
+  }, [currentPermissions])
 
 
   // On initial render check if logged user is admin to decide which components to show
@@ -120,9 +134,13 @@ export default function Admin() {
   
   // Get the current user realm roles to prefill the boxes and for updating the permissions
   const getUserPermissions = async () => { 
-    const token = await IAMService.getToken();
-    const permissions = await appService.getAssignedRealmRoles(baseURL, realm, loggedUser.id, token);
-    setCurrentPermissions(permissions.realmMappings);
+    if (loggedUser){
+      const token = await IAMService.getToken();
+      const permissions = await appService.getAssignedRealmRoles(baseURL, realm, loggedUser.id, token);
+      setCurrentPermissions(permissions.realmMappings);
+      console.log(permissions.realmMappings);
+    }
+    
   };
 
   function QuorumDashboard({ request, onCommit }) {
@@ -577,11 +595,11 @@ export default function Admin() {
                         <label className="block font-semibold text-sm mb-1">Date of Birth</label>
                         <div className="flex gap-6">
                           <label className="flex items-center gap-2">
-                            <input type="checkbox" name="dob.read" defaultChecked={IAMService.hasOneRole("_tide_dob.read")} />
+                            <input type="checkbox" name="dob.read" checked={hasDobReadPerm} onChange={e => setHasDobReadPerm(e.target.checked)}/>
                             <span>Read</span>
                           </label>
                           <label className="flex items-center gap-2">
-                            <input type="checkbox" name="dob.write" defaultChecked={IAMService.hasOneRole("_tide_dob.write")} />
+                            <input type="checkbox" name="dob.write" checked={hasDobWritePerm} onChange={e => setHasDobWritePerm(e.target.checked)}/>
                             <span>Write</span>
                           </label>
                         </div>
@@ -592,11 +610,11 @@ export default function Admin() {
                         <label className="block font-semibold text-sm mb-1">Credit Card Number</label>
                         <div className="flex gap-6">
                           <label className="flex items-center gap-2">
-                            <input type="checkbox" name="cc.read" defaultChecked={IAMService.hasOneRole("_tide_cc.read")} />
+                            <input type="checkbox" name="cc.read" checked={hasCcReadPerm} onChange={e => setHasCcReadPerm(e.target.checked)}/>
                             <span>Read</span>
                           </label>
                           <label className="flex items-center gap-2">
-                            <input type="checkbox" name="cc.write" defaultChecked={IAMService.hasOneRole("_tide_cc.write")} />
+                            <input type="checkbox" name="cc.write" checked={hasCcWritePerm} onChange={e => setHasCcWritePerm(e.target.checked)}/>
                             <span>Write</span>
                           </label>
                         </div>
