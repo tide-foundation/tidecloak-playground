@@ -78,10 +78,34 @@ export default function Admin() {
     setHasDobReadPerm(currentPermissions.some(perm => perm.name === "_tide_dob.read"));
     setHasDobWritePerm(currentPermissions.some(perm => perm.name === "_tide_dob.write"));
 
-    setHasCcReadPerm(currentPermissions.some(perm => perm.name === "_tide_dob.cc"));
-    setHasCcWritePerm(currentPermissions.some(perm => perm.name === "_tide_dob.write"));
+    setHasCcReadPerm(currentPermissions.some(perm => perm.name === "_tide_cc.read"));
+    setHasCcWritePerm(currentPermissions.some(perm => perm.name === "_tide_cc.write"));
   }, [currentPermissions])
 
+  
+  // Get current logged in user
+  const getLoggedUser = async () => { 
+    const token = await IAMService.getToken();
+    const loggedVuid =  await IAMService.getValueFromToken("vuid");
+    const users = await appService.getUsers(baseURL, realm, token);
+    const loggedInUser = users.find(user => {
+      if (user.attributes.vuid[0] === loggedVuid){
+          return user;
+      }
+    });
+    setLoggedUser(loggedInUser);
+  };
+  
+  // Get the current user realm roles to prefill the boxes and for updating the permissions
+  const getUserPermissions = async () => { 
+    if (loggedUser){
+      const token = await IAMService.getToken();
+      const permissions = await appService.getAssignedRealmRoles(baseURL, realm, loggedUser.id, token);
+      setCurrentPermissions(permissions.realmMappings);
+      console.log(permissions.realmMappings);
+    }
+    
+  };
 
   // On initial render check if logged user is admin to decide which components to show
   const checkAdminRole = async () => {
@@ -117,30 +141,59 @@ export default function Admin() {
     }
   };
 
-  // Get current logged in user
-  const getLoggedUser = async () => { 
+  // Assign or unassign the logged in user realm roles (pemissions)
+  const handleAdminPermissionSubmit = async (e) => {
+    e.preventDefault();
     const token = await IAMService.getToken();
-    const loggedVuid =  await IAMService.getValueFromToken("vuid");
-    const users = await appService.getUsers(baseURL, realm, token);
-    const loggedInUser = users.find(user => {
-      if (user.attributes.vuid[0] === loggedVuid){
-          return user;
+
+    // Compare the current checkbox state with the current permissions. Note: Current permissions array only updates when a role change request COMMITS.
+    // If the states don't match, a change request is required.
+    // Date of Birth
+    if (hasDobReadPerm !== currentPermissions.some(perm => perm.name === "_tide_dob.read")){
+      const readRole = await appService.getRealmRole(baseURL, realm, "_tide_dob.read", token);
+      if (hasDobReadPerm === true){
+        await appService.assignRealmRole(baseURL, realm, loggedUser.id, readRole, token);
       }
-    });
-    setLoggedUser(loggedInUser);
-  };
-  
- 
-  
-  // Get the current user realm roles to prefill the boxes and for updating the permissions
-  const getUserPermissions = async () => { 
-    if (loggedUser){
-      const token = await IAMService.getToken();
-      const permissions = await appService.getAssignedRealmRoles(baseURL, realm, loggedUser.id, token);
-      setCurrentPermissions(permissions.realmMappings);
-      console.log(permissions.realmMappings);
+      else {
+        await appService.unassignRealmRole(baseURL, realm, loggedUser.id, readRole, token);
+      }
     }
-    
+
+    if (hasDobWritePerm !== currentPermissions.some(perm => perm.name === "_tide_dob.write")){
+      const writeRole = await appService.getRealmRole(baseURL, realm, "_tide_dob.write", token);
+      if (hasDobWritePerm === true){
+        await appService.assignRealmRole(baseURL, realm, loggedUser.id, writeRole, token);
+      }
+      else {
+        await appService.unassignRealmRole(baseURL, realm, loggedUser.id, writeRole, token);
+      }
+    }
+
+    // Credit Card
+    if (hasCcReadPerm !== currentPermissions.some(perm => perm.name === "_tide_cc.read")){
+      const readRole = await appService.getRealmRole(baseURL, realm, "_tide_cc.read", token);
+      if (hasCcReadPerm === true){
+        await appService.assignRealmRole(baseURL, realm, loggedUser.id, readRole, token);
+      }
+      else {
+        await appService.unassignRealmRole(baseURL, realm, loggedUser.id, readRole, token);
+      }
+    }
+
+    if (hasCcWritePerm !== currentPermissions.some(perm => perm.name === "_tide_cc.write")){
+      const writeRole = await appService.getRealmRole(baseURL, realm, "_tide_cc.write", token);
+      if (hasCcWritePerm === true){
+        await appService.assignRealmRole(baseURL, realm, loggedUser.id, writeRole, token);
+      }
+      else {
+        await appService.unassignRealmRole(baseURL, realm, loggedUser.id, writeRole, token);
+      }
+    }
+
+    //     setActiveRequestIndex(0);
+    //     setHasChanges(false);
+    //   });
+    // }
   };
 
   function QuorumDashboard({ request, onCommit }) {
@@ -404,104 +457,7 @@ export default function Admin() {
 
   
 
-    const handleAdminPermissionSubmit = async (e) => {
-      e.preventDefault();
-      const formData = new FormData(e.target);
-  
-      // // build the “updated” object from the form
-      // const updated = { dob: { read: false, write: false }, cc: { read: false, write: false } };
-      // for (let key of form.keys()) {
-      //   let [field, mode] = key.split('.');
-      //   updated[field][mode] = true;
-      // }
-
-      // // find which modes actually changed vs. the current assigned permissions
-      // const diffs = [];
-      // for (let field of ['dob', 'cc']) {
-      //   for (let mode of ['read', 'write']) {
-      //     const newValue = updated[field][mode];
-      //     const oldValue = currentPermissions.some(perm => perm.name === `_tide_${field}.${mode}`);
-      //     if (newValue !== oldValue) {
-      //       diffs.push({ field, mode, value: newValue });
-      //     }
-      //   }
-      // }
-
-      // if (diffs.length === 0) {
-      //   // no actual changes—drop any existing draft/pending/approved,
-      //   // keep only the ones already committed (or just clear all)
-      //   setRequests(rs => rs.filter(r => r.status === 'Committed'));
-      //   setHasChanges(false);
-      //   return;
-      // }
-
-      // setRequests(() => {
-      //   // build exactly one draft per actual diff
-      //   const newDrafts = diffs.map(diff => ({
-      //     id: Date.now() + Math.random(),
-      //     date: new Date().toLocaleDateString(),
-      //     type: 'Permission Change',
-      //     value: { [diff.field]: { [diff.mode]: diff.value } },
-      //     status: 'Draft',
-      //     field: diff.field,
-      //     mode: diff.mode
-      //   }));
-  
-      //   // discard *everything* else and show only the new drafts
-      //   return newDrafts;
-      // });
-
-      // setActiveRequestIndex(0);
-      // setHasChanges(false);
-
-      const updated = {
-        dob: { read: false, write: false },
-        cc: { read: false, write: false }
-      };
-  
-      for (let [key] of formData.entries()) {
-        const [field, permission] = key.split(".");
-        updated[field][permission] = true;
-      }
-  
-      const isDifferent = Object.keys(updated).some(field => {
-        return (
-          updated[field].read !== IAMService.hasOneRole("_tide_" + field + ".read") ||
-          updated[field].write !== IAMService.hasOneRole("_tide_" + field + ".write")
-        );
-      });
-  
-      if (isDifferent) {
-  
-        const token = await IAMService.getToken();
-        Object.keys(updated).forEach(async (field) => {
-          // Read fields 
-          const readRole = await appService.getRealmRole(baseURL, realm, "_tide_" + field + ".read", token);
-          if (updated[field].read !== IAMService.hasOneRole("_tide_" + field + ".read") && updated[field].read === false){
-            const response = await appService.unassignRealmRole(baseURL, realm, loggedUser.id, readRole, token);
-          }
-          else if (updated[field].read !== IAMService.hasOneRole("_tide_" + field + ".read") && updated[field].read === true){
-            const response = await appService.assignRealmRole(baseURL, realm, loggedUser.id, readRole, token);
-          }
-  
-          // Write fields
-          const writeRole = await appService.getRealmRole(baseURL, realm, "_tide_" + field + ".write", token);
-          if (updated[field].write !== IAMService.hasOneRole("_tide_" + field + ".write") && updated[field].write === false){
-            const response = await appService.unassignRealmRole(baseURL, realm, loggedUser.id, writeRole, token);
-          }
-          else if (updated[field].write !== IAMService.hasOneRole("_tide_" + field + ".write") && updated[field].write === true){
-            const response = await appService.assignRealmRole(baseURL, realm, loggedUser.id, writeRole, token);
-          }
-  
-          const changeRequests = await appService.getUserRequests(baseURL, realm, token);
-          setRequests(changeRequests); // overwrite previous request
-          console.log(changeRequests);
-
-          setActiveRequestIndex(0);
-          setHasChanges(false);
-        });
-      }
-    };
+    
 
     const addCommit = async (request) => {
         const token = await IAMService.getToken();
