@@ -47,6 +47,15 @@ export default function Admin() {
   const [hasCcReadPerm, setHasCcReadPerm] = useState(false);
   const [hasCcWritePerm, setHasCcWritePerm] = useState(false);
 
+  const [hasUserApproved, setHasUserApproved] = useState(false);
+  const [hasUserCommitted, setHasUserCommitted] = useState(false);
+
+  const [totalApproved, setTotalApproved] = useState(1);
+ 
+  const ADMIN_NAMES = ["You", "Alice", "Ben", "Carlos", "Dana"];
+      
+  const [approvals, setApprovals] = useState([false, false, false, false, false]);
+
   //const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
@@ -191,6 +200,7 @@ export default function Admin() {
 
     const changeRequests = await appService.getUserRequests(baseURL, realm, token);
     setRequests(changeRequests);
+    console.log(changeRequests);
 
     // Set first change request as the one currently opened
     setActiveRequestIndex(0);
@@ -206,9 +216,11 @@ export default function Admin() {
         requestStatus = request.deleteStatus;
       }
       else { 
-        requestStatus = request.status
+        requestStatus = request.status;
       }
+      console.log(requestStatus);
     
+      // When committed
       if (requestStatus === "Committed") {
         return (
           <div className="bg-white border rounded-lg p-6 shadow space-y-4 mt-8">
@@ -241,56 +253,47 @@ export default function Admin() {
         </div>
         );
       }
-    
-      const ADMIN_NAMES = ["You", "Alice", "Ben", "Carlos", "Dana"];
-      const isCommitted = requestStatus === "Committed";
-      const isApproved = requestStatus === "Approved" || isCommitted;
-      const [hasUserApproved, setHasUserApproved] = useState(isCommitted || isApproved);
-    
-      const [approvals, setApprovals] = useState([false, false, false, false, false]);
-      const [canCommit, setCanCommit] = useState(false);
-    
+      
+
+      
+      // Perform approval checks and commit checks everytime requests is updated from the enclave actions
       useEffect(() => {
-        const isCommitted = requestStatus === "Committed";
-        const isApproved = requestStatus === "Approved";
-    
-        if (isCommitted) {
-          setHasUserApproved(true);
-          setApprovals([true, true, true, true, true]);
-          setCanCommit(false);
-          return;
-        }
-    
-        if (isApproved) {
-          setHasUserApproved(true);
-          setApprovals([true, true, true, false, false]);
-          setCanCommit(true);
-          return;
-        }
-    
-        // Reset for new request
-        setHasUserApproved(false);
-        setApprovals([false, false, false, false, false]);
-        setCanCommit(false);
-      }, [request?.id]);
-    
-    
-      useEffect(() => {
-        if (hasUserApproved) {
+        //requestStatus = requests[activeRequestIndex].deleteStatus ? requests[activeRequestIndex].deleteStatus : requests[activeRequestIndex].status;
+        //const isCommitted = requestStatus === "Committed";
+        //const isApproved = requestStatus === "APPROVED";
+        //console.log(isApproved);
+
+        // if (isCommitted) {
+        //   setHasUserApproved(true);
+        //   setApprovals([true, true, true, true, true]);
+        //   setCanCommit(false);
+        //   return;
+        // }
+
+        // if (isApproved) {
+        //   setHasUserApproved(true);
+        //   setApprovals([true, true, true, false, false]);
+        //   //setCanCommit(true);
+        //   return;
+        // }
+
+         // When Approving (Animation)
+        if (hasUserApproved){
+          console.log(requests);
           const others = [1, 2, 3, 4];
           const shuffled = others.sort(() => 0.5 - Math.random()).slice(0, 2);
-    
+          console.log(shuffled);
           shuffled.forEach((index, i) => {
             setTimeout(() => {
-              setApprovals(prev => {
+              setApprovals( prev => {
                 const updated = [...prev];
                 updated[index] = true;
-                //setRequests(appService.getUserRequests(baseURL, realm, jwt));
-                // // 🟢 Check if quorum is reached and status needs to be bumped
-                // const totalApproved = updated.filter(Boolean).length;
-                // if (totalApproved >= 3 && requestStatus === "Approved") {
-                  
-                //   setRequests(appService.getUserRequests(baseURL, realm, jwt));
+                setTotalApproved(totalApproved + 1);
+                // // // 🟢 Check if quorum is reached and status needs to be bumped
+                //const totalApproved = updated.filter(Boolean).length;
+                // if (totalApproved >= 3 && (requests[activeRequestIndex].status === "Approved" || requests[activeRequestIndex].deleteStatus === "Approved")) {
+                //   console.log("reached");
+                //   //setRequests(await appService.getUserRequests(baseURL, realm, token));
                   
                 // }
     
@@ -298,14 +301,42 @@ export default function Admin() {
                 return updated;
               });
             }, (i + 1) * 900);
-          });
-    
-          setTimeout(() => {
-            setCanCommit(true);
-          }, 3.2 * 1000);
-          //setRequests(appService.getUserRequests(baseURL, realm, jwt));
+          });  
+                
+          // To break out of animation loop
+          setHasUserApproved(false);
         }
-      }, [hasUserApproved]);
+
+      }, [requests])
+    
+      
+      // const [canCommit, setCanCommit] = useState(false);
+    
+      // useEffect(() => {
+     
+    
+     
+    
+
+    
+      //   // Reset for new request
+      //   setHasUserApproved(false);
+      //   setApprovals([false, false, false, false, false]);
+      //   setCanCommit(false);
+      // }, [request?.id]);
+    
+    
+      // useEffect(() => {
+      //   if (hasUserApproved) {
+      //     console.log(activeRequestIndex);
+      //     console.log(requests[activeRequestIndex]);
+      //     
+      //     console.log(shuffled);
+    
+      //     
+    
+      //     
+      // }, [hasUserApproved]);
     
       // POST /tideAdminResources/add-rejection
       // Add denied status to change request 
@@ -320,7 +351,9 @@ export default function Admin() {
   
         const response = await appService.denyEnclave(baseURL, realm, formData, token);
         if (response.ok){
-          //appService.getUserRequests(baseURL, realm, token);
+          setRequests(await appService.getUserRequests(baseURL, realm, token));
+          setHasUserApproved(false);
+          
         } 
       };
   
@@ -339,8 +372,9 @@ export default function Admin() {
     
         const response = await appService.approveEnclave(baseURL, realm, formData, token);
         if (response.ok){
-            //appService.getUserRequests(baseURL, realm, token);
-            
+            setRequests(await appService.getUserRequests(baseURL, realm, token));
+            setApprovals([true, false, false, false, false]);
+            setHasUserApproved(true);
         }
         
         };
@@ -366,30 +400,20 @@ export default function Admin() {
           if (authorizerApproval.accepted === false) {
             addRejection(changeRequest.actionType, changeRequest.draftRecordId, changeRequest.changeSetType);
             heimdall.closeEnclave(); 
-            setHasUserApproved(false);
+           
           } else if (authorizerApproval.accepted === true) { // If Approve is clicked
             const authorizerAuthentication = await heimdall.getAuthorizerAuthentication();
             addApproval(changeRequest.actionType, changeRequest.draftRecordId, changeRequest.changeSetType, authorizerApproval.data, authorizerAuthentication);
             heimdall.closeEnclave();
-            setHasUserApproved(true);
-
-            //appService.getUserRequests(baseURL, realm, token);
-            //requestStatus = "Pending";
+           
           }
         };
   
-        setApprovals(prev => {
-          const updated = [...prev];
-          updated[0] = true;
-          return updated;
-        });
-    
-        //setHasUserApproved(true);
-    
-        // Let parent know we're reviewing (mark as "Pending")
-        if (requestStatus === "Draft") {
-          requestStatus = "Pending"; // this is ok temporarily for local display
-        }
+        // setApprovals(prev => {
+        //   const updated = [...prev];
+        //   updated[0] = true;
+        //   return updated;
+        // });
       };
 
       
@@ -424,7 +448,7 @@ export default function Admin() {
         </div>
 
         <div className="pt-4">
-          {!hasUserApproved && !isCommitted ? (
+          {!hasUserApproved ? (
             <Button onClick={() => {handleUserApprove(request)}}>
               Review
             </Button>
@@ -441,13 +465,13 @@ export default function Admin() {
               View on User Page →
             </a>
 
-          ) : canCommit ? (
+          ) : false ? (
             <Button className="bg-green-600 hover:bg-green-700" onClick={onCommit}>
               Commit
             </Button>
           ) : (
             <p className="text-sm text-gray-500 italic">
-              Awaiting quorum: <strong>{approvals.filter(Boolean).length} / 3</strong> approved
+              Awaiting quorum: <strong>{totalApproved} / 3</strong> approved
             </p>
           )}
         </div>
