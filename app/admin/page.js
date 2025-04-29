@@ -102,7 +102,6 @@ export default function Admin() {
       const token = await IAMService.getToken();
       const permissions = await appService.getAssignedRealmRoles(baseURL, realm, loggedUser.id, token);
       setCurrentPermissions(permissions.realmMappings);
-      console.log(permissions.realmMappings);
     }
     
   };
@@ -190,10 +189,13 @@ export default function Admin() {
       }
     }
 
-    //     setActiveRequestIndex(0);
-    //     setHasChanges(false);
-    //   });
-    // }
+    const changeRequests = await appService.getUserRequests(baseURL, realm, token);
+    setRequests(changeRequests);
+
+    // Set first change request as the one currently opened
+    setActiveRequestIndex(0);
+    // Reset form state
+    setHasChanges(false);
   };
 
   function QuorumDashboard({ request, onCommit }) {
@@ -401,8 +403,8 @@ export default function Admin() {
         </pre>
 
         <div className="flex justify-between items-center mt-6">
-          {ADMIN_NAMES.map((name, idx, j) => (
-            <div key={j} className="relative flex flex-col items-center">
+          {ADMIN_NAMES.map((name, idx) => (
+            <div key={idx} className="relative flex flex-col items-center">
               <div
                 className={`w-14 h-14 flex items-center justify-center rounded-full border-4 transition-all duration-700 ease-in-out 
           ${approvals[idx] ? "border-green-500 shadow-md shadow-green-200" : "border-gray-300"}
@@ -582,41 +584,6 @@ export default function Admin() {
 
 
 
-                  {/* {requests.length > 0 && (
-                    <div className="relative">
-                      <button
-                        onClick={() => setShowChangeRequestAccordion(prev => !prev)}
-                        className="absolute -top-2 right-0 text-2xl hover:scale-110 transition-transform"
-                        aria-label="Toggle change request explainer"
-                      >
-                        {showChangeRequestAccordion ? "🤯" : "🤔"}
-                      </button>
-
-                      <AccordionBox title="Change Request Review" isOpen={showChangeRequestAccordion}>
-                        <p className="text-sm text-gray-600 mb-4">
-                          Admin privileges alone aren't enough. Permission changes are staged for review and must reach quorum before they can be committed.
-                        </p>
-                      </AccordionBox>
-                      {
-                        requests.map((request, i) => (
-                          <QuorumDashboard
-                            key={i}
-                            request={request}
-                            setRequests={setRequests}
-                            onCommit={async () => {
-                                await addCommit(request);
-                                await IAMService.getToken();
-                                console.log(await IAMService.hasOneRole("_tide_cc.write"));
-                                // Update the logged in user's details to be shared across the application
-                                //logUser();
-                                
-                              //router.push("/user"); // ensures return to Admin after commit
-                            }}
-                          />
-                        ))
-                      }
-                    </div>
-                  )} */}
                   {requests.length > 0 && (
                     <>
                       {/* Sub-heading + info toggle */}
@@ -647,7 +614,7 @@ export default function Admin() {
 
                           return (
                             <div
-                              key={i}
+                              key={idx}
                               onClick={() => setExpandedIndex(idx)}
                               className={`
       cursor-pointer border rounded p-3
