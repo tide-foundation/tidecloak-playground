@@ -36,6 +36,8 @@ export default function Admin() {
 
   const [hasChanges, setHasChanges] = useState(false);
   const [requests, setRequests] = useState([]);
+
+  
   const [currentPermissions, setCurrentPermissions] = useState([]);
   
   const [showExplainer, setShowExplainer] = useState(false);
@@ -49,6 +51,7 @@ export default function Admin() {
 
   const [hasUserApproved, setHasUserApproved] = useState(false);
   const [hasUserCommitted, setHasUserCommitted] = useState(false);
+
 
   const [isApproved, setIsApproved] = useState(false);
 
@@ -315,6 +318,7 @@ export default function Admin() {
                 if (requestStatus === "APPROVED"){
                   setIsApproved(true);
                 }
+                // Allow next change request card to be used
                 quorumDashRef.current = false;
               }
             }, (i + 1) * 900);
@@ -385,7 +389,13 @@ export default function Admin() {
     
         const response = await appService.approveEnclave(baseURL, realm, formData, token);
         if (response.ok){
-          setRequests(await appService.getUserRequests(baseURL, realm, token));
+          const updatedChangeReqs = await appService.getUserRequests(baseURL, realm, token);
+
+          
+          const updatedChangeReq = updatedChangeReqs.find(req => req.draftRecordId === draftId);
+          requests[activeRequestIndex] = updatedChangeReq; 
+          
+
           setApprovals([true, false, false, false, false]);
           setPending(true);
           setHasUserApproved(true);
@@ -461,7 +471,7 @@ export default function Admin() {
               Review
             </Button>
 
-          ) : request?.status === "Committed" ? (
+          ) : request.deleteStatus === "COMMITTED" || request.status === "COMMITTED"? (
             <a
               href="#"
               onClick={(e) => {
@@ -504,9 +514,26 @@ export default function Admin() {
         });
         
         const response = await appService.commitChange(baseURL, realm, body, token);
-        //setActiveRequestIndex(1);
+        
         if (response.ok){
-          console.log("COMMITED!");
+          // const changeRequests = await appService.getUserRequests(baseURL, realm, token);
+          
+          // Hard code the change, because keycloak removes committed change requests
+          console.log(requests);
+          if (requests[activeRequestIndex].deleteStatus){
+            requests[activeRequestIndex].deleteStatus = "COMMITTED";
+          }
+          else {
+            requests[activeRequestIndex].status = "COMMITTED";
+          }
+          
+
+
+          setApprovals([false, false, false, false, false]);
+          setIsApproved(false);
+          setActiveRequestIndex(prev => prev + 1);
+          setExpandedIndex(prev => prev + 1);
+
         }
     };
 
