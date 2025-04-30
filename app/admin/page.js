@@ -50,6 +50,9 @@ export default function Admin() {
   const [hasUserApproved, setHasUserApproved] = useState(false);
   const [hasUserCommitted, setHasUserCommitted] = useState(false);
 
+  const [isApproved, setIsApproved] = useState(false);
+
+
   const [totalApproved, setTotalApproved] = useState(1);
  
   const ADMIN_NAMES = ["You", "Alice", "Ben", "Carlos", "Dana"];
@@ -265,9 +268,9 @@ export default function Admin() {
       
       // Perform approval checks and commit checks everytime requests is updated from the enclave actions
       useEffect(() => {
-        //requestStatus = requests[activeRequestIndex].deleteStatus ? requests[activeRequestIndex].deleteStatus : requests[activeRequestIndex].status;
+        
         //const isCommitted = requestStatus === "Committed";
-        //const isApproved = requestStatus === "APPROVED";
+       
         //console.log(isApproved);
 
         // if (isCommitted) {
@@ -307,6 +310,11 @@ export default function Admin() {
               if (completed === shuffled.length){
                 setPending(false);
                 setHasUserApproved(false);
+                // Change the button to a Commit button based on the new status
+                requestStatus = requests[activeRequestIndex].deleteStatus ? requests[activeRequestIndex].deleteStatus : requests[activeRequestIndex].status;
+                if (requestStatus === "APPROVED"){
+                  setIsApproved(true);
+                }
                 quorumDashRef.current = false;
               }
             }, (i + 1) * 900);
@@ -448,7 +456,7 @@ export default function Admin() {
         </div>
 
         <div className="pt-4">
-          {!hasUserApproved ? (
+          {!isApproved ? (
             <Button onClick={() => {handleUserApprove(request)}}>
               Review
             </Button>
@@ -458,14 +466,14 @@ export default function Admin() {
               href="#"
               onClick={(e) => {
                 e.preventDefault();
-                setPage("User");
+                router.push("/user");
               }}
               className="text-blue-600 hover:underline text-sm font-medium"
             >
               View on User Page →
             </a>
 
-          ) : false ? (
+          ) : isApproved ? (
             <Button className="bg-green-600 hover:bg-green-700" onClick={onCommit}>
               Commit
             </Button>
@@ -490,15 +498,15 @@ export default function Admin() {
 
         // Key value pairs
         const body = JSON.stringify({
-            "actionType": request.actionType,
-            "changeSetId": request.draftRecordId,
-            "changeSetType": request.changeSetType
+          "actionType": request.actionType,
+          "changeSetId": request.draftRecordId,
+          "changeSetType": request.changeSetType
         });
         
         const response = await appService.commitChange(baseURL, realm, body, token);
         //setActiveRequestIndex(1);
         if (response.ok){
-            console.log("COMMITED!");
+          console.log("COMMITED!");
         }
     };
 
