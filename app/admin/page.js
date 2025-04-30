@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import IAMService from "../../lib/IAMService";
 import appService from "../../lib/appService";
 import { useAppContext } from "../context/context";
@@ -55,6 +55,11 @@ export default function Admin() {
   const ADMIN_NAMES = ["You", "Alice", "Ben", "Carlos", "Dana"];
       
   const [approvals, setApprovals] = useState([false, false, false, false, false]);
+
+  const [pending, setPending] = useState(false);
+
+  // State of whether the first QuorumDashBoard (card) has ran. It triggers based on how many cards is needed. 
+  const quorumDashRef  = useRef(false);
 
   //const [isLoggedIn, setIsLoggedIn] = useState(false);
 
@@ -208,6 +213,8 @@ export default function Admin() {
     setHasChanges(false);
   };
 
+
+  
   function QuorumDashboard({ request, onCommit }) {
       // const [requestStatus, setRequestStatus] = useState(""); 
       
@@ -254,7 +261,7 @@ export default function Admin() {
         );
       }
       
-
+      
       
       // Perform approval checks and commit checks everytime requests is updated from the enclave actions
       useEffect(() => {
@@ -278,36 +285,34 @@ export default function Admin() {
         // }
 
          // When Approving (Animation)
-        if (hasUserApproved){
-          console.log(requests);
+        if (hasUserApproved && quorumDashRef.current === false){
+          quorumDashRef.current = true;
+          
           const others = [1, 2, 3, 4];
           const shuffled = others.sort(() => 0.5 - Math.random()).slice(0, 2);
-          console.log(shuffled);
+          let completed = 0;
+
           shuffled.forEach((index, i) => {
             setTimeout(() => {
               setApprovals( prev => {
                 const updated = [...prev];
                 updated[index] = true;
-                setTotalApproved(totalApproved + 1);
-                // // // 🟢 Check if quorum is reached and status needs to be bumped
-                //const totalApproved = updated.filter(Boolean).length;
-                // if (totalApproved >= 3 && (requests[activeRequestIndex].status === "Approved" || requests[activeRequestIndex].deleteStatus === "Approved")) {
-                //   console.log("reached");
-                //   //setRequests(await appService.getUserRequests(baseURL, realm, token));
-                  
-                // }
-    
-    
                 return updated;
               });
+              // Update the UI's counter for number of people approved
+              setTotalApproved(prev => prev + 1);
+            
+              // To break out of animation loop after the last animation and change status from PENDING
+              completed++;
+              if (completed === shuffled.length){
+                setPending(false);
+                setHasUserApproved(false);
+                quorumDashRef.current = false;
+              }
             }, (i + 1) * 900);
           });  
-                
-          // To break out of animation loop
-          setHasUserApproved(false);
         }
-
-      }, [requests])
+      }, [hasUserApproved])
     
       
       // const [canCommit, setCanCommit] = useState(false);
@@ -372,9 +377,10 @@ export default function Admin() {
     
         const response = await appService.approveEnclave(baseURL, realm, formData, token);
         if (response.ok){
-            setRequests(await appService.getUserRequests(baseURL, realm, token));
-            setApprovals([true, false, false, false, false]);
-            setHasUserApproved(true);
+          setRequests(await appService.getUserRequests(baseURL, realm, token));
+          setApprovals([true, false, false, false, false]);
+          setPending(true);
+          setHasUserApproved(true);
         }
         
         };
@@ -408,12 +414,6 @@ export default function Admin() {
            
           }
         };
-  
-        // setApprovals(prev => {
-        //   const updated = [...prev];
-        //   updated[0] = true;
-        //   return updated;
-        // });
       };
 
       
@@ -655,13 +655,23 @@ export default function Admin() {
                                   </span>
                                 </div>
                                 {
+                                  pending
+                                  ?
+                                  <span className={`
+                                    px-2 py-1 rounded-full text-xs
+                                    ${
+                                      "bg-yellow-100 text-yellow-800" 
+                                      }
+                                  `}>
+                                    {"PENDING"}
+                                  </span> 
+                                  :
                                   req.deleteStatus
                                   ?
                                   <span className={`
                                     px-2 py-1 rounded-full text-xs
-                                    ${req.deleteStatus === "Draft" ? "bg-gray-200 text-gray-800" :
-                                      req.deleteStatus === "Pending" ? "bg-yellow-100 text-yellow-800" :
-                                        req.deleteStatus === "Approved" ? "bg-green-100 text-green-800" :
+                                    ${req.deleteStatus === "DRAFT" ? "bg-gray-200 text-gray-800" :
+                                        req.deleteStatus === "APPROVED" ? "bg-green-100 text-green-800" :
                                           "bg-blue-100 text-blue-800"}
                                   `}>
                                     {req.deleteStatus}
@@ -669,9 +679,8 @@ export default function Admin() {
                                   :
                                   <span className={`
                                     px-2 py-1 rounded-full text-xs
-                                    ${req.status === "Draft" ? "bg-gray-200 text-gray-800" :
-                                      req.status === "Pending" ? "bg-yellow-100 text-yellow-800" :
-                                        req.status === "Approved" ? "bg-green-100 text-green-800" :
+                                    ${req.status === "DRAFT" ? "bg-gray-200 text-gray-800" :
+                                        req.status === "APPROVED" ? "bg-green-100 text-green-800" :
                                           "bg-blue-100 text-blue-800"}
                                   `}>
                                     {req.status}
