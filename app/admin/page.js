@@ -88,17 +88,15 @@ export default function Admin() {
     
   }, [isTideAdmin])
 
+  // Handles the state of the submit change button, disable if there's no change
   useEffect(() => {
-
-  }, [requests])
-
-  // useEffect(() => {
-  //   setHasDobReadPerm(currentPermissions.some(perm => perm.name === "_tide_dob.read"));
-  //   setHasDobWritePerm(currentPermissions.some(perm => perm.name === "_tide_dob.write"));
-
-  //   setHasCcReadPerm(currentPermissions.some(perm => perm.name === "_tide_cc.read"));
-  //   setHasCcWritePerm(currentPermissions.some(perm => perm.name === "_tide_cc.write"));
-  // }, [currentPermissions])
+    if (hasDobReadPerm === IAMService.hasOneRole("_tide_dob.read")
+      && hasDobWritePerm === IAMService.hasOneRole("_tide_dob.write")
+      && hasCcReadPerm === IAMService.hasOneRole("_tide_cc.read")
+      && hasCcWritePerm === IAMService.hasOneRole("_tide_cc.write")){
+        setHasChanges(false); 
+    }
+  }, [hasDobReadPerm, hasDobWritePerm, hasCcReadPerm, hasCcWritePerm])
 
   // Get current logged in user
   const getLoggedUser = async () => { 
@@ -500,6 +498,19 @@ export default function Admin() {
           const response = await appService.cancelChange(baseURL, realm, body, token);
         })
       
+    };
+
+   
+    const handleChange = () => { 
+      setHasChanges(true);
+      if (hasDobReadPerm === IAMService.hasOneRole("_tide_dob.read")
+        && hasDobWritePerm === IAMService.hasOneRole("_tide_dob.write")
+        && hasCcReadPerm === IAMService.hasOneRole("_tide_cc.read")
+        && hasCcWritePerm === IAMService.hasOneRole("_tide_cc.write")){
+          setHasChanges(false); 
+      }
+      console.log(hasDobReadPerm);
+      console.log(IAMService.hasOneRole("_tide_dob.read"));
     };
 
     return (
