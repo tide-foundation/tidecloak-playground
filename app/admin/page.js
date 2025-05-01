@@ -233,7 +233,6 @@ export default function Admin() {
       else { 
         requestStatus = request.status;
       }
-      console.log(requestStatus);
     
       // When committed
       if (requestStatus === "Committed") {
@@ -358,7 +357,6 @@ export default function Admin() {
         
   
       const handleUserApprove = async (changeRequest) => {
-        console.log(changeRequest);
         const token = await IAMService.getToken();
         // Get popup data for the change request to know that it requires the enclave and pass data to the popup
         const response = await appService.reviewChangeRequest(baseURL, realm, changeRequest, token);

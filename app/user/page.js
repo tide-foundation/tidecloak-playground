@@ -65,7 +65,7 @@ export default function User(){
     // Populate the Database Exposure cards, and set the current logged user
     const getAllUsers = async () => {
         const token = await IAMService.getToken(); 
-        console.log(token);
+        console.log(token); 
         const users = await appService.getUsers(baseURL, realm, token);
         setUsers(users);
         const loggedVuid =  await IAMService.getValueFromToken("vuid");
@@ -84,8 +84,20 @@ export default function User(){
         // Let context data load first
         if (loggedUser){
             try {
+                
+              // If user has no read permission don't decrypt the data
+                if (!IAMService.hasOneRole("_tide_cc.read")){
+                  setFormData(prev => ({...prev, cc: loggedUser.attributes.cc[0]}));
+                }
+
+                if (!IAMService.hasOneRole("_tide_dob.read")){
+                  setFormData(prev => ({...prev, dob: "0000-00-00"}));
+                }
+                //console.log(loggedUser.attributes.dob[0]);
+
+
                 // Fill the fields if logged user has the attributes
-                if (loggedUser.attributes.dob && IAMService.hasOneRole("_tide_dob.selfdecrypt")){
+                if (loggedUser.attributes.dob && IAMService.hasOneRole("_tide_dob.read") && IAMService.hasOneRole("_tide_dob.selfdecrypt")){
                     // Display this in accordion
                     setEncryptedDob(loggedUser.attributes.dob[0]);
                     // DOB format in Keycloak needs to be "YYYY-MM-DD" to display
@@ -106,7 +118,7 @@ export default function User(){
                     //setSavedData(prev => ({...prev, dob: decryptedDob}));
                 }
             
-                if (loggedUser.attributes.cc && IAMService.hasOneRole("_tide_cc.selfdecrypt")){
+                if (loggedUser.attributes.cc && IAMService.hasOneRole("_tide_cc.read") && IAMService.hasOneRole("_tide_cc.selfdecrypt")){
                     // Display this in accordion
                     setEncryptedCc(loggedUser.attributes.cc[0]);
                     const decryptedCc = await IAMService.doDecrypt([
