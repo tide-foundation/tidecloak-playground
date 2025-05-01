@@ -417,7 +417,7 @@ export default function Admin() {
 
         <div className="pt-4">
           {!isApproved ? (
-            <Button onClick={() => {handleUserApprove(request)}}>
+            <Button onClick={() => {handleUserApprove(request)}} disabled={pending}>
               Review
             </Button>
 
