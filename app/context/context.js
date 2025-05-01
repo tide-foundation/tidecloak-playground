@@ -18,24 +18,24 @@ const baseURL = "http://localhost:8080";
  */
 export const Provider = ({ children }) => {
 
-    const [loggedUser, setLoggedUser] = useState(null);
+    //const [loggedUser, setLoggedUser] = useState(null);
     
-    const logUser = async () => {
-        const token = await IAMService.getToken();
-        const loggedVuid =  await IAMService.getValueFromToken("vuid");
-        const users = await appService.getUsers(baseURL, realm, token);
-        const loggedInUser = users.find(user => {
-            if (user.attributes.vuid[0] === loggedVuid){
-                return user;
-            }
-        });
-        setLoggedUser(loggedInUser);
-    }
+    // const logUser = async () => {
+    //     const token = await IAMService.getToken();
+    //     const loggedVuid =  await IAMService.getValueFromToken("vuid");
+    //     const users = await appService.getUsers(baseURL, realm, token);
+    //     const loggedInUser = users.find(user => {
+    //         if (user.attributes.vuid[0] === loggedVuid){
+    //             return user;
+    //         }
+    //     });
+    //     setLoggedUser(loggedInUser);
+    // }
 
     
  
     return (
-        <Context.Provider value={{realm, baseURL, logUser, loggedUser}}>
+        <Context.Provider value={{realm, baseURL}}>
             {children}
         </Context.Provider>
     )

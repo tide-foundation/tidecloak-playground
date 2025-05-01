@@ -12,10 +12,12 @@ export default function User(){
 
     const pathname = usePathname();
 
-    const {baseURL, realm, logUser, loggedUser} = useAppContext();
+    const {baseURL, realm} = useAppContext();
 
     const [loading, setLoading] = useState(true);
-    
+
+    const [loggedUser, setLoggedUser] = useState(null);
+     
     const [expandedBlobs, setExpandedBlobs] = useState({});
     const [userFeedback, setUserFeedback] = useState("");
     const [showUserInfoAccordion, setShowUserInfoAccordion] = useState(false);
@@ -40,11 +42,9 @@ export default function User(){
 
     useEffect(() => {
         IAMService.initIAM(() => {
-            if (IAMService.isLoggedIn()){
-                // Provide the context the logged in user object to be shared across components
-                logUser();
-                getAllUsers();
-            }
+          if (IAMService.isLoggedIn()){
+            getAllUsers();           
+          }
         });
     }, [])
 
@@ -52,7 +52,6 @@ export default function User(){
     useEffect(() => {
       if (loggedUser){
         getUserData();
-        getCurrentRoles();
       }
     }, [loggedUser])
 
@@ -63,22 +62,22 @@ export default function User(){
         }
     }, [formData])
 
-    // Populate the Database Exposure cards
+    // Populate the Database Exposure cards, and set the current logged user
     const getAllUsers = async () => {
         const token = await IAMService.getToken(); 
+        console.log(token);
         const users = await appService.getUsers(baseURL, realm, token);
         setUsers(users);
+        const loggedVuid =  await IAMService.getValueFromToken("vuid");
+        const loggedInUser = users.find(user => {
+          if (user.attributes.vuid[0] === loggedVuid){
+              return user;
+          }
+        });
+        setLoggedUser(loggedInUser);
     };
 
-    // Get currently assigned roles to the logged in user to check permissions, not just via token
-    const getCurrentRoles = async () => {
-      if (loggedUser){
-        const token = await IAMService.getToken();
-        const currentRoles = await appService.getAssignedRealmRoles(baseURL, realm, loggedUser.id, token);
-        console.log(currentRoles);
-      }
-        
-    };
+    
 
     // Decrypt the logged in user's data
       const getUserData = async () => { 
@@ -128,42 +127,35 @@ export default function User(){
                 }       
             } catch (error){
               // Revisit this if deciding to account of user data being changed manually in Keycloak
+                console.log(loggedUser.attributes.dob[0]);
+                console.log(loggedUser.attributes.cc[0]);
                 // Data in Keycloak is not encrypted yet, so do this instead
-                // setFormData(prev => ({...prev, cc: loggedUser.attributes.dob[0]})); // ????????????????????????????? cause of the bug? they're both using the formData hence why one refreshes beeccause of the other
-                // setFormData(prev => ({...prev, cc: loggedUser.attributes.cc[0]}));
-                // console.log("reached");
-                // console.log(loggedUser.attributes.dob);
-                // console.log(loggedUser.attributes.cc);
-                // const encryptedDob = await IAMService.doEncrypt([
-                //   {
-                //     "data": "1999/11/11",
-                //     "tags": ["dob"]
-                //   }
-                // ])
+                if (loggedUser.attributes.dob){
+                  const encryptedDob = await IAMService.doEncrypt([
+                    {
+                      "data": loggedUser.attributes.dob[0],
+                      "tags": ["dob"]
+                    }
+                  ])
+                  loggedUser.attributes.dob = encryptedDob[0];
+                  console.log(encryptedDob[0]);
+                }
                 
-                // //setEncryptedDob(encryptedDob);
-                // console.log(encryptedDob);
-                // loggedUser.attributes.dob = encryptedDob[0];
 
-                // const encryptedCc = await IAMService.doEncrypt([
-                //   {
-                //     "data": "53534534534",
-                //     "tags": ["cc"]
-                //   }
-                // ])
+                if (loggedUser.attributes.cc){
+                  const encryptedCc = await IAMService.doEncrypt([
+                    {
+                      "data": loggedUser.attributes.cc[0],
+                      "tags": ["cc"]
+                    }
+                  ])
+                  loggedUser.attributes.cc = encryptedCc[0];
+                  console.log(encryptedCc[0]);
+                }
 
-                // // const encryptedDob = await IAMService.doEncrypt([
-                // //   {
-                // //       "data": formData.dob,
-                // //       "tags": ["dob"]
-                // //   }
-                // // ]}
-                // // setEncryptedCc(encryptedCc);
-                // loggedUser.attributes.cc = encryptedCc[0];
-
-                // // // Update the user with the encrypted data to prevent storage as raw
-                // const token = await  IAMService.getToken();
-                // const response = await appService.updateUser(baseURL, realm, loggedUser, token);
+                // Update the user with the encrypted data to prevent storage as raw
+                const token = await  IAMService.getToken();
+                const response = await appService.updateUser(baseURL, realm, loggedUser, token);
 
                 console.log(error);
             }
