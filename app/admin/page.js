@@ -37,9 +37,6 @@ export default function Admin() {
   const [hasChanges, setHasChanges] = useState(false);
   const [requests, setRequests] = useState([]);
 
-  
-  const [currentPermissions, setCurrentPermissions] = useState([]);
-  
   const [showExplainer, setShowExplainer] = useState(false);
   const handleElevateClick = () => setShowExplainer(true);
 
@@ -50,8 +47,6 @@ export default function Admin() {
   const [hasCcWritePerm, setHasCcWritePerm] = useState(false);
 
   const [hasUserApproved, setHasUserApproved] = useState(false);
-  const [hasUserCommitted, setHasUserCommitted] = useState(false);
-
 
   const [isApproved, setIsApproved] = useState(false);
 
@@ -67,12 +62,11 @@ export default function Admin() {
   // State of whether the first QuorumDashBoard (card) has ran. It triggers based on how many cards is needed. 
   const quorumDashRef  = useRef(false);
 
-  //const [isLoggedIn, setIsLoggedIn] = useState(false);
-
   useEffect(() => {
     IAMService.initIAM(() => {
       if (IAMService.isLoggedIn()){
         getLoggedUser();
+        getChangeRequests(); // Get existing requests to cancel them
       }
       setLoading(false);
     });
@@ -94,7 +88,9 @@ export default function Admin() {
     
   }, [isTideAdmin])
 
-  
+  useEffect(() => {
+
+  }, [requests])
 
   // useEffect(() => {
   //   setHasDobReadPerm(currentPermissions.some(perm => perm.name === "_tide_dob.read"));
@@ -162,11 +158,23 @@ export default function Admin() {
     }
   };
 
+  // Get latest change requests for canceling and updating them
+  const getChangeRequests = async () => {
+    const token = await IAMService.getToken();
+    const changeRequests = await appService.getUserRequests(baseURL, realm, token);
+    setRequests(changeRequests);
+  }
+
   // Assign or unassign the logged in user realm roles (pemissions)
   const handleAdminPermissionSubmit = async (e) => {
     e.preventDefault();
     const token = await IAMService.getToken();
 
+    // Cancel existing requests if they exist to reset
+    if (requests.length > 0){
+      await cancelRequests(requests);
+    }
+    
     // Compare the current checkbox state with the current permissions. Note: token roles only update when a role change request COMMITS.
     // If the states don't match, a change request is required.
     // Date of Birth
@@ -211,9 +219,8 @@ export default function Admin() {
       }
     }
 
-    const changeRequests = await appService.getUserRequests(baseURL, realm, token);
-    setRequests(changeRequests);
-    console.log(changeRequests);
+    // Get the latest change requests
+    getChangeRequests();
 
     // Set first change request as the one currently opened
     setActiveRequestIndex(0);
@@ -451,7 +458,6 @@ export default function Admin() {
     const addCommit = async (request) => {
         const token = await IAMService.getToken();
 
-        // Key value pairs
         const body = JSON.stringify({
           "actionType": request.actionType,
           "changeSetId": request.draftRecordId,
@@ -478,6 +484,22 @@ export default function Admin() {
           // Get a new token to have check the currently assigned roles to the logged in user
           await IAMService.updateToken(-1); //-1 to update it immediately
         }
+    };
+
+    // If submit button is pressed again, cancel all the change requests
+    const cancelRequests = async (requests) => {
+      const token = await IAMService.getToken();
+      
+        requests.map(async (request) => {
+          const body = JSON.stringify({
+            "actionType": request.actionType,
+            "changeSetId": request.draftRecordId,
+            "changeSetType": request.changeSetType
+          });
+
+          const response = await appService.cancelChange(baseURL, realm, body, token);
+        })
+      
     };
 
     return (
