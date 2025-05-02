@@ -6,9 +6,9 @@ import { useAppContext } from "../../context/context";
 export default function RedirectPage() {
   // This is the authentication callback page that securely fetch the JWT access token and redirects (stateless) session to the protected page
   useEffect(() => {
-    IAMService.initIAM(() => {
+    
       window.location.href = "/user";                                  
-    });
+   
   }, []);
 
   return;
