@@ -14,7 +14,6 @@ import { useRouter, usePathname } from "next/navigation";
 
 export default function Login() {
 
-  const router = useRouter();
   const pathname = usePathname();
 
  
@@ -38,18 +37,6 @@ export default function Login() {
     setLoading(false);
     });
   }, [])
-
-
-  
-
-  //Checking for token (if exists then user is logged in) then share the user object
-//   useEffect(() => {
-//     if(jwt){
-//       setLoggedInUser();
-      
-//     };
-//   }, [jwt])
-
 
   const handleLogin = async () => {
     IAMService.doLogin();

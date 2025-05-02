@@ -62,14 +62,6 @@ export default function Admin() {
   // State of whether the first QuorumDashBoard (card) has ran. It triggers based on how many cards is needed. 
   const quorumDashRef  = useRef(false);
 
-  // useEffect(() => {
-  //   if (authenticated){
-  //     getLoggedUser();
-  //     getChangeRequests(); // Get existing requests to cancel them
-  //   }
-  //   setLoading(false);
-  // }, [])
-
   useEffect(() => {
     if (authenticated){
       getLoggedUser();
@@ -427,7 +419,7 @@ export default function Admin() {
         </div>
 
         <div className="pt-4">
-          {!isApproved ? (
+          { request.deleteStatus !== "APPROVED" && request.status !== "APPROVED"? (
             <Button onClick={() => {handleUserApprove(request)}} disabled={pending}>
               Review
             </Button>
@@ -444,7 +436,7 @@ export default function Admin() {
               View on User Page →
             </a>
 
-          ) : isApproved ? (
+          ) : !pending && (request.deleteStatus === "APPROVED" || request.status === "APPROVED") ? (
             <Button className="bg-green-600 hover:bg-green-700" onClick={onCommit}>
               Commit
             </Button>
@@ -504,19 +496,6 @@ export default function Admin() {
           const response = await appService.cancelChange(baseURL, realm, body, token);
         })
       
-    };
-
-   
-    const handleChange = () => { 
-      setHasChanges(true);
-      if (hasDobReadPerm === IAMService.hasOneRole("_tide_dob.read")
-        && hasDobWritePerm === IAMService.hasOneRole("_tide_dob.write")
-        && hasCcReadPerm === IAMService.hasOneRole("_tide_cc.read")
-        && hasCcWritePerm === IAMService.hasOneRole("_tide_cc.write")){
-          setHasChanges(false); 
-      }
-      console.log(hasDobReadPerm);
-      console.log(IAMService.hasOneRole("_tide_dob.read"));
     };
 
     return (
@@ -671,7 +650,7 @@ export default function Admin() {
                                   </span>
                                 </div>
                                 {
-                                  pending
+                                  pending && activeRequestIndex === idx
                                   ?
                                   <span className={`
                                     px-2 py-1 rounded-full text-xs
