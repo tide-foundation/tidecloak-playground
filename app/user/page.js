@@ -12,7 +12,7 @@ export default function User(){
 
     const pathname = usePathname();
 
-    const {baseURL, realm} = useAppContext();
+    const {baseURL, realm, authenticated} = useAppContext();
 
     const [loading, setLoading] = useState(true);
 
@@ -40,13 +40,19 @@ export default function User(){
         setFormData({ ...formData, [field]: e.target.value });
     };
 
+    // useEffect(() => {
+    //   console.log(authenticated);
+    //   if (authenticated){
+    //     getAllUsers();           
+    //   }  
+    // }, [])
+
     useEffect(() => {
-        IAMService.initIAM(() => {
-          if (IAMService.isLoggedIn()){
-            getAllUsers();           
-          }
-        });
-    }, [])
+      console.log(authenticated);
+      if (authenticated){
+        getAllUsers();
+      }
+    }, [authenticated])
 
     // Perform only when the context receives the logged user details
     useEffect(() => {

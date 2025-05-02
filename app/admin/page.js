@@ -18,7 +18,7 @@ export default function Admin() {
   const searchParams = useSearchParams();
   // Realm Management client ID to assign user the tide-realm-admin role if not yet assigned
   const RMClientID = searchParams.get("clientID");
-  const {baseURL, realm } = useAppContext();
+  const {baseURL, realm, authenticated } = useAppContext();
 
   const [isTideAdmin, setIsTideAdmin] = useState(false);
 
@@ -62,15 +62,21 @@ export default function Admin() {
   // State of whether the first QuorumDashBoard (card) has ran. It triggers based on how many cards is needed. 
   const quorumDashRef  = useRef(false);
 
+  // useEffect(() => {
+  //   if (authenticated){
+  //     getLoggedUser();
+  //     getChangeRequests(); // Get existing requests to cancel them
+  //   }
+  //   setLoading(false);
+  // }, [])
+
   useEffect(() => {
-    IAMService.initIAM(() => {
-      if (IAMService.isLoggedIn()){
-        getLoggedUser();
-        getChangeRequests(); // Get existing requests to cancel them
-      }
-      setLoading(false);
-    });
-  }, [])
+    if (authenticated){
+      getLoggedUser();
+      getChangeRequests(); // Get existing requests to cancel them
+    }
+    setLoading(false);
+  }, [authenticated])
 
   // Get the currently assigned realm roles of the logged in user after they've been identified 
   useEffect(() => {

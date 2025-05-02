@@ -8,6 +8,7 @@ import appService from "../../lib/appService";
 
 // Create once, share, and  avoid creating on each rerender. 
 const Context = createContext();
+
 const realm = settings.realm;
 const baseURL = "http://localhost:8080";
 
@@ -17,25 +18,17 @@ const baseURL = "http://localhost:8080";
  * @returns {JSX.Element} - HTML, wrapped around everything in layout.js
  */
 export const Provider = ({ children }) => {
-
-    //const [loggedUser, setLoggedUser] = useState(null);
     
-    // const logUser = async () => {
-    //     const token = await IAMService.getToken();
-    //     const loggedVuid =  await IAMService.getValueFromToken("vuid");
-    //     const users = await appService.getUsers(baseURL, realm, token);
-    //     const loggedInUser = users.find(user => {
-    //         if (user.attributes.vuid[0] === loggedVuid){
-    //             return user;
-    //         }
-    //     });
-    //     setLoggedUser(loggedInUser);
-    // }
+    const [authenticated, setAuthenticated] = useState(false);
 
-    
- 
+    useEffect(() => {
+        IAMService.initIAM((auth) => {
+            setAuthenticated(auth)
+          });
+    }, [])
+
     return (
-        <Context.Provider value={{realm, baseURL}}>
+        <Context.Provider value={{realm, baseURL, authenticated}}>
             {children}
         </Context.Provider>
     )
