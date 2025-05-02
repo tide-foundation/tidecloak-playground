@@ -405,7 +405,7 @@ export default function User(){
                   </AccordionBox>
 
 
-                  <DatabaseExposureTable users={users}/>
+                  <DatabaseExposureTable users={users} loggedUser={loggedUser}/>
 
                 </div>
 

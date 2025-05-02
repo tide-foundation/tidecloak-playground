@@ -5,26 +5,26 @@ import Button from "../components/button";
 
 // Animation
 function DecryptingText({ text, speed = 30 }) {
-const [displayed, setDisplayed] = useState('');
-const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+    const [displayed, setDisplayed] = useState('');
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
 
     useEffect(() => {
-    let i = 0;
-    const interval = setInterval(() => {
-        setDisplayed((prev) =>
-        text
-            .split('')
-            .map((char, idx) => {
-            if (idx < i) return text[idx];
-            return chars[Math.floor(Math.random() * chars.length)];
-            })
-            .join('')
-        );
-        i++;
-        if (i > text.length) clearInterval(interval);
-    }, speed);
+        let i = 0;
+        const interval = setInterval(() => {
+            setDisplayed((prev) =>
+            text
+                .split('')
+                .map((char, idx) => {
+                if (idx < i) return text[idx];
+                return chars[Math.floor(Math.random() * chars.length)];
+                })
+                .join('')
+            );
+            i++;
+            if (i > text.length) clearInterval(interval);
+        }, speed);
 
-    return () => clearInterval(interval);
+        return () => clearInterval(interval);
     }, [text, speed]);
 
     return <span className="font-mono text-green-600">{displayed}</span>;
@@ -37,6 +37,7 @@ function DecryptedRow({ isUser, user, username, dob, cc, canRead }) {
     const [decryptedDob, setDecryptedDob] = useState("");
     const [decryptedCc, setDecryptedCc] = useState("");
 
+    // If new user data arrives reset to potentially decrypt again
     useEffect(() => {
         setDecrypted(false);
     }, [user])
@@ -44,63 +45,63 @@ function DecryptedRow({ isUser, user, username, dob, cc, canRead }) {
     // Calls on Decrypt button being selected to update the fields
     const handleDecrypt = () => {
 
-    let dob;
-    let cc;
+        let dob;
+        let cc;
 
-    if (Array.isArray(user.attributes.dob)){
-        dob = user.attributes.dob[0];
-        console.log(dob);
-    }
-    else {
-        dob = user.attributes.dob;
-        console.log(dob);
-    }
-
-    if (Array.isArray(user.attributes.cc)){
-        cc = user.attributes.cc[0];
-        console.log(cc);
-    }
-    else {
-        cc = user.attributes.cc;
-        console.log(cc);
-    }
-
-    if (!isUser) {
-        setDecryptionStatus("Access denied: You don't have decryption rights.");
-        setTimeout(() => setDecryptionStatus(""), 3000);
-        return;
-    }
-
-    if (!canRead) {
-        setDecryptionStatus("Access denied: You lack read permission.");
-        setTimeout(() => setDecryptionStatus(""), 3000);
-        return;
-    }
-
-    setAnimating(true);
-    setTimeout(async () => {
-    const decryptedDobData = await IAMService.doDecrypt([
-        {
-        "encrypted": dob,
-        "tags": ["dob"]
+        if (Array.isArray(user.attributes.dob)){
+            dob = user.attributes.dob[0];
+            console.log(dob);
         }
-    ])
-    
-    setDecryptedDob(decryptedDobData[0]); 
-
-    const decryptedCcData = await IAMService.doDecrypt([
-        {
-            "encrypted": cc,
-            "tags": ["cc"]
+        else {
+            dob = user.attributes.dob;
+            console.log(dob);
         }
-    ])
-    
-        setDecryptedCc(decryptedCcData[0]); 
 
-        setDecrypted(true);
-        setAnimating(false);
-        setDecryptionStatus("Decrypted successfully!");
-        setTimeout(() => setDecryptionStatus(""), 3000);
+        if (Array.isArray(user.attributes.cc)){
+            cc = user.attributes.cc[0];
+            console.log(cc);
+        }
+        else {
+            cc = user.attributes.cc;
+            console.log(cc);
+        }
+
+        if (!isUser) {
+            setDecryptionStatus("Access denied: You don't have decryption rights.");
+            setTimeout(() => setDecryptionStatus(""), 3000);
+            return;
+        }
+
+        if (!canRead) {
+            setDecryptionStatus("Access denied: You lack read permission.");
+            setTimeout(() => setDecryptionStatus(""), 3000);
+            return;
+        }
+
+        setAnimating(true);
+        setTimeout(async () => {
+            const decryptedDobData = await IAMService.doDecrypt([
+                {
+                    "encrypted": dob,
+                    "tags": ["dob"]
+                }
+            ])
+            
+            setDecryptedDob(decryptedDobData[0]); 
+
+            const decryptedCcData = await IAMService.doDecrypt([
+                {
+                    "encrypted": cc,
+                    "tags": ["cc"]
+                }
+            ])
+            
+            setDecryptedCc(decryptedCcData[0]); 
+
+            setDecrypted(true);
+            setAnimating(false);
+            setDecryptionStatus("Decrypted successfully!");
+            setTimeout(() => setDecryptionStatus(""), 3000);
         }, 800);
     };
     
@@ -146,9 +147,20 @@ function DecryptedRow({ isUser, user, username, dob, cc, canRead }) {
  
 
 // The Decryptable Cards
-export default function DatabaseExposureTable({users}) {
-    console.log("me too?");
+export default function DatabaseExposureTable({users, loggedUser}) {
+    // Memorise the current array, only rerender if this array changes
     const memoUsers = useMemo(() => users, [users]);
+    // Swap first position with logged in user to put them on top of the stack
+    memoUsers.map((user, i) => {
+        if (i !== 0){ 
+            if (user.id === loggedUser.id){
+                let temp;
+                temp = memoUsers[0];
+                memoUsers[0] = user;
+                memoUsers[i] = temp;
+            }
+        }
+    })
 
     return (
         <div className="mt-6 space-y-6 pb-24 md:pb-36">
@@ -157,7 +169,6 @@ export default function DatabaseExposureTable({users}) {
                 memoUsers
                 ?
                 memoUsers.map((user, i) => (
-                 
                   <DecryptedRow key={i}
                   isUser={user.attributes.vuid[0] === IAMService.getValueFromToken("vuid")}
                   user={user}
