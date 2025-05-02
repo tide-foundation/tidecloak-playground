@@ -181,9 +181,9 @@ export default function User(){
     };
     
     const shortenString = (string) => {
-        const start = string.slice(0, 50);
-        const end = string.slice(50);
-        return `${start}...${end}`;
+        const start = string.slice(0, 30);
+        const end = string.slice(200);
+        return `${start} ....... ${end}`;
     } 
 
     // Animation
@@ -489,7 +489,7 @@ export default function User(){
                                 </span>
                               </div>
 
-                              <p>
+                              {/* <p>
                                 <span className="font-medium">Value in Database:</span>{" "}
                                 <button
                                   type="button"
@@ -510,7 +510,26 @@ export default function User(){
                                     
                                   }
                                 </button>
-                              </p>
+                              </p> */}
+                             <div className="break-words whitespace-pre-wrap text-sm">
+                              <span className="font-medium text-gray-700">Value in Database:</span>{" "}
+                              <span
+                                onClick={() =>
+                                  setExpandedBlobs((prev) => ({ ...prev, [field]: !prev[field] }))
+                                }
+                                className="text-blue-600 underline cursor-pointer break-words"
+                              >
+                                {
+                                  field === "dob" 
+                                  ? expandedBlobs[field]
+                                    ? encryptedDob
+                                    : shortenString(encryptedDob)
+                                  : expandedBlobs[field]
+                                    ? encryptedCc
+                                    : shortenString(encryptedCc)
+                                  }
+                              </span>
+                            </div>
                             </div>
                           )}
                         </div>
