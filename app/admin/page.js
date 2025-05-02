@@ -522,7 +522,6 @@ export default function Admin() {
     return (
       !loading && IAMService.isLoggedIn()
       ?
-      <div className="min-h-screen flex flex-col bg-white">
       <main className="flex-grow w-full pt-6">
       <div className="w-full px-8 max-w-screen-md mx-auto flex flex-col items-start gap-8">
       <div className="w-full max-w-3xl">
@@ -736,7 +735,6 @@ export default function Admin() {
         </div>
         </div>
         </main>
-        </div>
         : null
     )
 }

@@ -396,7 +396,7 @@ export default function User(){
     return (
         !loading
         ?
-        <div className="min-h-screen flex flex-col bg-white">
+        
         <main className="flex-grow w-full pt-6 pb-16">
         <div className="w-full px-8 max-w-screen-md mx-auto flex flex-col items-start gap-8">
         <div className="w-full max-w-3xl">
@@ -610,7 +610,7 @@ export default function User(){
         </div>
         </div>
         </main>
-        </div>
+        
         : null 
     )
 };
