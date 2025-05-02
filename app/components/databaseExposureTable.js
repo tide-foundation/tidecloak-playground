@@ -144,9 +144,7 @@ function DecryptedRow({ isUser, user, username, dob, cc, canRead }) {
     );
 }
  
- 
- 
- 
+
 // The Decryptable Cards
 export default function DatabaseExposureTable({users}) {
     console.log("me too?");

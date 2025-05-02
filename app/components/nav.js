@@ -14,12 +14,16 @@ export default function Nav() {
       IAMService.doLogout();
     };
 
-    const handleAdminButton = async () => {
-      router.push("/admin");
+    const handleAdminButton = () => {
+      if (pathname !== "/admin"){
+        router.push("/admin");
+      }
     };
 
     const handleUserButton = () => {
-      router.push("/user");
+      if (pathname !== "/user"){
+        router.push("/user");
+      }
     };
 
 
