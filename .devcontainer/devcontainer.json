@@ -1,5 +1,5 @@
 {
-  "name": "Tidecloak Root Demo",
+  "name": "Tidecloak Demo",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:18",
   "postCreateCommand": "npm install && npm start",
   "customizations": {
@@ -11,11 +11,10 @@
       ]
     }
   },
-  "workspaceFolder": "/workspaces/tidecloakdemo-spaces",
   "forwardPorts": [3000],
   "portsAttributes": {
     "3000": {
-      "label": "Web App",
+      "label": "Tidecloak App",
       "onAutoForward": "openBrowser"
     }
   }
