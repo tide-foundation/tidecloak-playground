@@ -1,7 +1,7 @@
 {
-  "name": "Tidecloak Local Demo",
+  "name": "Tidecloak Root Demo",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:18",
-  "postCreateCommand": "cd tidecloak-demo && npm install && npm start",
+  "postCreateCommand": "npm install && npm start",
   "customizations": {
     "vscode": {
       "extensions": [
@@ -11,7 +11,7 @@
       ]
     }
   },
-  "workspaceFolder": "/workspaces/tidecloakdemo-spaces/tidecloak-demo",
+  "workspaceFolder": "/workspaces/tidecloakdemo-spaces",
   "forwardPorts": [3000],
   "portsAttributes": {
     "3000": {
