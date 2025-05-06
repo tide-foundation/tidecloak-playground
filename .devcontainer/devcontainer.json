@@ -1,0 +1,22 @@
+{
+  "name": "Tidecloak Local Demo",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:18",
+  "postCreateCommand": "cd tidecloak-demo && npm install && npm start",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "eamodio.gitlens"
+      ]
+    }
+  },
+  "workspaceFolder": "/workspaces/tidecloakdemo-spaces/tidecloak-demo",
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "Web App",
+      "onAutoForward": "openBrowser"
+    }
+  }
+}
