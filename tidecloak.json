@@ -1,22 +1,3 @@
 {
-  "realm": "nextjs-test",
-  "auth-server-url": "http://localhost:8080/",
-  "ssl-required": "external",
-  "resource": "myclient",
-  "public-client": true,
-  "confidential-port": 0,
-  "jwk": {
-    "keys": [
-      {
-        "kid": "6YV8ci-S-A3VDUAXS--ythW9_1mKdfy_QkneJcUfbf4",
-        "kty": "OKP",
-        "alg": "EdDSA",
-        "use": "sig",
-        "crv": "Ed25519",
-        "x": "ZuZHIIJryXDJEi6avA3NS9xQb1PMnA_s0MtOqX-ZA8Y"
-      }
-    ]
-  },
-  "vendorId": "6629112537472152211246024663206622735823624120204657443746313580826275035662",
-  "homeOrkUrl": "https://ork1.tideprotocol.com"
+  
 }

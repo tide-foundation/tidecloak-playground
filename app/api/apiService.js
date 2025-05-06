@@ -10,23 +10,25 @@ async function getMasterToken(baseURL){
             "Content-Type": "application/x-www-form-urlencoded",
         },
         body: new URLSearchParams({
-            "username": "admin",
-            "password": "password",
-            "grant_type": "password",
-            "client_id": "admin-cli"
+            "username": process.env.KC_USERNAME,
+            "password": process.env.KC_PASSWORD,
+            "grant_type": process.env.GRANT_TYPE,
+            "client_id": process.env.CLIENT_ID
         })
     });
     
     if (!response.ok) {
-        return new Response(JSON.stringify({error: response.statusText + ": Unable to fetch master token", status: response.status}))
+        throw new Error(response.status + ": Unable to fetch master token")
     } 
     
     //Converting from a ReadableStream to access the master token.
     const data = await response.json(); 
-    const masterToken = data.access_token;
+    return data.access_token;
 
-    return new Response(JSON.stringify({ok: true, status: response.status, body: masterToken}));
 }
+
+
+/* TIDE CUSTOM ENDPOINTS */
 
 /**
  * 

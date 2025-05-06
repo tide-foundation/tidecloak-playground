@@ -4,6 +4,7 @@ import React, { useState, useLayoutEffect, useEffect } from "react";
 
 import AccordionBox from "./components/accordionBox";
 import Button from "./components/button";
+import kcData from "/tidecloak.json";
 
 import IAMService from "../lib/IAMService";
 // Required for the Approval and Commit Tide Encalve to work in the admin console.
@@ -24,44 +25,53 @@ export default function Login() {
 
  
   const [showLoginAccordion, setShowLoginAccordion] = useState(false);
-  
-  
 
   //const {realm, baseURL, logUser} = useAppContext();
 
   const [loading, setLoading] = useState(true);
 
-  // Initialiser
-  const initSteps = [
-    'Creating user roles in TideCloak',
-    'Seeding demo data',
-    'Configuring permissions',
-    'Finalizing setup',
-  ];
-  const [isInitializing, setIsInitializing] = useState(true);
+  // // Initialiser
+  // const initSteps = [
+  //   'Creating user roles in TideCloak',
+  //   'Seeding demo data',
+  //   'Configuring permissions',
+  //   'Finalizing setup',
+  // ];
+
+  // State to show initialiser when the tidecloak.json file has an empty object
+  const [isInitializing, setIsInitializing] = useState(false);
+
   const [currentStep, setCurrentStep] = useState(0);
 
   // Initiate Keycloak to handle token and Tide enclave
   useEffect(() => {
-    IAMService.initIAM(() => {
-      // Skip login screen if already logged in
-      if (IAMService.isLoggedIn()){
-        window.location.href = "/auth/redirect ";
-      }
-      setLoading(false);
-    });
-
-
-    // run through each step on a 1s cadence
-    initSteps.forEach((_, idx) => {
-      setTimeout(() => {
-        setCurrentStep(idx);
-        if (idx === initSteps.length - 1) {
-          // all done, wait a moment then hide loader
-          setTimeout(() => setIsInitializing(false), 500);
+   
+      
+        // Skip login screen if already logged in
+        if (IAMService.isLoggedIn()){
+          window.location.href = "/auth/redirect ";
         }
-      }, idx * 1000);
-    });
+        setLoading(false);
+      
+    if ( Object.keys(kcData).length == 0 ) {
+      
+      setIsInitializing(true);
+      setLoading(false);
+    }
+   
+      
+      
+    
+
+
+    // // run through each step on a 1s cadence
+    // initSteps.forEach((_, idx) => {
+    //   setCurrentStep(idx);
+    //   if (idx === initSteps.length - 1) {
+    //     // all done, wait a moment then hide loader
+    //     setTimeout(() => setIsInitializing(false), 500);
+    //   }
+    // });
   }, [])
 
   const handleLogin = async () => {
@@ -70,7 +80,7 @@ export default function Login() {
 
   // Initialization Placeholder
   if (isInitializing) {
-    return <LoadingPage steps={initSteps} currentIndex={currentStep} />;
+    return <LoadingPage isInitializing={isInitializing} setIsInitializing={setIsInitializing} />;
   }
   
   return (
