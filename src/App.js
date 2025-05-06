@@ -6,8 +6,10 @@ import {
   FaGithub,
   FaCheckCircle,
   FaChevronRight,
+  FaExclamationCircle,
 } from "react-icons/fa";
 import { SiX } from "react-icons/si"; // Modern X (formerly Twitter) icon
+import LoadingPage from './components/LoadingPage';
 
 
 function Button({ children, onClick, type = "button", className = "" }) {
@@ -181,6 +183,8 @@ function QuorumDashboard({ request, onCommit, setPage, setRequests }) {
   const [approvals, setApprovals] = useState([false, false, false, false, false]);
   const [canCommit, setCanCommit] = useState(false);
 
+
+
   useEffect(() => {
     const isCommitted = request?.status === "Committed";
     const isApproved = request?.status === "Approved";
@@ -348,6 +352,30 @@ function DatabaseExposureTable({ jwt, formData }) {
 // Main App Component
 
 function App() {
+
+  const initSteps = [
+    'Creating user roles in TideCloak',
+    'Seeding demo data',
+    'Configuring permissions',
+    'Finalizing setup',
+  ];
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [currentStep, setCurrentStep] = useState(0);
+
+  useEffect(() => {
+    // run through each step on a 1s cadence
+    initSteps.forEach((_, idx) => {
+      setTimeout(() => {
+        setCurrentStep(idx);
+        if (idx === initSteps.length - 1) {
+          // all done, wait a moment then hide loader
+          setTimeout(() => setIsInitializing(false), 500);
+        }
+      }, idx * 1000);
+    });
+  }, []);
+
+
   const [jwt, setJwt] = useState(null);
   const [page, setPage] = useState("Landing");
   const [showExplainer, setShowExplainer] = useState(false);
@@ -578,6 +606,10 @@ function App() {
     setSavedData(newSaved);
   }, [jwt]);
 
+  // Initialization Placeholder
+  if (isInitializing) {
+    return <LoadingPage steps={initSteps} currentIndex={currentStep} />;
+  }
 
 
   return (
@@ -640,6 +672,11 @@ function App() {
                   <h3 className="text-xl font-semibold">BYOiD</h3>
                   <p className="text-base">Login or create an account to see the user experience demo.</p>
                   <Button onClick={handleLogin}>Login</Button>
+                  {/* error placeholder */}
+                  <div className="mt-2 flex items-center text-red-600 text-sm">
+                    <FaExclamationCircle className="mr-1" />
+                    <span>This is a dummy error message</span>
+                  </div>
                 </div>
 
                 <div className="border-t border-gray-200 pt-6">
