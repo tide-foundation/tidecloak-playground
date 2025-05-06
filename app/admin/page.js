@@ -36,6 +36,7 @@ export default function Admin() {
 
   const [hasChanges, setHasChanges] = useState(false);
   const [requests, setRequests] = useState([]);
+  const [isApproved, setIsApproved] = useState(false);
 
   const [showExplainer, setShowExplainer] = useState(false);
   const handleElevateClick = () => setShowExplainer(true);
@@ -48,9 +49,6 @@ export default function Admin() {
 
   const [hasUserApproved, setHasUserApproved] = useState(false);
 
-  const [isApproved, setIsApproved] = useState(false);
-
-
   const [totalApproved, setTotalApproved] = useState(1);
  
   const ADMIN_NAMES = ["You", "Alice", "Ben", "Carlos", "Dana"];
@@ -61,6 +59,27 @@ export default function Admin() {
 
   // State of whether the first QuorumDashBoard (card) has ran. It triggers based on how many cards is needed. 
   const quorumDashRef  = useRef(false);
+
+  useEffect(() => {
+    const storedApprovals = localStorage.getItem("approvals");
+    // This is intended only for when refreshing browser, approvals[0] would be false then
+    if (isApproved && approvals[0] === false){
+      if (storedApprovals){
+        setApprovals(JSON.parse(storedApprovals));
+      }
+      else {
+        // Make up a new array of people who approved
+        let approvals = [true, false, false, false, false]
+        const others = [1, 2, 3, 4];
+        const shuffled = others.sort(() => 0.5 - Math.random()).slice(0, 2);
+        shuffled.forEach((index) => {
+          approvals[index] = true;
+        })
+        console.log(approvals);
+        setApprovals(approvals);
+      }
+    }
+  }, [isApproved])
 
   useEffect(() => {
     if (authenticated){
@@ -165,6 +184,8 @@ export default function Admin() {
   const handleAdminPermissionSubmit = async (e) => {
     e.preventDefault();
     const token = await IAMService.getToken();
+
+    localStorage.removeItem("approvals");
 
     // Cancel existing requests if they exist to reset
     if (requests.length > 0){
@@ -273,6 +294,12 @@ export default function Admin() {
       
       // Perform approval checks and commit checks everytime requests is updated from the enclave actions
       useEffect(() => {
+
+        // Based on the status of the change request, trigger useEffect to update the current approvals on refresh
+        if (requestStatus === "APPROVED"){
+          setIsApproved(true);
+        }
+
         // When Approving (Animation)
         if (hasUserApproved && quorumDashRef.current === false){
           quorumDashRef.current = true;
@@ -281,13 +308,13 @@ export default function Admin() {
           const shuffled = others.sort(() => 0.5 - Math.random()).slice(0, 2);
           let completed = 0;
 
+          // Temporary array to update currently approved users for a change request and store locally
+          const updated = [...approvals];
           shuffled.forEach((index, i) => {
-            setTimeout(() => {
-              setApprovals( prev => {
-                const updated = [...prev];
-                updated[index] = true;
-                return updated;
-              });
+            setTimeout(async() => {
+              updated[index] = true;
+              setApprovals([...updated]);
+
               // Update the UI's counter for number of people approved
               setTotalApproved(prev => prev + 1);
             
@@ -298,11 +325,11 @@ export default function Admin() {
                 setHasUserApproved(false);
                 // Change the button to a Commit button based on the new status
                 requestStatus = requests[activeRequestIndex].deleteStatus ? requests[activeRequestIndex].deleteStatus : requests[activeRequestIndex].status;
-                if (requestStatus === "APPROVED"){
-                  setIsApproved(true);
-                }
                 // Allow next change request card to be used
                 quorumDashRef.current = false;
+                // Store locally for persistence through browser refresh
+                localStorage.setItem("approvals", JSON.stringify(updated));
+                  
               }
             }, (i + 1) * 900);
           });  
@@ -473,9 +500,11 @@ export default function Admin() {
           
           // Reset states for next change request
           setApprovals([false, false, false, false, false]);
-          setIsApproved(false);
           setActiveRequestIndex(prev => prev + 1);
           setExpandedIndex(prev => prev + 1);
+
+          // Clear the locally stored approved users array
+          localStorage.removeItem("approvals");
 
           // Get a new token to have check the currently assigned roles to the logged in user
           await IAMService.updateToken(-1); //-1 to update it immediately
