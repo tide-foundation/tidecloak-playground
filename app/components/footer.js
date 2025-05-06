@@ -2,6 +2,7 @@ import {
     FaDiscord,
     FaLinkedin,
     FaGithub,
+    FaExclamationCircle,
 } from "react-icons/fa";
 
 import { SiX } from "react-icons/si"; // Modern X (formerly Twitter) icon

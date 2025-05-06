@@ -8,7 +8,13 @@ import Button from "./components/button";
 import IAMService from "../lib/IAMService";
 // Required for the Approval and Commit Tide Encalve to work in the admin console.
 
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
+
+import {
+  FaExclamationCircle,
+} from "react-icons/fa";
+
+import LoadingPage from "./components/LoadingPage";
 
 // Main App Component
 
@@ -25,16 +31,36 @@ export default function Login() {
 
   const [loading, setLoading] = useState(true);
 
-
+  // Initialiser
+  const initSteps = [
+    'Creating user roles in TideCloak',
+    'Seeding demo data',
+    'Configuring permissions',
+    'Finalizing setup',
+  ];
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [currentStep, setCurrentStep] = useState(0);
 
   // Initiate Keycloak to handle token and Tide enclave
   useEffect(() => {
     IAMService.initIAM(() => {
-        // Skip login screen if already logged in
-        if (IAMService.isLoggedIn()){
-            window.location.href = "/auth/redirect ";
-    }
-    setLoading(false);
+      // Skip login screen if already logged in
+      if (IAMService.isLoggedIn()){
+        window.location.href = "/auth/redirect ";
+      }
+      setLoading(false);
+    });
+
+
+    // run through each step on a 1s cadence
+    initSteps.forEach((_, idx) => {
+      setTimeout(() => {
+        setCurrentStep(idx);
+        if (idx === initSteps.length - 1) {
+          // all done, wait a moment then hide loader
+          setTimeout(() => setIsInitializing(false), 500);
+        }
+      }, idx * 1000);
     });
   }, [])
 
@@ -42,6 +68,10 @@ export default function Login() {
     IAMService.doLogin();
   };
 
+  // Initialization Placeholder
+  if (isInitializing) {
+    return <LoadingPage steps={initSteps} currentIndex={currentStep} />;
+  }
   
   return (
     !loading
@@ -83,6 +113,11 @@ export default function Login() {
                   <h3 className="text-xl font-semibold">BYOiD</h3>
                   <p className="text-base">Login or create an account to see the user experience demo.</p>
                   <Button onClick={handleLogin}>Login</Button>
+                  {/* error placeholder */}
+                  <div className="mt-2 flex items-center text-red-600 text-sm">
+                     <FaExclamationCircle className="mr-1" />
+                     <span>This is a dummy error message</span>
+                   </div>
                 </div>
 
                 <div className="border-t border-gray-200 pt-6">
@@ -100,9 +135,6 @@ export default function Login() {
               </div>
             )}
 
-            
-
-            
           </div>
 
         </div>
