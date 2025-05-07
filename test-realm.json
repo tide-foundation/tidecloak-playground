@@ -123,22 +123,6 @@
       ]
     }
   ],
-  "identityProviders": [
-    {
-      "alias": "tide",
-      "providerId": "tide",
-      "enabled": true,
-      "config": {
-        "changeSetEndpoint": "http://localhost:8080",
-        "LogoURL": "http://localhost:8080/realms/tidecloak-demo/tide-idp-resources/images/LOGO",
-        "syncMode": "LEGACY",
-        "ImageURL": "http://localhost:8080/realms/tidecloak-demo/tide-idp-resources/images/BACKGROUND_IMAGE",
-        "loginFormType": "cmkOnly",
-        "homeORKurl": "https://ork1.tideprotocol.com",
-        "clientSecret": "****"
-      }
-    }
-  ],
   "components": {
     "org.keycloak.userprofile.UserProfileProvider": [
       {

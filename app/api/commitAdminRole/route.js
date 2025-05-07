@@ -30,7 +30,7 @@ export async function GET(){
         const usersChangeRequests = UsersChangeRequestsResp.body;
         
         // Sign the change request to approve
-        const signChangeReqFetch = await apiService.signUsersChangeRequest(baseURL, realm, usersChangeRequests, masterToken);
+        const signChangeReqFetch = await apiService.signChangeRequest(baseURL, realm, usersChangeRequests, masterToken);
         const signChangeReqResp = await signChangeReqFetch.json();
 
         if (!signChangeReqResp.ok){
@@ -38,7 +38,7 @@ export async function GET(){
         }
 
         // Commit the signed change request for the user to have tide-realm-admin role
-        const commitChangeReqFetch = await apiService.commitUsersChangeRequest(baseURL, realm, usersChangeRequests, masterToken);
+        const commitChangeReqFetch = await apiService.commitChangeRequest(baseURL, realm, usersChangeRequests, masterToken);
         const commitChangeReqResp = await commitChangeReqFetch.json();
 
         if (!commitChangeReqResp.ok){
@@ -49,6 +49,6 @@ export async function GET(){
 
     } 
     catch (error) {
-        return new Response(JSON.stringify({error: error + "Can't approve user as Admin."}))
+        return new Response(JSON.stringify({ok: false, error: "[commitAdminRole Endpoint]" + error.message}), {status: 500})
     }
 }

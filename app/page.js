@@ -30,23 +30,16 @@ export default function Login() {
 
   const [loading, setLoading] = useState(true);
 
-  // // Initialiser
-  // const initSteps = [
-  //   'Creating user roles in TideCloak',
-  //   'Seeding demo data',
-  //   'Configuring permissions',
-  //   'Finalizing setup',
-  // ];
+  const [inviteURL, setInviteURL] = useState("");
+
+ 
 
   // State to show initialiser when the tidecloak.json file has an empty object
   const [isInitializing, setIsInitializing] = useState(false);
 
-  const [currentStep, setCurrentStep] = useState(0);
 
   // Initiate Keycloak to handle token and Tide enclave
   useEffect(() => {
-   
-      
         // Skip login screen if already logged in
         if (IAMService.isLoggedIn()){
           window.location.href = "/auth/redirect ";
@@ -58,21 +51,15 @@ export default function Login() {
       setIsInitializing(true);
       setLoading(false);
     }
-   
-      
-      
-    
-
-
-    // // run through each step on a 1s cadence
-    // initSteps.forEach((_, idx) => {
-    //   setCurrentStep(idx);
-    //   if (idx === initSteps.length - 1) {
-    //     // all done, wait a moment then hide loader
-    //     setTimeout(() => setIsInitializing(false), 500);
-    //   }
-    // });
   }, [])
+
+  useEffect(() => {
+    if (!loading && inviteURL !== ""){
+      navigator.clipboard.writeText(inviteURL);
+      console.log("Copied Tide Invite URL to Clipboard.");
+    }
+  }, [inviteURL])
+ 
 
   const handleLogin = async () => {
     IAMService.doLogin();
@@ -80,7 +67,7 @@ export default function Login() {
 
   // Initialization Placeholder
   if (isInitializing) {
-    return <LoadingPage isInitializing={isInitializing} setIsInitializing={setIsInitializing} />;
+    return <LoadingPage isInitializing={isInitializing} setIsInitializing={setIsInitializing} setInviteURL={setInviteURL}/>;
   }
   
   return (

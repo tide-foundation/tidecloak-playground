@@ -1,6 +1,6 @@
 import configs from "../apiConfigs";
 import settings from "/test-realm.json";
-import services from "../apiService";
+import apiService from "../apiService";
 
 /**
  * This endpoint is only for creating the initial realm for the admin console on initialisation for the client side.
@@ -20,15 +20,14 @@ export async function GET(request){
 
     // To get the token without the leading "Bearer "
     const masterToken = authHeader.split(" ")[1];
-    console.log(masterToken);
 
     try {
         // Create the realm, importing the settings from test-realm.json
-        const result = await services.createDefaultRealm(baseURL, settings, masterToken);
+        const result = await apiService.createDefaultRealm(baseURL, settings, masterToken);
 
         return new Response(JSON.stringify({...result}), {status: result.status});
     } 
     catch (error) {
-        return new Response(JSON.stringify({error: "[createRealm Endpoint] " + error.message}), {status: 500});
+        return new Response(JSON.stringify({ok: false, error: "[createRealm Endpoint] " + error.message}), {status: 500});
     }
 }
