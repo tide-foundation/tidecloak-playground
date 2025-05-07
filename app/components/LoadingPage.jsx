@@ -8,28 +8,71 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // Initialiser
     const steps = [
-        'Activating license',
-        'Creating user roles in TideCloak',
-        'Seeding demo data',
-        'Configuring permissions',
-        'Finalizing setup',
+        "Getting Token",
+        "Creating Realm"
+        
+
+        // 'Activating license',
+        // 'Creating user roles in TideCloak',
+        // 'Seeding demo data',
+        // 'Configuring permissions',
+        // 'Finalizing setup',
     ];
 
     useEffect(() => {
         if (isInitializing){
+            try {
+                getMasterToken();
+            }
+            catch (error){
+                console.log(error);
+            }
+        }
+    }, []);
+
+    useEffect(() => {
+        if (masterToken){
             initialize();
         }
-    }, [])
+    }, [masterToken]);
 
     const getMasterToken = async () => {
-      const response = await fetch(`/api/getMasterToken`); 
-      const data = await response.json();
-      setMasterToken(data.body);
+        const response = await fetch(`/api/getMasterToken`, {
+            method: "GET"
+        }); 
+        const data = await response.json();
+        setMasterToken(data.body);
     
+        if (!response.ok){
+            const errorResponse = await response.json();
+            throw new Error(errorResponse.error || "Unable to fetch master token.");
+        }
     };
 
-    const initialize = () => {
-        getMasterToken();
+    const createRealm = async () => {
+        setCurrentStep(1);
+        console.log(masterToken);
+        const response = await fetch(`/api/createRealm`, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${masterToken}`
+            }
+        });
+        
+        if (!response.ok){
+            const errorResponse = await response.json();
+            throw new Error(errorResponse.error || "Unable to create the realm.");
+        }
+    }
+
+    const initialize = async () => {
+        try {
+            await createRealm();
+        }
+        catch (error){
+            console.log(error);
+        }
+
     };
 
 
@@ -50,14 +93,14 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
             <h1 className="text-2xl font-bold mb-6 text-gray-800">
                 Initializing your demo app
             </h1>
-            {/* <ul className="list-disc list-inside space-y-2 text-gray-700">
+            <ul className="list-disc list-inside space-y-2 text-gray-700">
                 {steps.map((msg, i) => (
                     <li
                         key={i}
                         className={
-                            i < currentIndex
+                            i < currentStep
                                 ? 'opacity-50 line-through'
-                                : i === currentIndex
+                                : i === currentStep
                                     ? 'font-semibold'
                                     : ''
                         }
@@ -65,7 +108,7 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
                         {msg}
                     </li>
                 ))}
-            </ul> */}
+            </ul>
         </div>
     );
 }

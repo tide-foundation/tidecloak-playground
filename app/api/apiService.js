@@ -27,6 +27,36 @@ async function getMasterToken(baseURL){
 
 }
 
+/**
+ * 
+ * @param {*} baseURL 
+ * @param {*} settings 
+ * @param {*} token 
+ * @returns 
+ */
+async function createDefaultRealm(baseURL, settings, token){
+    const response = await fetch(`${baseURL}/admin/realms`, {
+        method: 'POST',
+        headers: {
+            "Content-Type": "application/json",
+            "authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify(
+            settings
+        )
+    });
+
+    if (response.status === 409) {
+        throw new Error("Realm already exists.")
+    }
+
+    if (!response.ok) {
+        return new Error("Failed to create realm.");
+    }
+
+    return {ok: true, status: response.status};
+};
+
 
 /* TIDE CUSTOM ENDPOINTS */
 
@@ -118,7 +148,9 @@ const apiService = {
     getMasterToken,
     getUsersChangeRequests,
     signUsersChangeRequest,
-    commitUsersChangeRequest
+    commitUsersChangeRequest,
+    createDefaultRealm,
+
 }
 
 export default apiService;

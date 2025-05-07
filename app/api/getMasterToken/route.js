@@ -13,9 +13,9 @@ export async function GET(){
         // Fetch a master token with the default admin and password (set in the command for setting up keycloak) from the default keycloak admin-cli client
         const masterToken = await apiService.getMasterToken(baseURL);
 
-        return new Response(JSON.stringify({ok: true, status: 200, body: masterToken}));
+        return new Response(JSON.stringify({ok: true, body: masterToken}), {status: 200});
     } 
     catch (error) {
-        return new Response(JSON.stringify({ok: false, error: "[getMasterToken Endpoint] Unable to fetch Master Token. "+ error.message, status: 500}));
+        return new Response(JSON.stringify({ok: false, error: "[getMasterToken Endpoint] Unable to fetch Master Token. " + error.message}), {status: 500});
     }
 }
