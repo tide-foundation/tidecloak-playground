@@ -47,35 +47,57 @@ export async function GET(request){
         const availableClientRoles = availableClientRolesResult.body;
 
         //Assign the client roles to the demo user
-        assignClientRoles.forEach(async (roleName) => {
-            const assignRole = await availableClientRoles.find((role) => role.name === roleName);
+        // assignClientRoles.forEach(async (roleName) => {
+        //     const assignRole = await availableClientRoles.find((role) => role.name === roleName);
 
+        //     const assignRoleResult = await apiService.assignClientRole(baseURL, realm, userID, RMClientID, assignRole, masterToken);
+        // })
+
+        for (let i = 0; i < assignClientRoles.length; i++) {
+            const roleName = assignClientRoles[i];
+            const assignRole = availableClientRoles.find((role) => role.name === roleName);
             const assignRoleResult = await apiService.assignClientRole(baseURL, realm, userID, RMClientID, assignRole, masterToken);
-        })
+        }
 
         const availableRealmRolesResult = await apiService.getAvailableRealmRoles(baseURL, realm, userID, masterToken);
         const availableRealmRoles = availableRealmRolesResult.body;
 
         // Assign the realm roles to the demo user
-        assignRealmRoles.forEach(async (roleName) => {
-            const assignRole = await availableRealmRoles.find((role) => role.name === roleName);
+        // assignRealmRoles.forEach(async (roleName) => {
+        //     const assignRole = await availableRealmRoles.find((role) => role.name === roleName);
 
+        //     const assignRoleResult = await apiService.assignRealmRole(baseURL, realm, userID, assignRole, masterToken);
+        // })
+
+        for (let i = 0; i < assignRealmRoles.length; i++) {
+            const roleName = assignRealmRoles[i];
+            const assignRole = availableRealmRoles.find((role) => role.name === roleName);
             const assignRoleResult = await apiService.assignRealmRole(baseURL, realm, userID, assignRole, masterToken);
-        })
+        }
 
         // Get the change request for assigning the role to the user
         const usersChangeRequestsResults = await apiService.getUsersChangeRequests(baseURL, realm, masterToken);
         const usersChangeRequests = usersChangeRequestsResults.body;
 
         // Approve and Commit each role for the user
-        usersChangeRequests.forEach(async (changeRequest) => {
+        // usersChangeRequests.forEach(async (changeRequest) => {
+        //     // Sign the change request to approve
+        //     const signChangeRequestResult = await apiService.signChangeRequest(baseURL, realm, changeRequest, masterToken);
+            
+        //     // Commit the signed change request for the role
+        //     const commitChangeRequestResult = await apiService.commitChangeRequest(baseURL, realm, changeRequest, masterToken);
+
+        // })
+
+        for (let i = 0; i < usersChangeRequests.length; i++) {
+            const changeRequest = usersChangeRequests[i];
+        
             // Sign the change request to approve
             const signChangeRequestResult = await apiService.signChangeRequest(baseURL, realm, changeRequest, masterToken);
             
             // Commit the signed change request for the role
             const commitChangeRequestResult = await apiService.commitChangeRequest(baseURL, realm, changeRequest, masterToken);
-
-        })
+        }
 
         return new Response(JSON.stringify({ok: true}), {status: 200}); 
     } 

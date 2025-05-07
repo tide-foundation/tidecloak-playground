@@ -27,11 +27,17 @@ export async function GET(request){
         const clientChangeRequestsFetch = await apiService.getClientsChangeRequests(baseURL, realm, masterToken);
         const clientsChangeRequests = clientChangeRequestsFetch.body;
 
-        clientsChangeRequests.forEach(async (changeRequest) => {
-            const approveResult = await apiService.signChangeRequest(baseURL, realm, changeRequest, masterToken);
+        // clientsChangeRequests.forEach(async (changeRequest) => {
+        //     const approveResult = await apiService.signChangeRequest(baseURL, realm, changeRequest, masterToken);
 
+        //     const commitResult = await apiService.commitChangeRequest(baseURL, realm, changeRequest, masterToken);
+        // })
+        for (let i = 0; i < clientsChangeRequests.length; i++) {
+            const changeRequest = clientsChangeRequests[i];
+        
+            const approveResult = await apiService.signChangeRequest(baseURL, realm, changeRequest, masterToken);
             const commitResult = await apiService.commitChangeRequest(baseURL, realm, changeRequest, masterToken);
-        })
+        }
 
         //return new Response(JSON.stringify({ok: true, status: commitClientResp.status, statusText: "Approving & Committing Client: Complete!"}));     
 
