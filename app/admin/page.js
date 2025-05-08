@@ -17,7 +17,7 @@ export default function Admin() {
   const router = useRouter();
   const searchParams = useSearchParams();
   // Realm Management client ID to assign user the tide-realm-admin role if not yet assigned
-  const RMClientID = searchParams.get("clientID");
+  //const RMClientID = searchParams.get("clientID");
   const {baseURL, realm, authenticated } = useAppContext();
 
   const [isTideAdmin, setIsTideAdmin] = useState(false);
@@ -84,7 +84,9 @@ export default function Admin() {
   useEffect(() => {
     if (authenticated){
       getLoggedUser();
-      getChangeRequests(); // Get existing requests to cancel them
+      if (isTideAdmin){
+        getChangeRequests(); // Get existing requests to cancel them
+      }
     }
     setLoading(false);
   }, [authenticated])
@@ -153,6 +155,8 @@ export default function Admin() {
     const token = await IAMService.getToken();
 
     if (!isTideAdmin){
+        const RMClientID = await appService.getRealmManagementId(baseURL, realm, token);
+
         // Get the tide-realm-admin role to assign
         const tideAdminRole = await appService.getTideAdminRole(baseURL, realm, loggedUser.id, RMClientID, token);
 

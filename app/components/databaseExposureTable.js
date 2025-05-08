@@ -2,8 +2,10 @@
 import IAMService from "../../lib/IAMService";
 import React, { useState, useEffect, useMemo } from "react";
 import Button from "../components/button";
+import appService from "../../lib/appService";
+import {useAppContext} from "../context/context";
 
-// Animation
+// Animation only
 function DecryptingText({ text, speed = 30 }) {
     const [displayed, setDisplayed] = useState('');
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
@@ -36,6 +38,8 @@ function DecryptedRow({ isUser, user, username, dob, cc, canRead }) {
     const [animating, setAnimating] = useState(false);
     const [decryptedDob, setDecryptedDob] = useState("");
     const [decryptedCc, setDecryptedCc] = useState("");
+    
+    const {baseURL, realm} = useAppContext();
 
     // If new user data arrives reset to potentially decrypt again
     useEffect(() => {
@@ -45,26 +49,26 @@ function DecryptedRow({ isUser, user, username, dob, cc, canRead }) {
     // Calls on Decrypt button being selected to update the fields
     const handleDecrypt = () => {
 
-        let dob;
-        let cc;
+        // let dob;
+        // let cc;
 
-        if (Array.isArray(user.attributes.dob)){
-            dob = user.attributes.dob[0];
-            console.log(dob);
-        }
-        else {
-            dob = user.attributes.dob;
-            console.log(dob);
-        }
+        // if (Array.isArray(user.attributes.dob)){
+        //     dob = user.attributes.dob[0];
+        //     console.log(dob);
+        // }
+        // else {
+        //     dob = user.attributes.dob;
+        //     console.log(dob);
+        // }
 
-        if (Array.isArray(user.attributes.cc)){
-            cc = user.attributes.cc[0];
-            console.log(cc);
-        }
-        else {
-            cc = user.attributes.cc;
-            console.log(cc);
-        }
+        // if (Array.isArray(user.attributes.cc)){
+        //     cc = user.attributes.cc[0];
+        //     console.log(cc);
+        // }
+        // else {
+        //     cc = user.attributes.cc;
+        //     console.log(cc);
+        // }
 
         if (!isUser) {
             setDecryptionStatus("Access denied: You don't have decryption rights.");
@@ -105,7 +109,6 @@ function DecryptedRow({ isUser, user, username, dob, cc, canRead }) {
         }, 800);
     };
     
-    
     return (
     <div className="border border-gray-300 rounded p-4 bg-white shadow-sm space-y-2">
         <div className="text-sm font-mono break-all">
@@ -116,14 +119,14 @@ function DecryptedRow({ isUser, user, username, dob, cc, canRead }) {
         <div className="text-sm font-mono break-all">
             <strong className="block text-gray-600 text-xs uppercase mb-1">Date of Birth</strong>
             <span className={`inline-block transition-opacity duration-500 ${animating ? "opacity-0" : "opacity-100"}`}>
-            {isUser && decrypted && dob ? <DecryptingText text={decryptedDob} /> : user.attributes.dob}
+            {isUser && decrypted && dob ? <DecryptingText text={decryptedDob} /> : dob}
             </span>
         </div>
 
         <div className="text-sm font-mono break-all">
             <strong className="block text-gray-600 text-xs uppercase mb-1">Credit Card</strong>
             <span className={`inline-block transition-opacity duration-500 ${animating ? "opacity-0" : "opacity-100"}`}>
-            {isUser && decrypted && cc ? <DecryptingText text={decryptedCc} /> : user.attributes.dob}
+            {isUser && decrypted && cc ? <DecryptingText text={decryptedCc} /> : cc}
             </span>
         </div>
 
@@ -147,20 +150,18 @@ function DecryptedRow({ isUser, user, username, dob, cc, canRead }) {
  
 
 // The Decryptable Cards
-export default function DatabaseExposureTable({users, loggedUser}) {
+export default function DatabaseExposureTable({users, loggedUser, encryptedDob, encryptedCc}) {
     // Memorise the current array, only rerender if this array changes
     const memoUsers = useMemo(() => users, [users]);
     // Swap first position with logged in user to put them on top of the stack
-    memoUsers.map((user, i) => {
-        if (i !== 0){ 
-            if (user.id === loggedUser.id){
-                let temp;
-                temp = memoUsers[0];
-                memoUsers[0] = user;
-                memoUsers[i] = temp;
-            }
+    for (let i = 0; i < memoUsers.length; i++) {
+        if (i !== 0 && memoUsers[i].id === loggedUser.id) {
+            const temp = memoUsers[0];
+            memoUsers[0] = memoUsers[i];
+            memoUsers[i] = temp;
+            break;
         }
-    })
+    }
 
     return (
         <div className="mt-6 space-y-6 pb-24 md:pb-36">
@@ -170,11 +171,13 @@ export default function DatabaseExposureTable({users, loggedUser}) {
                 ?
                 memoUsers.map((user, i) => (
                   <DecryptedRow key={i}
-                  isUser={user.attributes.vuid[0] === IAMService.getValueFromToken("vuid")}
+                  isUser={user.attributes.vuid
+                    ? user.attributes.vuid[0] === IAMService.getValueFromToken("vuid") ? true : false
+                    : false}
                   user={user}
                   username={user.username}
-                  dob={IAMService.hasOneRole("_tide_dob.read") ? user.attributes.dob : null}
-                  cc={IAMService.hasOneRole("_tide_cc.read") ? user.attributes.cc : null}
+                  dob={IAMService.hasOneRole("_tide_dob.read") ? encryptedDob : null}
+                  cc={IAMService.hasOneRole("_tide_cc.read") ? encryptedCc : null}
                   canRead={IAMService.hasOneRole("_tide_dob.read") || IAMService.hasOneRole("_tide_cc.read")}
                   />
                 ))
