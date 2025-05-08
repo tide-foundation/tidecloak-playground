@@ -16,6 +16,6 @@ export async function GET(){
         return new Response(JSON.stringify({ok: true, body: masterToken}), {status: 200});
     } 
     catch (error) {
-        return new Response(JSON.stringify({ok: false, error: "[getMasterToken Endpoint] Unable to fetch Master Token. " + error.message}), {status: 500});
+        return new Response(JSON.stringify({ok: false, error: "[getMasterToken Endpoint] " + error.message}), {status: 500});
     }
 }

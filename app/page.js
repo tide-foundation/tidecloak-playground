@@ -9,7 +9,7 @@ import kcData from "/tidecloak.json";
 import IAMService from "../lib/IAMService";
 // Required for the Approval and Commit Tide Encalve to work in the admin console.
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import {
   FaExclamationCircle,
@@ -32,22 +32,20 @@ export default function Login() {
 
   const [inviteURL, setInviteURL] = useState("");
 
- 
-
   // State to show initialiser when the tidecloak.json file has an empty object
   const [isInitializing, setIsInitializing] = useState(false);
 
-
   // Initiate Keycloak to handle token and Tide enclave
   useEffect(() => {
-        // Skip login screen if already logged in
-        if (IAMService.isLoggedIn()){
-          window.location.href = "/auth/redirect ";
-        }
-        setLoading(false);
+    const router = useRouter();
+
+    // Skip login screen if already logged in
+    if (IAMService.isLoggedIn()){
+      router.push("/auth/redirect");
+    }
+    setLoading(false);
       
     if ( Object.keys(kcData).length == 0 ) {
-      
       setIsInitializing(true);
       setLoading(false);
     }
@@ -101,8 +99,6 @@ export default function Login() {
                     The system itself has no backdoor. That’s the point.
                   </p>
                 </AccordionBox>
-
-
 
                 <div className="bg-blue-50 rounded shadow p-6 space-y-4">
                   <h2 className="text-3xl font-bold">Welcome to your demo app</h2>

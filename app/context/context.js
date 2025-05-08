@@ -20,15 +20,29 @@ const baseURL = "http://localhost:8080";
 export const Provider = ({ children }) => {
     
     const [authenticated, setAuthenticated] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [token, setToken] = useState(null);
 
     useEffect(() => {
         IAMService.initIAM((auth) => {
             setAuthenticated(auth)
+            setLoading(false);
           });
     }, [])
 
+    const getToken = async () => {
+        const token = await IAMService.getToken(); 
+        setToken(token);
+    }
+
+    useEffect(() => {
+        if (authenticated) {
+            getToken();
+        }
+    }, [authenticated])
+
     return (
-        <Context.Provider value={{realm, baseURL, authenticated}}>
+        <Context.Provider value={{realm, baseURL, authenticated, loading, token}}>
             {children}
         </Context.Provider>
     )

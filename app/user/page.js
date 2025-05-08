@@ -13,7 +13,7 @@ export default function User(){
 
     const pathname = usePathname();
 
-    const {baseURL, realm, authenticated} = useAppContext();
+    const {baseURL, realm, authenticated, token} = useAppContext();
 
     const [loading, setLoading] = useState(true);
 
@@ -34,16 +34,28 @@ export default function User(){
     const [users, setUsers] = useState([]);
     const [encryptedDob, setEncryptedDob] = useState("");
     const [encryptedCc, setEncryptedCc] = useState("");
+
+    //const [token, setToken] = useState(null);
         
     const handleUserFieldChange = (field) => (e) => {
         setFormData({ ...formData, [field]: e.target.value });
     };
 
+    
+
+    // useEffect(() => {
+    //   if (authenticated){
+    //     getAllUsers();
+    //     getToken();
+    //   }
+    // }, [authenticated])
+
     useEffect(() => {
       if (authenticated){
         getAllUsers();
       }
-    }, [authenticated])
+      
+    }, [token])
 
     // Perform only when the context receives the logged user details
     useEffect(() => {
@@ -59,9 +71,11 @@ export default function User(){
         }
     }, [formData])
 
+    
+
     // Populate the Database Exposure cards, and set the current logged user
     const getAllUsers = async () => {
-      const token = await IAMService.getToken(); 
+      //const token = await IAMService.getToken(); 
       const users = await appService.getUsers(baseURL, realm, token);
       setUsers(users);
       const loggedVuid =  await IAMService.getValueFromToken("vuid");
@@ -163,7 +177,7 @@ export default function User(){
                 }
 
                 // Update the user with the encrypted data to prevent storage as raw
-                const token = await  IAMService.getToken();
+                //const token = await  IAMService.getToken();
                 const response = await appService.updateUser(baseURL, realm, loggedUser, token);
 
                 console.log(error + " User Dob or CC was saved as raw data encrypting it and saving now.");
@@ -207,7 +221,7 @@ export default function User(){
                 setEncryptedCc(encryptedCc[0]);
             }
 
-            const token = await IAMService.getToken();
+            //const token = await IAMService.getToken();
             const response = await appService.updateUser(baseURL, realm, loggedUser, token);
 
             if (response.ok){
