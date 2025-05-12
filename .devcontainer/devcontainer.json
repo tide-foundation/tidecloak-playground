@@ -1,5 +1,5 @@
 {
-  "name": "Tidecloak Next.js Demo",
+  "name": "Tidecloak Playgroud",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:18",
   "postCreateCommand": "npm install && npm run dev",
   "customizations": {
@@ -15,7 +15,7 @@
   "forwardPorts": [3000],
   "portsAttributes": {
     "3000": {
-      "label": "Next.js App",
+      "label": "Tidecloak Playgroud",
       "onAutoForward": "openBrowser"
     }
   }
