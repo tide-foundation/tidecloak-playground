@@ -1,22 +1,29 @@
 {
-  "name": "tidecloak-demo",
+  "name": "tidecloak-nextjs",
   "version": "1.0.0",
-  "private": true,
+  "private": false,
+  "type": "module",
   "dependencies": {
+    "buffer": "6.0.3",
     "framer-motion": "^4.1.17",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "jose": "^5.9.6",
+    "next": "^15.3.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "react-icons": "^4.12.0",
-    "react-scripts": "^4.0.3"
+    "react-scripts": "^4.0.3",
+    "sqlite": "5.1.1",
+    "sqlite3": "5.1.7",
+    "tidecloak-js": "^0.6.64"
   },
   "scripts": {
-    "start": "concurrently \"npm run build:css\" \"cross-env NODE_OPTIONS=--openssl-legacy-provider react-scripts start\"",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
     "build:css": "tailwindcss -i ./src/index.css -o ./src/tailwind.css --watch"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.4",
     "autoprefixer": "^10.4.21",
     "concurrently": "^9.1.2",
     "cross-env": "^7.0.3",
