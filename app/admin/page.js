@@ -192,12 +192,13 @@ export default function Admin() {
     
     const token = await IAMService.getToken();
     const changeRequests = await appService.getUserRequests(baseURL, realm, token);
-
     // Remove Denied Requests
     const withoutDeniedReqs = changeRequests.filter((request) => 
       (request.deleteStatus !== "DENIED" && request.status !== "DENIED")
     )
     setRequests(withoutDeniedReqs);
+   
+    
   }
 
   // Assign or unassign the logged in user realm roles (pemissions)
@@ -371,7 +372,7 @@ export default function Admin() {
   
         const response = await appService.denyEnclave(baseURL, realm, formData, token);
         if (response.ok){
-          //setRequests(await appService.getUserRequests(baseURL, realm, token));
+          setRequests(await appService.getUserRequests(baseURL, realm, token));
           setHasUserApproved(false);
           setActiveRequestIndex(prev => prev + 1);
           setExpandedIndex(prev => prev + 1);
