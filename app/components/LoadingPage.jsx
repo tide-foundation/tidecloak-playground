@@ -1,5 +1,5 @@
 import {useState, useEffect} from 'react';
-import './spinKit.css';
+import '../styles/spinKit.css';
 
 export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
