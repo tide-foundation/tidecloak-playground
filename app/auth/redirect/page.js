@@ -3,18 +3,43 @@ import { useEffect } from "react";
 
 import { useAppContext } from "../../context/context";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+
+import IAMService from "../../../lib/IAMService";
 
 export default function RedirectPage() {
 
-  const {authenticated, loading} = useAppContext();
-
+  const {authenticated, contextLoading} = useAppContext();
+  const params = useSearchParams();
+  const auth = params.get("auth");
   const router = useRouter();
 
-  // This is the authentication callback page that securely fetch the JWT access token and redirects (stateless) session to the protected page
+  // useEffect(() => {
+  //   if (!contextLoading){
+  //     if (auth === "failed"){
+  //       IAMService.doLogout();
+  //       console.log("hi?");
+  //     }
+
+
+  //     if (authenticated){
+  //       router.push("/user");
+        
+  //     }
+  //     else {
+  //       router.push("/");
+  //     }                
+  //   }       
+  // }, []);
+
   useEffect(() => {
-    if (!loading){
-      
+    if (!contextLoading){
+
+      if (auth === "failed"){
+        sessionStorage.setItem("tokenExpired", true);
+        IAMService.doLogout(); // The redirect would be calling upon itself here to check if authenticated
+      }
+
       if (authenticated){
         router.push("/user");
         
@@ -23,7 +48,7 @@ export default function RedirectPage() {
         router.push("/");
       }                
     }       
-  }, [loading]);
+  }, [contextLoading]);
 
   return;
 }

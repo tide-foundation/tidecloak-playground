@@ -45,7 +45,7 @@ export async function middleware(req) {
     throw "Token verification failed.";
   } catch (err) {
 	console.error("[Middleware] ", err);
-    return NextResponse.redirect(new URL("/fail", req.url));
+    return NextResponse.redirect(new URL("/auth/redirect?auth=failed", req.url));
   }
   
 }

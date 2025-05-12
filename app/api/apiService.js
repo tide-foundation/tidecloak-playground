@@ -49,7 +49,7 @@ async function createDefaultRealm(baseURL, settings, token){
     });
 
     if (response.status === 409) {
-        throw new Error("Realm already exists.")
+        throw new Error("Realm already exists. Deleting realm, please refresh the browser.");
     }
 
     if (!response.ok) {

@@ -1,7 +1,7 @@
 import {useState, useEffect} from 'react';
 import './spinKit.css';
 
-export default function LoadingPage({ isInitializing, setIsInitializing, setInviteURL}) {
+export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     const [currentStep, setCurrentStep] = useState(0);
     const [masterToken, setMasterToken] = useState(null);
@@ -241,11 +241,6 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setInvi
         }
 
         const data = await response.json();
-        setInviteURL(data.inviteURL);
-        // // Save the Tide Invite URL for later use
-        // await navigator.clipboard.writeText(data.inviteURL);
-        // console.log("Copied Invite Link to Clipboard.");
-        // console.log(data.inviteURL);
     }
     
     const initialize = async () => {
@@ -260,6 +255,8 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setInvi
             await updateCustomDomainURL();
             await signSettings();
             await getAdapter();
+
+            setIsInitializing(false);
         }
         catch (error){
             // Delete IDP then realm if an error occurs in initialisation in preparation for restarting the process

@@ -28,7 +28,7 @@ export async function GET(request){
         const defaultUserID = defaultUserResult.body.id;
         // Generate an invite link to return to the client for the user to link their Tide account
         const createInviteResult = await apiService.createTideInvite(baseURL, realm, defaultUserID, masterToken);
-
+        console.log(createInviteResult.body);
         return new Response(JSON.stringify({ok: true, inviteURL: createInviteResult.body}), {status: createInviteResult.status}); 
         
     } 

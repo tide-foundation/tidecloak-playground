@@ -13,9 +13,9 @@ export default function User(){
 
     const pathname = usePathname();
 
-    const {baseURL, realm, authenticated, token} = useAppContext();
+    const {baseURL, realm, authenticated, contextLoading} = useAppContext();
 
-    const [loading, setLoading] = useState(true);
+    // const [loading, setLoading] = useState(true);
 
     const [loggedUser, setLoggedUser] = useState(null);
      
@@ -43,39 +43,38 @@ export default function User(){
 
     
 
-    // useEffect(() => {
-    //   if (authenticated){
-    //     getAllUsers();
-    //     getToken();
-    //   }
-    // }, [authenticated])
-
     useEffect(() => {
-      if (authenticated){
-        getAllUsers();
+      if (!contextLoading){
+        if (authenticated){
+          
+          getAllUsers();
+        }
       }
-      
-    }, [token])
+     
+    }, [authenticated])
 
-    // Perform only when the context receives the logged user details
+
+
+    //Perform only when the context receives the logged user details
     useEffect(() => {
-      if (loggedUser){
+      if (loggedUser && !contextLoading){
         getUserData();
+        
       }
     }, [loggedUser])
 
     // Show the contents only after the user data is ready
-    useEffect(() => {
-        if (formData.dob !== "" || formData.cc !== ""){
-            setLoading(false);  
-        }
-    }, [formData])
+    // useEffect(() => {
+    //     if (formData.dob !== "" || formData.cc !== ""){
+    //         setLoading(false);  
+    //     }
+    // }, [formData])
 
     
 
     // Populate the Database Exposure cards, and set the current logged user
     const getAllUsers = async () => {
-      //const token = await IAMService.getToken(); 
+      const token = await IAMService.getToken(); 
       const users = await appService.getUsers(baseURL, realm, token);
       setUsers(users);
       const loggedVuid =  await IAMService.getValueFromToken("vuid");
@@ -87,102 +86,103 @@ export default function User(){
       setLoggedUser(loggedInUser);
     };
 
-    // Decrypt the logged in user's data
-      const getUserData = async () => { 
-        // Let context data load first
-        if (loggedUser){
-            try {
-                
-              // If user has no read permission don't decrypt the data
-                if (!IAMService.hasOneRole("_tide_cc.read")){
-                  setFormData(prev => ({...prev, cc: loggedUser.attributes.cc[0]}));
-                }
-
-                if (!IAMService.hasOneRole("_tide_dob.read")){
-                  setFormData(prev => ({...prev, dob: "0000-00-00"}));
-                }
-                //console.log(loggedUser.attributes.dob[0]);
-
-
-                // Fill the fields if logged user has the attributes
-                if (loggedUser.attributes.dob && IAMService.hasOneRole("_tide_dob.read") && IAMService.hasOneRole("_tide_dob.selfdecrypt")){
-                    // Display this in accordion
-                    setEncryptedDob(loggedUser.attributes.dob[0]); // display when already encrypted in database
-                    // DOB format in Keycloak needs to be "YYYY-MM-DD" to display
-                    const decryptedDob = await IAMService.doDecrypt([
-                      {
-                        "encrypted": loggedUser.attributes.dob[0],
-                        "tags": ["dob"]
-                      }
-                    ])
-
-                    if (loggedUser.attributes.dob[0]){
-                      setFormData(prev => ({...prev, dob: decryptedDob[0]}));
-                    }
-                    else {
-                      setFormData(prev => ({...prev, dob: decryptedDob}));
-                    }
-                    
-                    //setSavedData(prev => ({...prev, dob: decryptedDob}));
-                }
-            
-                if (loggedUser.attributes.cc && IAMService.hasOneRole("_tide_cc.read") && IAMService.hasOneRole("_tide_cc.selfdecrypt")){
-                    // Display this in accordion
-                    setEncryptedCc(loggedUser.attributes.cc[0]); // display when already encrypted in database
-                    const decryptedCc = await IAMService.doDecrypt([
-                        {
-                          "encrypted": loggedUser.attributes.cc[0],
-                          "tags": ["cc"]
-                        }
-                    ])
-
-                    if (loggedUser.attributes.cc[0]){
-                        setFormData(prev => ({...prev, cc: decryptedCc[0]}));
-                    }
-                    else {
-                        setFormData(prev => ({...prev, cc: decryptedCc}));
-                    }
-
-                    //setSavedData(prev => ({...prev, cc: decryptedCc}));
-                }       
-            } catch (error){
-                // Set the raw data into the fields as they don't need to be decrypted (If they were saved not encrypted in Keycloak)
-                setFormData(prev => ({...prev, dob: loggedUser.attributes.dob[0]}));
-                setFormData(prev => ({...prev, cc: loggedUser.attributes.cc[0]}));
-
-                // Data in Keycloak is not encrypted yet, so do this instead
-                if (loggedUser.attributes.dob){
-                  const encryptedDob = await IAMService.doEncrypt([
-                    {
-                      "data": loggedUser.attributes.dob[0],
-                      "tags": ["dob"]
-                    }
-                  ])
-                  loggedUser.attributes.dob = encryptedDob[0];
-                  console.log(encryptedDob[0]);
-                  setEncryptedDob(encryptedDob[0]);
-                }
-                
-
-                if (loggedUser.attributes.cc){
-                  const encryptedCc = await IAMService.doEncrypt([
-                    {
-                      "data": loggedUser.attributes.cc[0],
-                      "tags": ["cc"]
-                    }
-                  ])
-                  loggedUser.attributes.cc = encryptedCc[0];
-                  console.log(encryptedCc[0]);
-                  setEncryptedCc(encryptedCc[0]);
-                }
-
-                // Update the user with the encrypted data to prevent storage as raw
-                //const token = await  IAMService.getToken();
-                const response = await appService.updateUser(baseURL, realm, loggedUser, token);
-
-                console.log(error + " User Dob or CC was saved as raw data encrypting it and saving now.");
+    //Decrypt the logged in user's data
+    const getUserData = async () => { 
+      // Let context data load first
+      if (loggedUser){
+        
+          try {
+              
+            // If user has no read permission don't decrypt the data
+            if (!IAMService.hasOneRole("_tide_cc.read")){
+              setFormData(prev => ({...prev, cc: loggedUser.attributes.cc[0]}));
             }
-        } 
+
+            if (!IAMService.hasOneRole("_tide_dob.read")){
+              setFormData(prev => ({...prev, dob: "0000-00-00"}));
+            }
+            
+
+
+            // Fill the fields if logged user has the attributes
+            if (loggedUser.attributes.dob && IAMService.hasOneRole("_tide_dob.read") && IAMService.hasOneRole("_tide_dob.selfdecrypt")){
+              // Display this in accordion
+              setEncryptedDob(loggedUser.attributes.dob[0]); // display when already encrypted in database
+              // DOB format in Keycloak needs to be "YYYY-MM-DD" to display
+              const decryptedDob = await IAMService.doDecrypt([
+                {
+                  "encrypted": loggedUser.attributes.dob[0],
+                  "tags": ["dob"]
+                }
+              ])
+
+              if (loggedUser.attributes.dob[0]){
+                setFormData(prev => ({...prev, dob: decryptedDob[0]}));
+              }
+              else {
+                setFormData(prev => ({...prev, dob: decryptedDob}));
+              }
+              
+              
+            }
+          
+            if (loggedUser.attributes.cc && IAMService.hasOneRole("_tide_cc.read") && IAMService.hasOneRole("_tide_cc.selfdecrypt")){
+              // Display this in accordion
+              setEncryptedCc(loggedUser.attributes.cc[0]); // display when already encrypted in database
+              const decryptedCc = await IAMService.doDecrypt([
+                  {
+                    "encrypted": loggedUser.attributes.cc[0],
+                    "tags": ["cc"]
+                  }
+              ])
+
+              if (loggedUser.attributes.cc[0]){
+                  setFormData(prev => ({...prev, cc: decryptedCc[0]}));
+              }
+              else {
+                  setFormData(prev => ({...prev, cc: decryptedCc}));
+              }
+
+             
+            }       
+          } catch (error){
+            // Set the raw data into the fields as they don't need to be decrypted (If they were saved not encrypted in Keycloak)
+            setFormData(prev => ({...prev, dob: loggedUser.attributes.dob[0]}));
+            setFormData(prev => ({...prev, cc: loggedUser.attributes.cc[0]}));
+
+            // Data in Keycloak is not encrypted yet, so do this instead
+            if (loggedUser.attributes.dob){
+              const encryptedDob = await IAMService.doEncrypt([
+                {
+                  "data": loggedUser.attributes.dob[0],
+                  "tags": ["dob"]
+                }
+              ])
+              loggedUser.attributes.dob = encryptedDob[0];
+              
+              setEncryptedDob(encryptedDob[0]);
+            }
+            
+
+            if (loggedUser.attributes.cc){
+              const encryptedCc = await IAMService.doEncrypt([
+                {
+                  "data": loggedUser.attributes.cc[0],
+                  "tags": ["cc"]
+                }
+              ])
+              loggedUser.attributes.cc = encryptedCc[0];
+              
+              setEncryptedCc(encryptedCc[0]);
+            }
+
+            // Update the user with the encrypted data to prevent storage as raw
+            const token = await  IAMService.getToken();
+            const response = await appService.updateUser(baseURL, realm, loggedUser, token);
+
+            console.log(error + " User Dob or CC was saved as raw data encrypting it and saving now.");
+          }
+      } 
     };
     
     const shortenString = (string) => {
@@ -221,7 +221,7 @@ export default function User(){
                 setEncryptedCc(encryptedCc[0]);
             }
 
-            //const token = await IAMService.getToken();
+            const token = await IAMService.getToken();
             const response = await appService.updateUser(baseURL, realm, loggedUser, token);
 
             if (response.ok){
@@ -237,7 +237,7 @@ export default function User(){
     };
 
     return (
-        !loading
+        !contextLoading
         ?
         
         <main className="flex-grow w-full pt-6 pb-16">

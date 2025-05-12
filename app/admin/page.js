@@ -15,9 +15,9 @@ export default function Admin() {
 
   const pathname = usePathname();
   const router = useRouter();
-  const searchParams = useSearchParams();
+ 
   // Realm Management client ID to assign user the tide-realm-admin role if not yet assigned
-  //const RMClientID = searchParams.get("clientID");
+ 
   const {baseURL, realm, authenticated } = useAppContext();
 
   const [isTideAdmin, setIsTideAdmin] = useState(false);
@@ -75,18 +75,25 @@ export default function Admin() {
         shuffled.forEach((index) => {
           approvals[index] = true;
         })
-        console.log(approvals);
+        
         setApprovals(approvals);
       }
     }
   }, [isApproved])
 
+  // useEffect(() => {
+  //   if (authenticated){
+  //     getLoggedUser();
+  //     if (isTideAdmin){
+  //       getChangeRequests(); // Get existing requests to cancel them
+  //     }
+  //   }
+  //   setLoading(false);
+  // }, [])
+
   useEffect(() => {
     if (authenticated){
       getLoggedUser();
-      if (isTideAdmin){
-        getChangeRequests(); // Get existing requests to cancel them
-      }
     }
     setLoading(false);
   }, [authenticated])
@@ -103,8 +110,10 @@ export default function Admin() {
       // Shouldn't need to get permissions if logged in user isn't an Admin; will need to elevate instead
       if (isTideAdmin){
         setUserPermissions();
+        if (isTideAdmin){
+          getChangeRequests(); // Get existing requests to cancel them
+        }
       }
-    
   }, [isTideAdmin])
 
   // Handles the state of the submit change button, disable if there's no change
@@ -167,9 +176,13 @@ export default function Admin() {
         const response = await fetch(`/api/commitAdminRole`);
 
         if (response.ok) {
+            // Force update of token without logging out
+            await IAMService.updateToken(-1); //-1 to update it immediately
             setIsTideAdmin(true); 
             console.log("Admin Role Assigned");
-            // Force update of token without logging out? IAMService => tidecloak updateToken() maybe.
+            
+            
+
         }
     }
     else {
@@ -179,9 +192,16 @@ export default function Admin() {
 
   // Get latest change requests for canceling and updating them
   const getChangeRequests = async () => {
+    
     const token = await IAMService.getToken();
     const changeRequests = await appService.getUserRequests(baseURL, realm, token);
-    setRequests(changeRequests);
+
+    // Remove Denied Requests
+    const withoutDeniedReqs = changeRequests.filter((request) => 
+      (request.deleteStatus !== "DENIED" && request.status !== "DENIED")
+    )
+    console.log(withoutDeniedReqs);
+    setRequests(withoutDeniedReqs);
   }
 
   // Assign or unassign the logged in user realm roles (pemissions)
@@ -191,15 +211,19 @@ export default function Admin() {
 
     localStorage.removeItem("approvals");
 
-    // Cancel existing requests if they exist to reset
-    if (requests.length > 0){
-      await cancelRequests(requests);
-    }
+    // Cancel all requests before assigning new ones.
+    const allRequests = await appService.getUserRequests(baseURL, realm, token); // Including the denied requests
+    console.log(allRequests);
+    await cancelRequests(allRequests);
+    
     
     // Compare the current checkbox state with the current permissions. Note: token roles only update when a role change request COMMITS.
     // If the states don't match, a change request is required.
     // Date of Birth
+
+
     if (hasDobReadPerm !== IAMService.hasOneRole("_tide_dob.read")){
+      
       const readRole = await appService.getRealmRole(baseURL, realm, "_tide_dob.read", token);
       if (hasDobReadPerm === true){
         await appService.assignRealmRole(baseURL, realm, loggedUser.id, readRole, token);
@@ -245,6 +269,7 @@ export default function Admin() {
 
     // Set first change request as the one currently opened
     setActiveRequestIndex(0);
+    setExpandedIndex(0);
     // Reset form state
     setHasChanges(false);
   };
@@ -353,9 +378,10 @@ export default function Admin() {
   
         const response = await appService.denyEnclave(baseURL, realm, formData, token);
         if (response.ok){
-          setRequests(await appService.getUserRequests(baseURL, realm, token));
+          //setRequests(await appService.getUserRequests(baseURL, realm, token));
           setHasUserApproved(false);
-          
+          setActiveRequestIndex(prev => prev + 1);
+          setExpandedIndex(prev => prev + 1);
         } 
       };
   
@@ -636,7 +662,7 @@ export default function Admin() {
 
 
 
-                  {requests.length > 0 && (
+                  {requests[0] && (
                     <>
                       {/* Sub-heading + info toggle */}
                       <div className="relative mb-2">

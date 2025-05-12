@@ -1,10 +1,12 @@
 "use client"
 
-import React, { useState, useLayoutEffect, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 
 import AccordionBox from "./components/accordionBox";
 import Button from "./components/button";
 import kcData from "/tidecloak.json";
+
+import {useAppContext} from "./context/context";
 
 import IAMService from "../lib/IAMService";
 // Required for the Approval and Commit Tide Encalve to work in the admin console.
@@ -22,54 +24,58 @@ import LoadingPage from "./components/LoadingPage";
 export default function Login() {
 
   const pathname = usePathname();
+  const router = useRouter();
 
- 
   const [showLoginAccordion, setShowLoginAccordion] = useState(false);
 
-  //const {realm, baseURL, logUser} = useAppContext();
+  const {authenticated, loading, contextLoading} = useAppContext();
 
-  const [loading, setLoading] = useState(true);
+  const [showError, setShowError] = useState(false);
 
-  const [inviteURL, setInviteURL] = useState("");
+  const [baseURL, setBaseURL] = useState("Need to setup backend first.");
 
   // State to show initialiser when the tidecloak.json file has an empty object
   const [isInitializing, setIsInitializing] = useState(false);
 
   // Initiate Keycloak to handle token and Tide enclave
   useEffect(() => {
-    const router = useRouter();
-
     // Skip login screen if already logged in
-    if (IAMService.isLoggedIn()){
+    if (authenticated){
       router.push("/auth/redirect");
     }
-    setLoading(false);
-      
-    if ( Object.keys(kcData).length == 0 ) {
-      setIsInitializing(true);
-      setLoading(false);
+    else if (!authenticated && Object.keys(kcData).length === 0) {
+      // Show initialiser
+        setIsInitializing(true);
+    }
+
+    if (kcData && Object.keys(kcData).length !== 0 && kcData["auth-server-url"]){
+      setBaseURL(kcData["auth-server-url"]);
+    }
+  }, [authenticated])
+
+
+  // Manage whether the token expired error should be shown
+  useEffect(() => {
+    const tokenExpired = sessionStorage.getItem("tokenExpired");
+    if (tokenExpired){
+      setShowError(true);
     }
   }, [])
 
-  useEffect(() => {
-    if (!loading && inviteURL !== ""){
-      navigator.clipboard.writeText(inviteURL);
-      console.log("Copied Tide Invite URL to Clipboard.");
-    }
-  }, [inviteURL])
- 
 
   const handleLogin = async () => {
+    // If previously logged in remove this session variable.
+    sessionStorage.removeItem("tokenExpired"); 
     IAMService.doLogin();
   };
 
   // Initialization Placeholder
   if (isInitializing) {
-    return <LoadingPage isInitializing={isInitializing} setIsInitializing={setIsInitializing} setInviteURL={setInviteURL}/>;
+    return <LoadingPage isInitializing={isInitializing} setIsInitializing={setIsInitializing}/>;
   }
   
   return (
-    !loading
+    true
     ?
       <main className="flex-grow w-full pt-6 pb-16">
 
@@ -106,11 +112,15 @@ export default function Login() {
                   <h3 className="text-xl font-semibold">BYOiD</h3>
                   <p className="text-base">Login or create an account to see the user experience demo.</p>
                   <Button onClick={handleLogin}>Login</Button>
-                  {/* error placeholder */}
-                  <div className="mt-2 flex items-center text-red-600 text-sm">
-                     <FaExclamationCircle className="mr-1" />
-                     <span>This is a dummy error message</span>
-                   </div>
+                  {
+                    showError
+                    ? 
+                    <div className="mt-2 flex items-center text-red-600 text-sm">
+                      <FaExclamationCircle className="mr-1" />
+                      <span>Session expired.</span>
+                    </div>
+                    : null
+                  }
                 </div>
 
                 <div className="border-t border-gray-200 pt-6">
@@ -119,7 +129,7 @@ export default function Login() {
                   <div className="border border-dashed border-gray-500 p-4">
                     <ul className="list-disc list-inside">
                       <li>
-                        Visit: <a href="http://xxxxxxxxxxxxxxxxxxxxx" className="text-blue-600">http://xxxxxxxxxxxxxxxxxxxxx</a>
+                        Visit: <a href={baseURL} className="text-blue-600">{baseURL}</a>
                       </li>
                       <li>Use Credentials: admin / password</li>
                     </ul>
