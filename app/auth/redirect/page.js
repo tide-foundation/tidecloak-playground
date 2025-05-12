@@ -14,24 +14,6 @@ export default function RedirectPage() {
   const auth = params.get("auth");
   const router = useRouter();
 
-  // useEffect(() => {
-  //   if (!contextLoading){
-  //     if (auth === "failed"){
-  //       IAMService.doLogout();
-  //       console.log("hi?");
-  //     }
-
-
-  //     if (authenticated){
-  //       router.push("/user");
-        
-  //     }
-  //     else {
-  //       router.push("/");
-  //     }                
-  //   }       
-  // }, []);
-
   useEffect(() => {
     if (!contextLoading){
 

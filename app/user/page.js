@@ -34,14 +34,10 @@ export default function User(){
     const [users, setUsers] = useState([]);
     const [encryptedDob, setEncryptedDob] = useState("");
     const [encryptedCc, setEncryptedCc] = useState("");
-
-    //const [token, setToken] = useState(null);
         
     const handleUserFieldChange = (field) => (e) => {
         setFormData({ ...formData, [field]: e.target.value });
     };
-
-    
 
     useEffect(() => {
       if (!contextLoading){
@@ -53,8 +49,6 @@ export default function User(){
      
     }, [authenticated])
 
-
-
     //Perform only when the context receives the logged user details
     useEffect(() => {
       if (loggedUser && !contextLoading){
@@ -62,15 +56,6 @@ export default function User(){
         
       }
     }, [loggedUser])
-
-    // Show the contents only after the user data is ready
-    // useEffect(() => {
-    //     if (formData.dob !== "" || formData.cc !== ""){
-    //         setLoading(false);  
-    //     }
-    // }, [formData])
-
-    
 
     // Populate the Database Exposure cards, and set the current logged user
     const getAllUsers = async () => {
@@ -101,8 +86,6 @@ export default function User(){
             if (!IAMService.hasOneRole("_tide_dob.read")){
               setFormData(prev => ({...prev, dob: "0000-00-00"}));
             }
-            
-
 
             // Fill the fields if logged user has the attributes
             if (loggedUser.attributes.dob && IAMService.hasOneRole("_tide_dob.read") && IAMService.hasOneRole("_tide_dob.selfdecrypt")){
@@ -190,10 +173,6 @@ export default function User(){
         const end = string.slice(200);
         return `${start} ....... ${end}`;
     } 
-
-    
-    
-   
 
     const handleFormSubmit = async (e) => {
         try {

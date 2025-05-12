@@ -180,9 +180,6 @@ export default function Admin() {
             await IAMService.updateToken(-1); //-1 to update it immediately
             setIsTideAdmin(true); 
             console.log("Admin Role Assigned");
-            
-            
-
         }
     }
     else {
@@ -200,7 +197,6 @@ export default function Admin() {
     const withoutDeniedReqs = changeRequests.filter((request) => 
       (request.deleteStatus !== "DENIED" && request.status !== "DENIED")
     )
-    console.log(withoutDeniedReqs);
     setRequests(withoutDeniedReqs);
   }
 
@@ -213,15 +209,12 @@ export default function Admin() {
 
     // Cancel all requests before assigning new ones.
     const allRequests = await appService.getUserRequests(baseURL, realm, token); // Including the denied requests
-    console.log(allRequests);
     await cancelRequests(allRequests);
     
     
     // Compare the current checkbox state with the current permissions. Note: token roles only update when a role change request COMMITS.
     // If the states don't match, a change request is required.
     // Date of Birth
-
-
     if (hasDobReadPerm !== IAMService.hasOneRole("_tide_dob.read")){
       
       const readRole = await appService.getRealmRole(baseURL, realm, "_tide_dob.read", token);
