@@ -1,20 +1,21 @@
 {
-  "name": "Tidecloak Demo",
+  "name": "Tidecloak Next.js Demo",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:18",
-  "postCreateCommand": "npm install && npm start",
+  "postCreateCommand": "npm install && npm run dev",
   "customizations": {
     "vscode": {
       "extensions": [
         "esbenp.prettier-vscode",
         "dbaeumer.vscode-eslint",
-        "eamodio.gitlens"
+        "eamodio.gitlens",
+        "bradlc.vscode-tailwindcss"
       ]
     }
   },
   "forwardPorts": [3000],
   "portsAttributes": {
     "3000": {
-      "label": "Tidecloak App",
+      "label": "Next.js App",
       "onAutoForward": "openBrowser"
     }
   }
