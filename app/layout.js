@@ -1,4 +1,5 @@
 // app/layout.js
+'use client';
 import "./styles/tailwind.css";
 import "./styles/spinKit.css";  // Import your spinKit styles
 import { Provider } from "./context/context";
