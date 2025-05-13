@@ -1,7 +1,7 @@
 {
   "name": "Tidecloak Demo",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:18",
-  "postCreateCommand": "./.devcontainer/setup.sh",
+  "postCreateCommand": "chmod +x .devcontainer/setup.sh && ./.devcontainer/setup.sh",
   "customizations": {
     "vscode": {
       "extensions": [
