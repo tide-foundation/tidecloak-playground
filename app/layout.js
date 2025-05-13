@@ -1,6 +1,6 @@
 // app/layout.js
-import "../styles/tailwind.css";
-import "../styles/spinKit.css";  // Import your spinKit styles
+import "./styles/tailwind.css";
+import "./styles/spinKit.css";  // Import your spinKit styles
 import { Provider } from "./context/context";
 import Nav from "./components/nav";
 import Footer from "./components/footer";
