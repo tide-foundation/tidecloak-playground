@@ -44,10 +44,20 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
         const data = await response.json();
         setMasterToken(data.body);
     
-        if (!response.ok){
-            const errorResponse = await response.json();
-            throw new Error(errorResponse.error || "Failed to fetch master token.");
+        if (!response.ok) {
+            const contentType = response.headers.get("content-type");
+        
+            let errorMessage = "Failed to fetch master token.";
+            if (contentType && contentType.includes("application/json")) {
+                const errorResponse = await response.json();
+                errorMessage = errorResponse.error || errorMessage;
+            } else {
+                errorMessage = await response.text();  // Read raw text if not JSON
+            }
+        
+            throw new Error(errorMessage);
         }
+                
     };
 
     // Create the demo realm using the settings provided in test-realm.json
