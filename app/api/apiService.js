@@ -165,11 +165,11 @@ async function createUser(baseURL, realm, token, username, dob, cc){
 
 /**
  * GET - /admin/realms/${realm}/users
- * Get the default user object via parameter search
+ * Get the demo user object via parameter search
  * @param {string} baseURL - url body provided in the apiConfigs.js
  * @param {String} realm - the realm name provided in the apiConfigs.js 
  * @param {string} token - master token
- * @returns {Promise<Object>} - response status with default user's object
+ * @returns {Promise<Object>} - response status with demo user's object
  */
 async function getDefaultUser(baseURL, realm, token){
     
@@ -385,7 +385,7 @@ async function getClientAdapter(baseURL, realm, clientID, token){
     });
 
     if (!response.ok){
-       throw new Error("Unable to get client adapter."); 
+       throw new Error("Failed to get client adapter."); 
     }
 
     const configsJSON = await response.json();
@@ -393,6 +393,43 @@ async function getClientAdapter(baseURL, realm, clientID, token){
 
     return {ok: true, status: response.status, body: configsString};
 };
+
+async function updateSelfRegister(baseURL, realm, token){
+
+    // Get the realm config first
+     const getResponse = await fetch(`${baseURL}/admin/realms/${realm}`, {
+        method: 'GET',
+        headers: {
+            "authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+        }
+    });
+
+    if (!getResponse.ok){
+        throw new Error("Failed to fetch realm configuration.");
+    }
+    const realmConfig = await getResponse.json();
+
+    // Turn is off
+    realmConfig.registrationAllowed = false;
+
+    const putResponse = await fetch(`${baseURL}/admin/realms/${realm}`, {
+        method: 'PUT',
+        headers: {
+            "authorization": `Bearer ${token}`,
+            "Content-Type": "application/json", 
+        },
+        body: JSON.stringify(
+            realmConfig
+        )
+    });
+
+    if (!putResponse.ok){
+        throw new Error("Failed to turn Self Register off."); 
+    }
+
+    return {ok: true, status: putResponse.status};
+}
 
 /* TIDE CUSTOM ENDPOINTS */
 
@@ -489,6 +526,7 @@ async function commitChangeRequest(baseURL, realm, usersChangeReq, token){
  * @returns {Promise<Object>} - status response
  */
 async function activateIDPLicense(baseURL, realm, token){
+    console.log(baseURL, realm, token);
     const response = await fetch(`${baseURL}/admin/realms/${realm}/vendorResources/setUpTideRealm`, {
         method: 'POST',
         headers: {
@@ -500,7 +538,7 @@ async function activateIDPLicense(baseURL, realm, token){
     });
     
     if (!response.ok) {
-       throw new Error("Unable to activate IDP license");
+       throw new Error("Failed to activate IDP license");
     }
 
     return {ok: true, status: response.status};
@@ -686,7 +724,8 @@ const apiService = {
     updateIDPSettings,
     signSettings,
     getClientID,
-    getClientAdapter
+    getClientAdapter,
+    updateSelfRegister
 }
 
 export default apiService;

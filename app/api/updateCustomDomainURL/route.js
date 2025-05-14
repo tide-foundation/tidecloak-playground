@@ -40,6 +40,6 @@ export async function GET(request){
         }
     } 
     catch (error) {
-        return new Response(JSON.stringify({ok: false, error: `[updateCustomDomainURL Endpoint]` + error.message}), {status: 500})
+        return new Response(JSON.stringify({ok: false, error: `[updateCustomDomainURL Endpoint] ` + error.message}), {status: 500})
     } 
 }

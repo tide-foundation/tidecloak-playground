@@ -9,19 +9,12 @@ import apiService from "../apiService";
  * @param {Object} request - master token in the authorization header 
  * @returns {Promise<Object>} - status response for client side to use
  */
-export async function GET(request){
+export async function GET(){
 
     const baseURL = configs.baseURL;
     const realm = settings.realm;
-
-    const authHeader = request.headers.get("authorization");
-
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return new Response(JSON.stringify({ error: "Unauthorized: Missing or invalid token"}), {status: 400});
-    }
-
-    // To get the token without the leading "Bearer "
-    const masterToken = authHeader.split(" ")[1];
+    
+    const masterToken = await apiService.getMasterToken(baseURL);
 
     try {
         // Sign the new IDP settings

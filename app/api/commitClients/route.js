@@ -39,9 +39,7 @@ export async function GET(request){
             const commitResult = await apiService.commitChangeRequest(baseURL, realm, changeRequest, masterToken);
         }
 
-        //return new Response(JSON.stringify({ok: true, status: commitClientResp.status, statusText: "Approving & Committing Client: Complete!"}));     
-
-        return new Response({ok: true});
+        return new Response(JSON.stringify({ok: true}), {status: commitClientResp.status});     
     } 
     catch (error) {
         return new Response(JSON.stringify({ok: false, error: "[commitClients Endpoint] " + error.message}), {status: 500})

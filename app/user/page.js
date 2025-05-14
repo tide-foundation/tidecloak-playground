@@ -42,8 +42,9 @@ export default function User(){
     useEffect(() => {
       if (!contextLoading){
         if (authenticated){
-          
+          updateCurrentConfig();
           getAllUsers();
+          
         }
       }
      
@@ -56,6 +57,58 @@ export default function User(){
         
       }
     }, [loggedUser])
+
+    // Fill the demo user's data and turn self registration off for demo purposes
+    const updateCurrentConfig = async() => {
+      const token = await IAMService.getToken();
+      const config = await appService.getRealmConfig(baseURL, realm, token);
+
+      // Get the logged in user 
+      if (config.registrationAllowed){
+        const users = await appService.getUsers(baseURL, realm, token);
+        setUsers(users);
+        const loggedVuid =  await IAMService.getValueFromToken("vuid");
+        const loggedInUser = users.find(user => {
+          if (user.attributes.vuid[0] === loggedVuid){
+              return user;
+          }
+        });
+      
+        loggedInUser["email"] = "demouser@tidecloak.com";
+        loggedInUser.attributes["dob"] = "1980-01-01";
+        loggedInUser.attributes["cc"] = "4111111111111111";
+        // Update the logged in user
+        const response = await appService.updateUser(baseURL, realm, loggedInUser, token);
+
+        // Turn Self Registration off
+        const setSelfRegOff = async ()  => {
+            
+          // The endpoint will get the token itself
+          const response = await fetch(`/api/updateSelfRegistration`, {
+            method: "GET",
+          })
+
+          if (!response.ok){
+            const errorResponse = await response.json();
+            throw new Error(errorResponse.error || "Failed to turn Self Registration off.");
+          }
+        }
+        setSelfRegOff();
+      }
+
+      // Sign the new settings after turning off Self Registration
+      const signSettings = async () => {
+        const response = await fetch(`/api/signSettings`, {
+          method: "GET",
+        })
+
+        if (!response.ok){
+          const errorResponse = await response.json();
+          throw new Error(errorResponse.error || "Failed to sign the realm settings.");
+        }
+        signSettings();
+      }
+    }
 
     // Populate the Database Exposure cards, and set the current logged user
     const getAllUsers = async () => {

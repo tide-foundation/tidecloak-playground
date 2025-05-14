@@ -142,24 +142,25 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
         }
     }
 
-    // Assign the demo user the minimum realm roles required
-    const assignRealmRoles = async () => {
-        setCurrentStep(4);
-        const response = await fetch(`/api/assignRealmRoles`, {
-            method: "GET",
-            headers: {
-                "Authorization": `Bearer ${masterToken}`
-            }
-        })
+    // // Assign the demo user the minimum realm roles required
+    // const assignRealmRoles = async () => {
+    //     
+    //     const response = await fetch(`/api/assignRealmRoles`, {
+    //         method: "GET",
+    //         headers: {
+    //             "Authorization": `Bearer ${masterToken}`
+    //         }
+    //     })
 
-        if (!response.ok){
-            const errorResponse = await response.json();
-            throw new Error(errorResponse.error || "Failed to assign roles to the demo user.");
-        }
-    }
+    //     if (!response.ok){
+    //         const errorResponse = await response.json();
+    //         throw new Error(errorResponse.error || "Failed to assign roles to the demo user.");
+    //     }
+    // }
 
     // Approve and Commit all Clients change requests
     const commitClients = async () => {
+        setCurrentStep(4);
         const response = await fetch(`/api/commitClients`, {
             method: "GET",
             headers: {
@@ -219,22 +220,22 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
         }
     }
 
-    // Sign the new settings after updating the Custom Domain URL
-    const inviteUser = async () => {
-        const response = await fetch(`/api/inviteUser`, {
-            method: "GET",
-            headers: {
-                "Authorization": `Bearer ${masterToken}`
-            }
-        })
+    // // Sign the new settings after updating the Custom Domain URL
+    // const inviteUser = async () => {
+    //     const response = await fetch(`/api/inviteUser`, {
+    //         method: "GET",
+    //         headers: {
+    //             "Authorization": `Bearer ${masterToken}`
+    //         }
+    //     })
 
-        if (!response.ok){
-            const errorResponse = await response.json();
-            throw new Error(errorResponse.error || "Failed generate Tide invite link.");
-        }
+    //     if (!response.ok){
+    //         const errorResponse = await response.json();
+    //         throw new Error(errorResponse.error || "Failed generate Tide invite link.");
+    //     }
 
-        const data = await response.json();
-    }
+    //     const data = await response.json();
+    // }
     
     const initialize = async () => {
         try {
@@ -242,8 +243,8 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
             await getLicense();
             await toggleIGA();
             await createUsers();
-            await inviteUser();
-            await assignRealmRoles();
+            //await inviteUser();
+            //await assignRealmRoles();
             await commitClients();
             await updateCustomDomainURL();
             await signSettings();
