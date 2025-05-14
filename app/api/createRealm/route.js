@@ -1,6 +1,7 @@
-import configs from "../apiConfigs";
-import settings from "/test-realm.json";
-import apiService from "../apiService";
+import configs from "../apiConfigs";                
+import settings from "../../../test-realm.json";   
+import apiService from "../apiService";          
+
 
 /**
  * This endpoint is only for creating the initial realm for the admin console on initialisation for the client side.
