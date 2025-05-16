@@ -20,6 +20,7 @@ export async function GET(request){
 
     // To get the token without the leading "Bearer "
     const masterToken = authHeader.split(" ")[1];
+    console.log(masterToken);
 
     try {
         // Create the realm, importing the settings from test-realm.json

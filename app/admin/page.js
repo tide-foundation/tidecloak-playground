@@ -1,16 +1,18 @@
 "use client"
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import IAMService from "../../lib/IAMService";
 import appService from "../../lib/appService";
 import { useAppContext } from "../context/context";
 import { Heimdall } from "../../tide-modules/heimdall";
-
 import AccordionBox from "../components/accordionBox";
 import Button from "../components/button";
 import { FaCheckCircle, FaChevronRight } from "react-icons/fa";
+import { usePathname, useRouter } from "next/navigation";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-
+/**
+ * 
+ * @returns {JSX.Element}
+ */
 export default function Admin() { 
 
   const pathname = usePathname();
@@ -177,7 +179,7 @@ export default function Admin() {
 
         if (response.ok) {
             // Force update of token without logging out
-            await IAMService.updateToken(-1); //-1 to update it immediately
+            await IAMService.updateIAMToken(); //-1 to update it immediately
             setIsTideAdmin(true); 
             console.log("Admin Role Assigned");
         }
@@ -204,6 +206,10 @@ export default function Admin() {
   // Assign or unassign the logged in user realm roles (pemissions)
   const handleAdminPermissionSubmit = async (e) => {
     e.preventDefault();
+
+    // Return the check boxes back to the current permissions the token holds
+    setUserPermissions(); 
+
     const token = await IAMService.getToken();
 
     localStorage.removeItem("approvals");
@@ -381,7 +387,7 @@ export default function Admin() {
   
       //POST /tideAdminResources/add-authorization
       // Add approve status to change request
-        const addApproval = async (action, draftId, type, authorizerApproval, authorizerAuthentication) => {
+      const addApproval = async (action, draftId, type, authorizerApproval, authorizerAuthentication) => {
         const token = await IAMService.getToken();
 
         // Key value pairs
@@ -393,6 +399,7 @@ export default function Admin() {
         formData.append("authorizerAuthentication", authorizerAuthentication);
     
         const response = await appService.approveEnclave(baseURL, realm, formData, token);
+
         if (response.ok){
           // TideCloak keeps approved change requests so fetch new one and replace
           const updatedChangeReqs = await appService.getUserRequests(baseURL, realm, token);
@@ -406,7 +413,7 @@ export default function Admin() {
           setHasUserApproved(true);
         }
         
-        };
+      };
 
         
   
@@ -521,17 +528,21 @@ export default function Admin() {
           else {
             requests[activeRequestIndex].status = "COMMITTED";
           }
-          
-          // Reset states for next change request
-          setApprovals([false, false, false, false, false]);
-          setActiveRequestIndex(prev => prev + 1);
-          setExpandedIndex(prev => prev + 1);
 
           // Clear the locally stored approved users array
           localStorage.removeItem("approvals");
 
           // Get a new token to have check the currently assigned roles to the logged in user
-          await IAMService.updateToken(-1); //-1 to update it immediately
+          await IAMService.updateIAMToken();
+
+          // Update check boxes to reflect the change in token's permissions
+          await setUserPermissions(); 
+
+          // Reset states for next change request
+          setApprovals([false, false, false, false, false]);
+          setTotalApproved(1);
+          setActiveRequestIndex(prev => prev + 1);
+          setExpandedIndex(prev => prev + 1);
         }
     };
 

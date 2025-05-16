@@ -5,6 +5,8 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     const [currentStep, setCurrentStep] = useState(0);
     const [masterToken, setMasterToken] = useState(null);
+
+    let restartCounter = 0;
     
 
     // Initialiser
@@ -243,8 +245,8 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
             await getLicense();
             await toggleIGA();
             await createUsers();
-            //await inviteUser();
-            //await assignRealmRoles();
+            // await inviteUser();
+            // await assignRealmRoles();
             await commitClients();
             await updateCustomDomainURL();
             await signSettings();
@@ -259,6 +261,15 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
             await deleteRealm();
             // Reset steps
             setCurrentStep(0);
+
+
+            // restartCounter = restartCounter + 1;
+            // console.log("Times restarted: " + restartCounter);
+
+            // if (restartCounter < 2){
+            //     await initialize();
+            // }
+            
         }
 
     };

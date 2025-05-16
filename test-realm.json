@@ -2,7 +2,7 @@
   "realm": "tidecloak-demo",
   "enabled": true,
   "sslRequired": "external",
-  "registrationAllowed": false,
+  "registrationAllowed": true,
   "duplicateEmailsAllowed": true,
   "roles": {
     "realm": [
@@ -48,7 +48,15 @@
             "_tide_dob.selfdecrypt",
             "_tide_cc.selfencrypt",
             "_tide_cc.selfdecrypt"
-          ]
+          ],
+          "client": {
+            "realm-management": [
+              "view-users",
+              "manage-users",
+              "view-clients",
+              "view-realm"
+            ]
+          }
         }
       }
     ],

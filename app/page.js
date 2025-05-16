@@ -1,60 +1,56 @@
 "use client"
 
-import React, { useState, useEffect } from "react";
-
+import { useState, useEffect } from "react";
 import AccordionBox from "./components/accordionBox";
 import Button from "./components/button";
 import kcData from "/tidecloak.json";
-
 import {useAppContext} from "./context/context";
-
 import IAMService from "../lib/IAMService";
-// Required for the Approval and Commit Tide Encalve to work in the admin console.
-
 import { usePathname, useRouter } from "next/navigation";
-
 import {
   FaExclamationCircle,
 } from "react-icons/fa";
-
 import LoadingPage from "./components/LoadingPage";
 
-// Main App Component
-
+/**
+ * "/" path containing the Login page, logouts including token expiration is redirected here
+ * @returns {JSX.Element} - HTML rendering the "/" path containing login functionality, message on token expiration and TideCloak backend address
+ */
 export default function Login() {
-
+  // Current path "/"
   const pathname = usePathname();
+  // Navigation manager
   const router = useRouter();
-
+  // Expandable extra information
   const [showLoginAccordion, setShowLoginAccordion] = useState(false);
-
-  const {authenticated, loading, contextLoading} = useAppContext();
-
+  // Shared context data to check if already authenticated skip this login screen
+  const {authenticated} = useAppContext();
+  // State for error message when token expires
   const [showError, setShowError] = useState(false);
-
+  // TideCloak address
   const [baseURL, setBaseURL] = useState("Need to setup backend first.");
-
   // State to show initialiser when the tidecloak.json file has an empty object
   const [isInitializing, setIsInitializing] = useState(false);
 
-  // Initiate Keycloak to handle token and Tide enclave
+  // Check authentication from context
   useEffect(() => {
     // Skip login screen if already logged in
     if (authenticated){
       router.push("/auth/redirect");
     }
     else if (!authenticated && Object.keys(kcData).length === 0) {
-      // Show initialiser
-        setIsInitializing(true);
+      // Show initialiser if tidecloak.json object is empty
+      setIsInitializing(true);
     }
 
+    // Get the TideCloak address from the tidecloak.json file if its object is filled by TideCloak
     if (kcData && Object.keys(kcData).length !== 0 && kcData["auth-server-url"]){
       setBaseURL(kcData["auth-server-url"]);
     }
   }, [authenticated])
 
 
-  // Manage whether the token expired error should be shown
+  // Manage whether the token expired error should be shown using cached session data
   useEffect(() => {
     const tokenExpired = sessionStorage.getItem("tokenExpired");
     if (tokenExpired){
@@ -63,13 +59,14 @@ export default function Login() {
   }, [])
 
 
+  // When the Login button is clicked, clear cached data and redirect to Tide Enclave
   const handleLogin = async () => {
     // If previously logged in remove this session variable.
     sessionStorage.removeItem("tokenExpired"); 
     IAMService.doLogin();
   };
 
-  // Initialization Placeholder
+  // Show the initialiser
   if (isInitializing) {
     return <LoadingPage isInitializing={isInitializing} setIsInitializing={setIsInitializing}/>;
   }

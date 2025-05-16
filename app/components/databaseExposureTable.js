@@ -2,6 +2,7 @@
 import IAMService from "../../lib/IAMService";
 import { useState, useEffect, useMemo } from "react";
 import Button from "../components/button";
+import {useAppContext} from '../context/context'
 
 // Animation only
 function DecryptingText({ text, speed = 30 }) {
@@ -36,7 +37,7 @@ function DecryptedRow({ isUser, user, username, dob, cc, canRead }) {
     const [animating, setAnimating] = useState(false);
     const [decryptedDob, setDecryptedDob] = useState("");
     const [decryptedCc, setDecryptedCc] = useState("");
-
+    
     // If new user data arrives reset to potentially decrypt again
     useEffect(() => {
         setDecrypted(false);
@@ -129,6 +130,7 @@ export default function DatabaseExposureTable({users, loggedUser, encryptedDob, 
     // Memorise the current array, only rerender if this array changes
     
     const memoUsers = useMemo(() => users, [users]);
+    const {contextLoading} = useAppContext();
    
     // Swap first position with logged in user to put them on top of the stack
     for (let i = 0; i < memoUsers.length; i++) {
@@ -145,21 +147,22 @@ export default function DatabaseExposureTable({users, loggedUser, encryptedDob, 
         <div className="mt-6 space-y-6 pb-24 md:pb-36">
             {
                 // Let the data load first
-                memoUsers
+                memoUsers && !contextLoading
                 ?
                 memoUsers.map((user, i) => (
+                    
                   <DecryptedRow key={i}
-                  isUser={user.attributes.vuid
+                  isUser={user.attributes?.vuid
                     ? user.attributes.vuid[0] === IAMService.getValueFromToken("vuid") ? true : false
                     : false}
-                  user={user}
+                   user={user}
                   username={user.username}
-                  dob={user.attributes.vuid
+                  dob={user.attributes?.vuid
                     ? user.attributes.vuid[0] === IAMService.getValueFromToken("vuid") ? encryptedDob : user.attributes.dob
-                    : user.attributes.dob}
-                  cc={user.attributes.vuid
+                    : user.attributes?.dob}
+                  cc={user.attributes?.vuid
                     ? user.attributes.vuid[0] === IAMService.getValueFromToken("vuid") ? encryptedCc : user.attributes.cc
-                    : user.attributes.cc}
+                    : user.attributes?.cc}
                   canRead={IAMService.hasOneRole("_tide_dob.read") || IAMService.hasOneRole("_tide_cc.read")}
                   />
                 ))

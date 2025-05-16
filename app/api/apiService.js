@@ -151,6 +151,9 @@ async function createUser(baseURL, realm, token, username, dob, cc){
             "enabled": true
         })
     });
+
+    console.log(response);
+    
     // Conflict case, but there should only be one user on initialisation.
     if (response.status === 409){
         throw new Error("User already exists.");
@@ -171,16 +174,8 @@ async function createUser(baseURL, realm, token, username, dob, cc){
  * @param {string} token - master token
  * @returns {Promise<Object>} - response status with demo user's object
  */
-async function getDefaultUser(baseURL, realm, token){
+async function getDemoUser(baseURL, realm, token){
     
-    const response = await fetch(`${baseURL}/admin/realms/${realm}/users?username=demouser`, {
-        method: 'GET',
-        headers: {
-            "Content-Type": "application/json",
-            "authorization": `Bearer ${token}`,
-        },
-    });
-
     // const response = await fetch(`${baseURL}/admin/realms/${realm}/users`, {
     //     method: 'GET',
     //     headers: {
@@ -189,17 +184,28 @@ async function getDefaultUser(baseURL, realm, token){
     //     },
     // });
 
+    const response = await fetch(`${baseURL}/admin/realms/${realm}/users`, {
+        method: 'GET',
+        headers: {
+            "Content-Type": "application/json",
+            "authorization": `Bearer ${token}`,
+        },
+    });
+
     if (!response.ok){
         throw new Error("Failed to get the demo user.");
     }
 
-    const users = await response.json();
-
-    if (users.length === 0){
+    const allUsers = await response.json();
+    const demoUser = allUsers.filter((user) => 
+        user.attributes?.vuid
+    );
+   
+    if (demoUser.length === 0){
         throw new Error("User not found. Check user exists in Keycloak."); 
     }
 
-    return {ok: true, status: response.status, body: users[0]};
+    return {ok: true, status: 200, body: demoUser[0]};
 };
 
 /** 
@@ -431,6 +437,26 @@ async function updateSelfRegister(baseURL, realm, token){
     return {ok: true, status: putResponse.status};
 }
 
+
+async function getUsers(baseURL, realm, token){
+    
+    const response = await fetch(`${baseURL}/admin/realms/${realm}/users`, { 
+        method: 'GET',
+        headers: {
+            "Content-Type": "application/json",
+            "authorization": `Bearer ${token}`,
+        },
+    });
+    
+    if (!response.ok){
+        throw new Error("Failed to get users.")
+    }
+
+    const data = await response.json();
+    return data;
+    
+} 
+
 /* TIDE CUSTOM ENDPOINTS */
 
 /**
@@ -526,7 +552,6 @@ async function commitChangeRequest(baseURL, realm, usersChangeReq, token){
  * @returns {Promise<Object>} - status response
  */
 async function activateIDPLicense(baseURL, realm, token){
-    console.log(baseURL, realm, token);
     const response = await fetch(`${baseURL}/admin/realms/${realm}/vendorResources/setUpTideRealm`, {
         method: 'POST',
         headers: {
@@ -562,6 +587,7 @@ async function toggleIGA(baseURL, realm, token){
             "isIGAEnabled": true,
         })
     });
+    console.log(response);
 
     if (!response.ok){
         throw new Error("Failed to toggle IGA on.")
@@ -712,7 +738,7 @@ const apiService = {
     activateIDPLicense,
     toggleIGA,
     createUser,
-    getDefaultUser,
+    getDemoUser,
     createTideInvite,
     getRealmManagement,
     getAvailableClientRoles,
@@ -725,7 +751,8 @@ const apiService = {
     signSettings,
     getClientID,
     getClientAdapter,
-    updateSelfRegister
+    updateSelfRegister,
+    getUsers
 }
 
 export default apiService;

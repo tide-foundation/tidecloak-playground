@@ -14,6 +14,7 @@ export async function GET(){
     const baseURL = configs.baseURL;
     const realm = settings.realm;
     
+    // Get its own master token as client side also needs this endpoint
     const masterToken = await apiService.getMasterToken(baseURL);
 
     try {

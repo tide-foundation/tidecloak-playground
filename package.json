@@ -1,5 +1,5 @@
 {
-  "name": "tidecloak-nextjs",
+  "name": "tidecloak-demo",
   "version": "1.0.0",
   "private": false,
   "type": "module",
@@ -14,7 +14,7 @@
     "react-scripts": "^4.0.3",
     "sqlite": "5.1.1",
     "sqlite3": "5.1.7",
-    "tidecloak-js": "^0.6.64"
+    "tidecloak-js": "^0.7.1"
   },
   "scripts": {
     "dev": "next dev",

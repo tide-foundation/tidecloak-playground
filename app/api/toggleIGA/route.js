@@ -22,6 +22,7 @@ export async function GET(request){
     try {
         // Toggle IGA to be true and it should remain true for the Admin Console.
         const result = await apiService.toggleIGA(baseURL, realm, masterToken);
+        console.log(result);
 
         return new Response(JSON.stringify({...result}), {status: result.status}); 
     } 
