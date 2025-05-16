@@ -10,19 +10,19 @@ async function getMasterToken(baseURL){
         USERNAME: process.env.KC_USERNAME ?? (() =>{
             console.log("KC_USERNAME not set in .env, using default.");
             return "admin";
-        }),
+        })(),
         PASSWORD: process.env.KC_PASSWORD ?? (() =>{
             console.log("KC_PASSWORD not set in .env, using default.");
             return "password";
-        }),
+        })(),
         GRANTTYPE: process.env.GRANT_TYPE ?? (() =>{
             console.log("GRANT_TYPE not set in .env, using default.");
             return "password";
-        }),
+        })(),
         CLIENTID: process.env.CLIENT_ID ?? (() =>{
             console.log("CLIENT_ID not set in .env, using default.");
             return "admin-cli";
-        })
+        })()
     };
 
 
