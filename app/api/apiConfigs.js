@@ -5,11 +5,11 @@ const envConfig = {
   BASEURL: process.env.BASE_URL ?? (() =>{
     console.log("BASE_URL not set in .env, using default.");
     return "http://localhost:8080";
-  }),
+  })(),
   CUSTOMURL: process.env.CUSTOM_URL ?? (() =>{
     console.log("CUSTOM_URL not set in .env, using default.");
     return "http://localhost:3000";
-  })
+  })()
 };
 
 // Realm name containing the Admin Console
