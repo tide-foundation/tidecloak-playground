@@ -5,16 +5,37 @@
  * @returns {Promise<Object>} - response status with Master Token
  */
 async function getMasterToken(baseURL){
+
+    const envConfig = {
+        USERNAME: process.env.KC_USERNAME ?? (() =>{
+            console.log("KC_USERNAME not set in .env, using default.");
+            return "admin";
+        }),
+        PASSWORD: process.env.KC_PASSWORD ?? (() =>{
+            console.log("KC_PASSWORD not set in .env, using default.");
+            return "password";
+        }),
+        GRANTTYPE: process.env.GRANT_TYPE ?? (() =>{
+            console.log("GRANT_TYPE not set in .env, using default.");
+            return "password";
+        }),
+        CLIENTID: process.env.CLIENT_ID ?? (() =>{
+            console.log("CLIENT_ID not set in .env, using default.");
+            return "admin-cli";
+        })
+    };
+
+
     const response = await fetch(`${baseURL}/realms/master/protocol/openid-connect/token`, {
         method: "POST",
         headers: {
             "Content-Type": "application/x-www-form-urlencoded",
         },
         body: new URLSearchParams({
-            "username": process.env.KC_USERNAME,
-            "password": process.env.KC_PASSWORD,
-            "grant_type": process.env.GRANT_TYPE,
-            "client_id": process.env.CLIENT_ID
+            "username": envConfig.USERNAME,
+            "password": envConfig.PASSWORD,
+            "grant_type": envConfig.GRANTTYPE,
+            "client_id": envConfig.CLIENTID
         })
     });
     

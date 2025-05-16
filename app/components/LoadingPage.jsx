@@ -41,8 +41,7 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
         const response = await fetch(`/api/getMasterToken`, {
             method: "GET"
         }); 
-        const data = await response.json();
-        setMasterToken(data.body);
+        
     
         if (!response.ok) {
             const contentType = response.headers.get("content-type");
@@ -57,6 +56,8 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
         
             throw new Error(errorMessage);
         }
+        const data = await response.json();
+        setMasterToken(data.body);
                 
     };
 
