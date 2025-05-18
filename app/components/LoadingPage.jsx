@@ -42,7 +42,6 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
             method: "GET"
         }); 
         
-    
         if (!response.ok) {
             const contentType = response.headers.get("content-type");
         
@@ -155,25 +154,25 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
         }
     }
 
-    // // Assign the demo user the minimum realm roles required
-    // const assignRealmRoles = async () => {
-    //     
-    //     const response = await fetch(`/api/assignRealmRoles`, {
-    //         method: "GET",
-    //         headers: {
-    //             "Authorization": `Bearer ${masterToken}`
-    //         }
-    //     })
+    // Assign the demo user the minimum realm roles required
+    const assignRealmRoles = async () => {
+        setCurrentStep(4);
+        const response = await fetch(`/api/assignRealmRoles`, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${masterToken}`
+            }
+        })
 
-    //     if (!response.ok){
-    //         const errorResponse = await response.json();
-    //         throw new Error(errorResponse.error || "Failed to assign roles to the demo user.");
-    //     }
-    // }
+        if (!response.ok){
+            const errorResponse = await response.json();
+            throw new Error(errorResponse.error || "Failed to assign roles to the demo user.");
+        }
+    }
 
     // Approve and Commit all Clients change requests
     const commitClients = async () => {
-        setCurrentStep(4);
+        setCurrentStep(5);
         const response = await fetch(`/api/commitClients`, {
             method: "GET",
             headers: {
@@ -189,7 +188,6 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // Update the Custom Domain URL for the Tide Enclave to work
     const updateCustomDomainURL = async () => {
-        setCurrentStep(5);
         const response = await fetch(`/api/updateCustomDomainURL`, {
             method: "GET",
             headers: {
@@ -233,22 +231,7 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
         }
     }
 
-    // // Sign the new settings after updating the Custom Domain URL
-    // const inviteUser = async () => {
-    //     const response = await fetch(`/api/inviteUser`, {
-    //         method: "GET",
-    //         headers: {
-    //             "Authorization": `Bearer ${masterToken}`
-    //         }
-    //     })
-
-    //     if (!response.ok){
-    //         const errorResponse = await response.json();
-    //         throw new Error(errorResponse.error || "Failed generate Tide invite link.");
-    //     }
-
-    //     const data = await response.json();
-    // }
+    
     
     const initialize = async () => {
         try {
@@ -256,8 +239,7 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
             await getLicense();
             await toggleIGA();
             await createUsers();
-            // await inviteUser();
-            // await assignRealmRoles();
+            await assignRealmRoles();
             await commitClients();
             await updateCustomDomainURL();
             await signSettings();

@@ -3,7 +3,7 @@ import settings from "/test-realm.json";
 import apiService from "../apiService";
 
 /**
- * This endpoint is only for fetching, approving and committing the client (IGA) as part of the initialisation process
+ * This endpoint is only for fetching, approving and committing the clients (IGA) as part of the initialisation process
  * @param {Object} request - with the master token in the header
  * @returns {Promise<Object>} - status response to be handled on client side
  */
@@ -27,11 +27,6 @@ export async function GET(request){
         const clientChangeRequestsFetch = await apiService.getClientsChangeRequests(baseURL, realm, masterToken);
         const clientsChangeRequests = clientChangeRequestsFetch.body;
 
-        // clientsChangeRequests.forEach(async (changeRequest) => {
-        //     const approveResult = await apiService.signChangeRequest(baseURL, realm, changeRequest, masterToken);
-
-        //     const commitResult = await apiService.commitChangeRequest(baseURL, realm, changeRequest, masterToken);
-        // })
         for (let i = 0; i < clientsChangeRequests.length; i++) {
             const changeRequest = clientsChangeRequests[i];
         

@@ -6,6 +6,7 @@ import Button from "./components/button";
 import kcData from "/tidecloak.json";
 import {useAppContext} from "./context/context";
 import IAMService from "../lib/IAMService";
+import appService from "../lib/appService";
 import { usePathname, useRouter } from "next/navigation";
 import {
   FaExclamationCircle,
@@ -24,13 +25,15 @@ export default function Login() {
   // Expandable extra information
   const [showLoginAccordion, setShowLoginAccordion] = useState(false);
   // Shared context data to check if already authenticated skip this login screen
-  const {authenticated} = useAppContext();
+  const {authenticated, realm, baseURL} = useAppContext();
   // State for error message when token expires
   const [showError, setShowError] = useState(false);
   // TideCloak address
-  const [baseURL, setBaseURL] = useState("Need to setup backend first.");
+  const [adminAddress, setAdminAddress] = useState("Need to setup backend first.");
   // State to show initialiser when the tidecloak.json file has an empty object
   const [isInitializing, setIsInitializing] = useState(false);
+  // Invite URL to link Tide account to TideCloak
+  const [inviteURL, setInviteURL] = useState();
 
   // Check authentication from context
   useEffect(() => {
@@ -45,7 +48,7 @@ export default function Login() {
 
     // Get the TideCloak address from the tidecloak.json file if its object is filled by TideCloak
     if (kcData && Object.keys(kcData).length !== 0 && kcData["auth-server-url"]){
-      setBaseURL(kcData["auth-server-url"]);
+      setAdminAddress(kcData["auth-server-url"]);
     }
   }, [authenticated])
 
@@ -59,16 +62,36 @@ export default function Login() {
   }, [])
 
 
-  // When the Login button is clicked, clear cached data and redirect to Tide Enclave
+  // Redirect to Tide Enclave to sign in or link Tide account based on existence of user's VUID checked on backend to make inviteURL.
   const handleLogin = async () => {
     // If previously logged in remove this session variable.
     sessionStorage.removeItem("tokenExpired"); 
-    IAMService.doLogin();
+
+    // Generate invite link
+    const response = await fetch(`/api/inviteUser`, {
+        method: "GET",
+    })
+
+    if (!response.ok){
+      const errorResponse = await response.json();
+      throw new Error(errorResponse.error || "Failed generate Tide invite link.");
+    }
+
+    const data = await response.json();
+
+    // Redirect to invite link to link Tide account when user has no VUID
+    if (data.inviteURL){
+      router.push(data.inviteURL);
+    }
+    else {
+      // Login if user has already linked Tide account (VUID exists)
+      IAMService.doLogin();
+    }
   };
 
   // Show the initialiser
   if (isInitializing) {
-    return <LoadingPage isInitializing={isInitializing} setIsInitializing={setIsInitializing}/>;
+    return <LoadingPage isInitializing={isInitializing} setIsInitializing={setIsInitializing} setInviteURL={setInviteURL}/>;
   }
   
   return (
@@ -126,7 +149,7 @@ export default function Login() {
                   <div className="border border-dashed border-gray-500 p-4">
                     <ul className="list-disc list-inside">
                       <li>
-                        Visit: <a href={baseURL} className="text-blue-600">{baseURL}</a>
+                        Visit: <a href={adminAddress} className="text-blue-600">{adminAddress}</a>
                       </li>
                       <li>Use Credentials: admin / password</li>
                     </ul>
