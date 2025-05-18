@@ -35,6 +35,8 @@ export default function User(){
     // Further expandable information
     const [showDeepDive, setShowDeepDive] = useState(false);
 
+    const [pageLoading, setPageLoading] = useState(true);
+
     // Data values for user information component
     const [formData, setFormData] = useState({
         dob: "",
@@ -48,9 +50,6 @@ export default function User(){
     // Encrypted Credit Card from database to decrypted in databaseExposureTable
     const [encryptedCc, setEncryptedCc] = useState("");
 
-    // TideCloak's configuration for self registration to populate demo user's data on first login then turned off.
-    const [selfRegistration, setSelfRegistration] = useState();
-
     // Runs first, once context verifies user is authenticated populate all users' demo data
     useEffect(() => {
       if (!contextLoading){
@@ -63,11 +62,16 @@ export default function User(){
 
     // Runs second, perform only when the context receives the logged user details to decrypt
     useEffect(() => {
-      if (loggedUser && !contextLoading && !selfRegistration){
+      if (loggedUser && !contextLoading){
         getUserData();
-        
       }
     }, [loggedUser])
+
+    // useEffect(() => {
+    //   if (encryptedDob !== "" && encryptedCc !== ""){
+    //     setPageLoading(false);
+    //   }
+    // }, [encryptedDob, encryptedCc])
 
     // Update the value of the two user input fields when user interacts
     const handleUserFieldChange = (field) => (e) => {
@@ -75,7 +79,6 @@ export default function User(){
     };
 
     // Populate the Database Exposure cards, and set the current logged users
-    // Get all users for when self registration is already off.
     const getAllUsers = async () => {
       const token = await IAMService.getToken(); 
       const users = await appService.getUsers(baseURL, realm, token);
@@ -155,6 +158,10 @@ export default function User(){
               // Set it still for the databaseExposureTable
               setEncryptedCc(loggedUser.attributes.cc[0]); 
             }   
+
+            // Show the data at once
+            setPageLoading(false);
+
           } catch (error){
             // Set the raw data into the fields as they don't need to be decrypted (If they were saved not encrypted in TideCloak)
             setFormData(prev => ({...prev, dob: loggedUser.attributes.dob[0]}));
@@ -192,6 +199,9 @@ export default function User(){
             const response = await appService.updateUser(baseURL, realm, loggedUser, token);
 
             console.log(error + " User Dob or CC was saved as raw data encrypting it and saving now.");
+
+            // Show the data at once
+            setPageLoading(false);
           }
       } 
     };
@@ -249,7 +259,7 @@ export default function User(){
     };
 
     return (
-        !contextLoading && !selfRegistration
+        !contextLoading && !pageLoading
         ?
         <main className="flex-grow w-full pt-6 pb-16">
         <div className="w-full px-8 max-w-screen-md mx-auto flex flex-col items-start gap-8">
