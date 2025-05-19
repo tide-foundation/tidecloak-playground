@@ -1,4 +1,3 @@
- 
 import IAMService from "../../lib/IAMService";
 import { useState, useEffect, useMemo } from "react";
 import Button from "../components/button";
@@ -31,52 +30,71 @@ function DecryptingText({ text, speed = 30 }) {
     return <span className="font-mono text-green-600">{displayed}</span>;
 }
 
-function DecryptedRow({ isUser, user, username, dob, cc, canRead }) {
+function DecryptedRow({ isUser, user, username, dob, cc }) {
     const [decrypted, setDecrypted] = useState(false);
     const [decryptionStatus, setDecryptionStatus] = useState("");
     const [animating, setAnimating] = useState(false);
     const [decryptedDob, setDecryptedDob] = useState("");
     const [decryptedCc, setDecryptedCc] = useState("");
-    
+    const [canReadDob, setCanReadDob] = useState();
+    const [canReadCc, setCanReadCc] = useState();
+
     // If new user data arrives reset to potentially decrypt again
     useEffect(() => {
         setDecrypted(false);
+        setCanReadDob(IAMService.hasOneRole("_tide_dob.read"));
+        setCanReadCc(IAMService.hasOneRole("_tide_cc.read"));
     }, [user])
 
     // Calls on Decrypt button being selected to update the fields
-    const handleDecrypt = () => {
+    const handleDecrypt = async () => {
+        let encryptedData = [];
 
+        // Can't decrypt other users
         if (!isUser) {
             setDecryptionStatus("Access denied: You don't have decryption rights.");
             setTimeout(() => setDecryptionStatus(""), 3000);
             return;
         }
-
-        if (!canRead) {
+        else if (!canReadDob && !canReadCc){
+            // Show error if no read permissions at all
             setDecryptionStatus("Access denied: You lack read permission.");
             setTimeout(() => setDecryptionStatus(""), 3000);
             return;
-        }
+        };
+
+        // Prepare to decrypt all at once as an array 
+        if (canReadDob){ 
+            encryptedData.push({
+                "encrypted": dob,
+                "tags": ["dob"]
+            });
+        };
+
+        if (canReadCc){
+            encryptedData.push({
+                "encrypted": cc,
+                "tags": ["cc"]
+            });
+        };
 
         setAnimating(true);
         setTimeout(async () => {
-            const decryptedDobData = await IAMService.doDecrypt([
-                {
-                    "encrypted": dob,
-                    "tags": ["dob"]
-                }
-            ])
+            const decryptedData = await IAMService.doDecrypt(encryptedData);
             
-            setDecryptedDob(decryptedDobData[0]); 
-
-            const decryptedCcData = await IAMService.doDecrypt([
-                {
-                    "encrypted": cc,
-                    "tags": ["cc"]
-                }
-            ])
-            
-            setDecryptedCc(decryptedCcData[0]); 
+            // Set data to show at roughly same time, only decrypt the attributes user has read permissions to
+            if (encryptedData.length === 2){
+                setDecryptedDob(decryptedData[0]); 
+                setDecryptedCc(decryptedData[1]); 
+            }
+            else if (encryptedData[0].tags[0] === "dob"){   // Yes DoB Read permission, No CC Read Permission
+                setDecryptedDob(decryptedData[0]); 
+                setDecryptedCc(cc);
+            }
+            else {                                          // No DoB Read permission, Yes CC Read Permission
+                setDecryptedDob(dob); 
+                setDecryptedCc(decryptedData[1]); 
+            }
 
             setDecrypted(true);
             setAnimating(false);
@@ -95,14 +113,14 @@ function DecryptedRow({ isUser, user, username, dob, cc, canRead }) {
         <div className="text-sm font-mono break-all">
             <strong className="block text-gray-600 text-xs uppercase mb-1">Date of Birth</strong>
             <span className={`inline-block transition-opacity duration-500 ${animating ? "opacity-0" : "opacity-100"}`}>
-            {isUser && decrypted && dob ? <DecryptingText text={decryptedDob} /> : dob}
+            {isUser && decrypted && dob && canReadDob? <DecryptingText text={decryptedDob} /> : dob}
             </span>
         </div>
 
         <div className="text-sm font-mono break-all">
             <strong className="block text-gray-600 text-xs uppercase mb-1">Credit Card</strong>
             <span className={`inline-block transition-opacity duration-500 ${animating ? "opacity-0" : "opacity-100"}`}>
-            {isUser && decrypted && cc ? <DecryptingText text={decryptedCc} /> : cc}
+            {isUser && decrypted && cc && canReadCc? <DecryptingText text={decryptedCc} /> : cc}
             </span>
         </div>
 
@@ -163,7 +181,6 @@ export default function DatabaseExposureTable({users, loggedUser, encryptedDob, 
                   cc={user.attributes?.vuid
                     ? user.attributes.vuid[0] === IAMService.getValueFromToken("vuid") ? encryptedCc : user.attributes.cc
                     : user.attributes?.cc}
-                  canRead={IAMService.hasOneRole("_tide_dob.read") || IAMService.hasOneRole("_tide_cc.read")}
                   />
                 ))
                 : null

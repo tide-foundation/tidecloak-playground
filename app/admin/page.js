@@ -181,7 +181,7 @@ export default function Admin() {
         if (response.ok) {
             // Force update of token without logging out
             setUpdatingToken(true);
-            await IAMService.updateIAMToken(); //-1 to update it immediately
+            await IAMService.updateToken(); //-1 to update it immediately
             setIsTideAdmin(true); 
             setUpdatingToken(false);
             console.log("Admin Role Assigned");
@@ -230,7 +230,7 @@ export default function Admin() {
     await cancelRequests(allRequests);
     
     // Roles drafted are counted as assigned to token by TideCloak, so cancel the requests then update the token
-    await IAMService.updateIAMToken();
+    await IAMService.updateToken();
     const updatedToken = await IAMService.getToken();
     setUpdatingToken(false);
     
@@ -544,7 +544,7 @@ export default function Admin() {
         localStorage.removeItem("approvals");
         setUpdatingToken(true);
         // Get a new token to have check the currently assigned roles to the logged in user
-        await IAMService.updateIAMToken();
+        await IAMService.updateToken();
 
         // Update check boxes to reflect the change in token's permissions
         await setUserPermissions();
