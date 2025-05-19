@@ -10,40 +10,43 @@ import { FaCheckCircle, FaChevronRight } from "react-icons/fa";
 import { usePathname, useRouter } from "next/navigation";
 
 /**
- * 
- * @returns {JSX.Element}
+ * Admin page for elavating the demo user to a Tide admin and managing their read and write permissions for Date of Birth and Credit Card
+ * @returns {JSX.Element} - HTML for the /admin path containing the permissions management via change requests
  */
 export default function Admin() { 
-
+  // Current path
   const pathname = usePathname();
+  // Navigator
   const router = useRouter();
- 
-  // Realm Management client ID to assign user the tide-realm-admin role if not yet assigned
- 
+  // Shared context data
   const {baseURL, realm, authenticated } = useAppContext();
-
+  // Admin state of the logged in demo user
   const [isTideAdmin, setIsTideAdmin] = useState(false);
-
-
+  // Object representation of the logged in user
   const [loggedUser, setLoggedUser] = useState(null);
 
+  // Extra information
   const [showAdminAccordion, setShowAdminAccordion] = useState(false);
   const [showChangeInfo, setShowChangeInfo] = useState(false);
+  
+  // Current change request being managed
   const [activeRequestIndex, setActiveRequestIndex] = useState(0);
+  // Current change request being opened
   const [expandedIndex, setExpandedIndex] = useState(0);
 
-  //const [requestStatus, setRequestStatus ] = useState("Draft");
-
+  // Show page only if loaded
   const [loading, setLoading] = useState(true);
-
   // Give token time to load before continuing
   const  [updatingToken, setUpdatingToken] = useState(false);
-
+  // True when boxes don't match the token's roles
   const [hasChanges, setHasChanges] = useState(false);
+  // All user change requests
   const [requests, setRequests] = useState([]);
-  const [isApproved, setIsApproved] = useState(false);
-
+  
+  // Extra information on what elevating a user to Tide Admin does
   const [showExplainer, setShowExplainer] = useState(false);
+  
+  // This button only appears when logged in demo user doesn't have the  Tide Admin role yet
   const handleElevateClick = () => setShowExplainer(true);
 
   // Check Boxes
@@ -52,19 +55,23 @@ export default function Admin() {
   const [hasCcReadPerm, setHasCcReadPerm] = useState(false);
   const [hasCcWritePerm, setHasCcWritePerm] = useState(false);
 
+  // User's input state to the change request
   const [hasUserApproved, setHasUserApproved] = useState(false);
-
+  // State of active change request based on quorum
+  const [isApproved, setIsApproved] = useState(false);
+  // How many admins approved
   const [totalApproved, setTotalApproved] = useState(1);
- 
+  // Demo data to simulate admins approving the active change request
   const ADMIN_NAMES = ["You", "Alice", "Ben", "Carlos", "Dana"];
-      
+  // Current hasUserApproved state for each admin    
   const [approvals, setApprovals] = useState([false, false, false, false, false]);
-
+  // Once approved, change requests becomes pending as it waits for other admins to approve to a total threshold (3 for this demo)
   const [pending, setPending] = useState(false);
 
-  // State of whether the first QuorumDashBoard (card) has ran. It triggers based on how many cards is needed. 
+  // State of whether the first QuorumDashBoard (card) has ran. Used to prevent too many animations, only 3 is needed.
   const quorumDashRef  = useRef(false);
 
+  // For demo purposes, fetched stored or store data of admins who have approved locally
   useEffect(() => {
     const storedApprovals = localStorage.getItem("approvals");
     // This is intended only for when refreshing browser, approvals[0] would be false then
@@ -86,6 +93,7 @@ export default function Admin() {
     }
   }, [isApproved])
 
+  // Run first
   useEffect(() => {
     if (authenticated){
       getLoggedUser();
@@ -93,14 +101,14 @@ export default function Admin() {
     setLoading(false);
   }, [authenticated])
 
-  // Get the currently assigned realm roles of the logged in user after they've been identified 
+  // Then get the currently assigned realm roles of the logged in user after they've been identified 
   useEffect(() => {
     if (loggedUser){ 
       checkAdminRole();  
     }
   }, [loggedUser])
 
-
+  // Then check if they're a Tide Admin to decide which components to render 
   useEffect(() => {
       // Shouldn't need to get permissions if logged in user isn't an Admin; will need to elevate instead
       if (isTideAdmin){
@@ -198,7 +206,11 @@ export default function Admin() {
     
   }
 
-  // Assign or unassign the logged in user realm roles (pemissions)
+  
+  /**
+   * Assign or unassign the logged in user realm roles (pemissions)
+   * @param {*} e - the form's event, when Submit Changes button is clicked
+   */
   const handleAdminPermissionSubmit = async (e) => {
     e.preventDefault();
 
@@ -207,11 +219,13 @@ export default function Admin() {
 
     const token = await IAMService.getToken();
 
+    // Clear cached data of the demo admins who have approved for a reset
     localStorage.removeItem("approvals");
 
-    // Cancel all requests before assigning new ones.
+    // Get all then cancel all requests before assigning new ones, disable boxes while token is updating duplicate fetches
+    // which causes errors
     const allRequests = await appService.getUserRequests(baseURL, realm, token); // Including the denied requests
-    
+  
     setUpdatingToken(true);
     await cancelRequests(allRequests);
     
@@ -223,8 +237,7 @@ export default function Admin() {
     // Compare the current checkbox state with the current permissions. Note: token roles only update when a role change request COMMITS.
     // If the states don't match, a change request is required.
     // Date of Birth
-    if (hasDobReadPerm !== IAMService.hasOneRole("_tide_dob.read")){
-      
+    if (hasDobReadPerm !== IAMService.hasOneRole("_tide_dob.read")){      
       const readRole = await appService.getRealmRole(baseURL, realm, "_tide_dob.read", updatedToken);
       if (hasDobReadPerm === true){
         await appService.assignRealmRole(baseURL, realm, loggedUser.id, readRole, updatedToken);
@@ -276,11 +289,18 @@ export default function Admin() {
   };
 
 
-  
+  /**
+   * Each is a card the represents the change request, its status, action, admins approved and user's action button
+   * @param {Object} request - representation of the change request
+   * @param {Function} onCommit - when the commit button is clicked run addCommit() for that change request
+   * @returns {JSX.Element} - HTML of the card representation 
+   */
   function QuorumDashboard({ request, onCommit }) {
-      // const [requestStatus, setRequestStatus] = useState(""); 
       
+      // Current request's status to be displayed
       let requestStatus;
+
+      // The status can be represented by either deleteStatus or status fields of the change request object
       if (request.deleteStatus){
         requestStatus = request.deleteStatus;
       }
@@ -324,7 +344,6 @@ export default function Admin() {
       
       // Perform approval checks and commit checks everytime requests is updated from the enclave actions
       useEffect(() => {
-
         // Based on the status of the change request, trigger useEffect to update the current approvals on refresh
         if (requestStatus === "APPROVED"){
           setIsApproved(true);
@@ -386,7 +405,7 @@ export default function Admin() {
         } 
       };
   
-      //POST /tideAdminResources/add-authorization
+      // POST /tideAdminResources/add-authorization
       // Add approve status to change request
       const addApproval = async (action, draftId, type, authorizerApproval, authorizerAuthentication) => {
         const token = await IAMService.getToken();
@@ -408,7 +427,6 @@ export default function Admin() {
           const updatedChangeReq = updatedChangeReqs.find(req => req.draftRecordId === draftId);
           requests[activeRequestIndex] = updatedChangeReq; 
         
-
           setApprovals([true, false, false, false, false]);
           setPending(true);
           setHasUserApproved(true);
@@ -417,7 +435,7 @@ export default function Admin() {
       };
 
         
-  
+      // When user presses Review button to show the Tide Enclave popup
       const handleUserApprove = async (changeRequest) => {
         const token = await IAMService.getToken();
         // Get popup data for the change request to know that it requires the enclave and pass data to the popup
@@ -436,7 +454,6 @@ export default function Admin() {
           if (authorizerApproval.accepted === false) {
             addRejection(changeRequest.actionType, changeRequest.draftRecordId, changeRequest.changeSetType);
             heimdall.closeEnclave(); 
-           
           } else if (authorizerApproval.accepted === true) { // If Approve is clicked
             const authorizerAuthentication = await heimdall.getAuthorizerAuthentication();
             addApproval(changeRequest.actionType, changeRequest.draftRecordId, changeRequest.changeSetType, authorizerApproval.data, authorizerAuthentication);
@@ -446,8 +463,6 @@ export default function Admin() {
         };
       };
 
-      
-    
       return (
         <div className="bg-white border rounded-lg p-6 shadow space-y-4 mt-8">
 
@@ -505,42 +520,42 @@ export default function Admin() {
     );
   }
 
-    const addCommit = async (request) => {
-        const token = await IAMService.getToken();
+  const addCommit = async (request) => {
+      const token = await IAMService.getToken();
 
-        const body = JSON.stringify({
-          "actionType": request.actionType,
-          "changeSetId": request.draftRecordId,
-          "changeSetType": request.changeSetType
-        });
-        
-        const response = await appService.commitChange(baseURL, realm, body, token);
-        
-        if (response.ok){
-          // Hard code the change, because keycloak removes committed change requests
-          if (requests[activeRequestIndex].deleteStatus){
-            requests[activeRequestIndex].deleteStatus = "COMMITTED";
-          }
-          else {
-            requests[activeRequestIndex].status = "COMMITTED";
-          }
-
-          // Clear the locally stored approved users array
-          localStorage.removeItem("approvals");
-          setUpdatingToken(true);
-          // Get a new token to have check the currently assigned roles to the logged in user
-          await IAMService.updateIAMToken();
-
-          // Update check boxes to reflect the change in token's permissions
-          await setUserPermissions();
-          setUpdatingToken(false); 
-
-          // Reset states for next change request
-          setApprovals([false, false, false, false, false]);
-          setTotalApproved(1);
-          setActiveRequestIndex(prev => prev + 1);
-          setExpandedIndex(prev => prev + 1);
+      const body = JSON.stringify({
+        "actionType": request.actionType,
+        "changeSetId": request.draftRecordId,
+        "changeSetType": request.changeSetType
+      });
+      
+      const response = await appService.commitChange(baseURL, realm, body, token);
+      
+      if (response.ok){
+        // Hard code the change, because keycloak removes committed change requests
+        if (requests[activeRequestIndex].deleteStatus){
+          requests[activeRequestIndex].deleteStatus = "COMMITTED";
         }
+        else {
+          requests[activeRequestIndex].status = "COMMITTED";
+        }
+
+        // Clear the locally stored approved users array
+        localStorage.removeItem("approvals");
+        setUpdatingToken(true);
+        // Get a new token to have check the currently assigned roles to the logged in user
+        await IAMService.updateIAMToken();
+
+        // Update check boxes to reflect the change in token's permissions
+        await setUserPermissions();
+        setUpdatingToken(false); 
+
+        // Reset states for next change request
+        setApprovals([false, false, false, false, false]);
+        setTotalApproved(1);
+        setActiveRequestIndex(prev => prev + 1);
+        setExpandedIndex(prev => prev + 1);
+      }
     };
 
     // If submit button is pressed again, cancel all the change requests
