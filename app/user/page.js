@@ -19,7 +19,7 @@ export default function User(){
     const pathname = usePathname();
 
     // Shared data across the application
-    const {baseURL, realm, authenticated, contextLoading, getNewToken} = useAppContext();
+    const {baseURL, realm, authenticated, contextLoading} = useAppContext();
 
     // Logged in user object
     const [loggedUser, setLoggedUser] = useState(null);
@@ -34,7 +34,7 @@ export default function User(){
     const [showExposureAccordion, setShowExposureAccordion] = useState(false);
     // Further expandable information
     const [showDeepDive, setShowDeepDive] = useState(false);
-
+    // Show the page only after all data loaded
     const [pageLoading, setPageLoading] = useState(true);
 
     // Data values for user information component
@@ -59,19 +59,12 @@ export default function User(){
       }
     }, [authenticated])
 
-
     // Runs second, perform only when the context receives the logged user details to decrypt
     useEffect(() => {
       if (loggedUser && !contextLoading){
         getUserData();
       }
     }, [loggedUser])
-
-    // useEffect(() => {
-    //   if (encryptedDob !== "" && encryptedCc !== ""){
-    //     setPageLoading(false);
-    //   }
-    // }, [encryptedDob, encryptedCc])
 
     // Update the value of the two user input fields when user interacts
     const handleUserFieldChange = (field) => (e) => {
@@ -181,7 +174,6 @@ export default function User(){
               setEncryptedDob(encryptedDob[0]);
             }
             
-
             if (loggedUser.attributes.cc){
               const encryptedCc = await IAMService.doEncrypt([
                 {

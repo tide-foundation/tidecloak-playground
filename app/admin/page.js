@@ -450,11 +450,6 @@ export default function Admin() {
       return (
         <div className="bg-white border rounded-lg p-6 shadow space-y-4 mt-8">
 
-
-        <pre className="bg-gray-50 border text-sm rounded p-4 overflow-auto">
-          {JSON.stringify(request.value, null, 2)}
-        </pre>
-
         <div className="flex justify-between items-center mt-6">
           {ADMIN_NAMES.map((name, idx) => (
             <div key={idx} className="relative flex flex-col items-center">
