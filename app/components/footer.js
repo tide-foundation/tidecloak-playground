@@ -5,7 +5,7 @@ import {
     FaExclamationCircle,
 } from "react-icons/fa";
 
-import { SiX } from "react-icons/si"; // Modern X (formerly Twitter) icon
+import { SiX } from "react-icons/si";
 
 export default function Footer(){
     return (
@@ -17,11 +17,11 @@ export default function Footer(){
             <a href="https://tide.org/tidecloak_product" className="text-blue-600 underline" target="_blank">TideCloak</a>
           </p>
           <a
-            href="https://tide.org/beta"
+            href="https://tide.org/alpha"
             className="px-3 py-1 bg-gray-800 text-white rounded hover:bg-blue-500 transition"
             target="_blank"
           >
-            Join the Beta program
+            Join the Alpha program
           </a>
         </div>
         <div className="flex gap-4 text-xl">
@@ -50,7 +50,7 @@ export default function Footer(){
             <FaLinkedin />
           </a>
           <a
-            href="https://github.com/tide-foundation/tidecloakspaces"
+            href="https://github.com/tide-foundation/"
             aria-label="GitHub"
             className="hover:text-blue-500 transition"
             target="_blank"

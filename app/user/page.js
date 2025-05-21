@@ -480,8 +480,8 @@ export default function User(){
             )}
         </div>
         </div>
+        <div className="h-10"></div>
         </main>
-        
         : null 
     )
 };
