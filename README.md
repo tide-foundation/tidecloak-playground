@@ -8,7 +8,7 @@ A semi-guided tour of a "TideCloaked" Next.js app, showing it's special properti
 
 Click the button below to **fork** your copy (C'mon, I said "fork!"):
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/tide-foundation/tidespaces/generate)
+[![Open in Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new?repo=715558149)
 
 It will auto-populate the **"Create a new repository"** form - and you only need to give it a Repository name e.g. "*mytidecloakplayground*" - and click `Create repository`
 
