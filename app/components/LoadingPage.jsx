@@ -5,10 +5,8 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     const [currentStep, setCurrentStep] = useState(0);
     const [masterToken, setMasterToken] = useState(null);
+    const [restartCounter, setRestartCounter ] = useState(0)
 
-    let restartCounter = 0;
-
-    
     // Initialiser
     const steps = [
         "Getting Token",
@@ -302,12 +300,13 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
             setCurrentStep(0);
 
 
-            // restartCounter = restartCounter + 1;
-            // console.log("Times restarted: " + restartCounter);
+            const incrementedCount = restartCounter + 1;
+            setRestartCounter(incrementedCount);
+            console.log("Times restarted: " + incrementedCount);
 
-            // if (restartCounter < 2){
-            //     await initialize();
-            // }
+            if (restartCounter < 2){
+                await initialize();
+            }
             
         }
 
