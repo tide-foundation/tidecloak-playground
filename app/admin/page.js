@@ -306,18 +306,10 @@ export default function Admin() {
       }
     
       // When committed
-      if (requestStatus === "Committed") {
+      if (requestStatus === "COMMITTED" && requests.length === activeRequestIndex + 1 ) {
         return (
           <div className="bg-white border rounded-lg p-6 shadow space-y-4 mt-8">
 
-          <div className="flex justify-between items-center">
-            <h3 className="text-xl font-bold text-gray-800">Change Request</h3>
-          </div>
-  
-  
-          <pre className="bg-gray-50 border text-sm rounded p-4 overflow-auto">
-            {JSON.stringify(request.value, null, 2)}
-          </pre>
           <div className="mt-4">
             <div className="text-sm text-gray-700 flex items-center gap-2">
               <FaCheckCircle className="text-green-500" />
@@ -485,22 +477,22 @@ export default function Admin() {
         </div>
 
         <div className="pt-4">
-          { request.deleteStatus !== "APPROVED" && request.status !== "APPROVED"? (
+          { request.deleteStatus === "DRAFT" || request.status === "DRAFT"? (
             <Button onClick={() => {handleUserApprove(request)}} disabled={pending}>
               Review
             </Button>
 
-          ) : request.deleteStatus === "COMMITTED" || request.status === "COMMITTED"? (
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                router.push("/user");
-              }}
-              className="text-blue-600 hover:underline text-sm font-medium"
-            >
-              View on User Page →
-            </a>
+          // ) : request.deleteStatus === "COMMITTED" || request.status === "COMMITTED"? (
+          //   <a
+          //     href="#"
+          //     onClick={(e) => {
+          //       e.preventDefault();
+          //       router.push("/user");
+          //     }}
+          //     className="text-blue-600 hover:underline text-sm font-medium"
+          //   >
+          //     View on User Page →
+          //   </a>
 
           ) : !pending && (request.deleteStatus === "APPROVED" || request.status === "APPROVED") ? (
             <Button className="bg-green-600 hover:bg-green-700" onClick={onCommit}>
@@ -548,8 +540,10 @@ export default function Admin() {
         // Reset states for next change request
         setApprovals([false, false, false, false, false]);
         setTotalApproved(1);
-        //setActiveRequestIndex(prev => prev + 1);
-        //setExpandedIndex(prev => prev + 1);
+        if (requests.length !== activeRequestIndex + 1 ){
+          setActiveRequestIndex(prev => prev + 1);
+          setExpandedIndex(prev => prev + 1);
+        }
       }
     };
 
