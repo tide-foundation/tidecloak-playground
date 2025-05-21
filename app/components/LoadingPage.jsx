@@ -304,6 +304,7 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
             setRestartCounter(incrementedCount);
             console.log("Times restarted: " + incrementedCount);
 
+            // If it fails on step 1 (createRealm) restart initalizer 
             if (restartCounter < 2){
                 await initialize();
             }
