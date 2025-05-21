@@ -19,7 +19,7 @@ export default function User(){
     const pathname = usePathname();
 
     // Shared data across the application
-    const {baseURL, realm, authenticated, contextLoading, getNewToken} = useAppContext();
+    const {baseURL, realm, authenticated, contextLoading} = useAppContext();
 
     // Logged in user object
     const [loggedUser, setLoggedUser] = useState(null);
@@ -34,6 +34,8 @@ export default function User(){
     const [showExposureAccordion, setShowExposureAccordion] = useState(false);
     // Further expandable information
     const [showDeepDive, setShowDeepDive] = useState(false);
+    // Show the page only after all data loaded
+    const [pageLoading, setPageLoading] = useState(true);
 
     // Data values for user information component
     const [formData, setFormData] = useState({
@@ -48,128 +50,28 @@ export default function User(){
     // Encrypted Credit Card from database to decrypted in databaseExposureTable
     const [encryptedCc, setEncryptedCc] = useState("");
 
-    // TideCloak's configuration for self registration to populate demo user's data on first login then turned off.
-    const [selfRegistration, setSelfRegistration] = useState();
-
-    // Runs first once context verifies user is authenticated to check  self regisration configuration
+    // Runs first, once context verifies user is authenticated populate all users' demo data
     useEffect(() => {
       if (!contextLoading){
         if (authenticated){
-          checkSelfRegistration();
+          getAllUsers();
         }
       }
     }, [authenticated])
 
-    // Runs second, upon checking self registration update logged in user (initially demo user should have no data),
-    // turn off self registration, then get all users to display all users' data in the databaseExposureTable.
+    // Runs second, perform only when the context receives the logged user details to decrypt
     useEffect(() => {
-      if (!contextLoading){
-        if (authenticated){
-          if (selfRegistration){
-            updateCurrentConfig();
-          }
-          else {
-            getAllUsers();
-          }
-        }
-      }
-    }, [selfRegistration])
-
-    // Runs third, perform only when the context receives the logged user details to decrypt
-    useEffect(() => {
-      if (loggedUser && !contextLoading && !selfRegistration){
+      if (loggedUser && !contextLoading){
         getUserData();
-        
       }
     }, [loggedUser])
-
-    // Get the realm configuration to check the state of self registration, 
-    // if ON(true) then this login session is the first; setup and turn off (for this demo only one user registers), else proceed as normal
-    const checkSelfRegistration = async () => {
-      const token = await IAMService.getToken();
-  
-      const config = await appService.getRealmConfig(baseURL, realm, token);
-      setSelfRegistration(config.registrationAllowed);
-    }
 
     // Update the value of the two user input fields when user interacts
     const handleUserFieldChange = (field) => (e) => {
       setFormData({ ...formData, [field]: e.target.value });
     };
 
-    // Fill the demo user's data and turn self registration off for demo purposes
-    const updateCurrentConfig = async() => {
-      const token = await IAMService.getToken();
-
-      // Get the logged in user 
-      if (selfRegistration){
-        const users = await appService.getUsers(baseURL, realm, token);
-        const loggedVuid =  await IAMService.getValueFromToken("vuid");
-        const loggedInUser = users.find(user => {
-          if (user.attributes?.vuid[0] === loggedVuid){
-            return user;
-          }
-        });
-      
-        // Initial demo data for logged in user that will be encrypted
-        loggedInUser["email"] = "demouser@tidecloak.com";
-        loggedInUser.attributes["dob"] = "1980-01-01";
-        loggedInUser.attributes["cc"] = "4111111111111111";
-
-        // Update the logged in user
-        const response = await appService.updateUser(baseURL, realm, loggedInUser, token);
-       
-        // Turn Self Registration off
-        const setSelfRegOff = async ()  => {
-          // The endpoint will get the token itself
-          const response = await fetch(`/api/updateSelfRegistration`, {
-            method: "GET",
-          })
-
-          if (!response.ok){
-            const errorResponse = await response.json();
-            throw new Error(errorResponse.error || "Failed to turn Self Registration off.");
-          }
-        }
-        await setSelfRegOff();
-
-        // Sign the new settings after turning off Self Registration
-        const signSettings = async () => {
-          const response = await fetch(`/api/signSettings`, {
-            method: "GET",
-          })
-
-          if (!response.ok){
-            const errorResponse = await response.json();
-            throw new Error(errorResponse.error || "Failed to sign the realm settings.");
-          }
-        }
-        await signSettings();
-
-        // Assign user the read and write realm roles for both DoB and CC
-        const assignRealmRoles = async ()  => {
-          // The endpoint will get the token itself
-          const response = await fetch(`/api/assignRealmRoles`, {
-            method: "GET",
-          })
-
-          if (!response.ok){
-            const errorResponse = await response.json();
-            throw new Error(errorResponse.error || "Failed to assign read and write realm roles to the logged in user.");
-          }
-        }
-        await assignRealmRoles();
-
-        // Update token to reflect read/write roles assigned
-        await IAMService.updateIAMToken();
-        // Check that it's turned off
-        await checkSelfRegistration();
-       
-      }
-    }
-
     // Populate the Database Exposure cards, and set the current logged users
-    // Get all users for when self registration is already off.
     const getAllUsers = async () => {
       const token = await IAMService.getToken(); 
       const users = await appService.getUsers(baseURL, realm, token);
@@ -249,6 +151,10 @@ export default function User(){
               // Set it still for the databaseExposureTable
               setEncryptedCc(loggedUser.attributes.cc[0]); 
             }   
+
+            // Show the data at once
+            setPageLoading(false);
+
           } catch (error){
             // Set the raw data into the fields as they don't need to be decrypted (If they were saved not encrypted in TideCloak)
             setFormData(prev => ({...prev, dob: loggedUser.attributes.dob[0]}));
@@ -268,7 +174,6 @@ export default function User(){
               setEncryptedDob(encryptedDob[0]);
             }
             
-
             if (loggedUser.attributes.cc){
               const encryptedCc = await IAMService.doEncrypt([
                 {
@@ -286,6 +191,9 @@ export default function User(){
             const response = await appService.updateUser(baseURL, realm, loggedUser, token);
 
             console.log(error + " User Dob or CC was saved as raw data encrypting it and saving now.");
+
+            // Show the data at once
+            setPageLoading(false);
           }
       } 
     };
@@ -343,7 +251,7 @@ export default function User(){
     };
 
     return (
-        !contextLoading && !selfRegistration
+        !contextLoading && !pageLoading
         ?
         <main className="flex-grow w-full pt-6 pb-16">
         <div className="w-full px-8 max-w-screen-md mx-auto flex flex-col items-start gap-8">
@@ -534,8 +442,8 @@ export default function User(){
             )}
         </div>
         </div>
+        <div className="h-10"></div>
         </main>
-        
         : null 
     )
 };

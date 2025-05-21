@@ -196,16 +196,7 @@ async function createUser(baseURL, realm, token, username, dob, cc){
  * @returns {Promise<Object>} - response status with demo user's object
  */
 async function getDemoUser(baseURL, realm, token){
-    
-    // const response = await fetch(`${baseURL}/admin/realms/${realm}/users`, {
-    //     method: 'GET',
-    //     headers: {
-    //         "Content-Type": "application/json",
-    //         "authorization": `Bearer ${token}`,
-    //     },
-    // });
-
-    const response = await fetch(`${baseURL}/admin/realms/${realm}/users`, {
+    const response = await fetch(`${baseURL}/admin/realms/${realm}/users?username=demouser`, {
         method: 'GET',
         headers: {
             "Content-Type": "application/json",
@@ -217,10 +208,7 @@ async function getDemoUser(baseURL, realm, token){
         throw new Error("Failed to get the demo user.");
     }
 
-    const allUsers = await response.json();
-    const demoUser = allUsers.filter((user) => 
-        user.attributes?.vuid
-    );
+    const demoUser = await response.json();
    
     if (demoUser.length === 0){
         throw new Error("User not found. Check user exists in Keycloak."); 
