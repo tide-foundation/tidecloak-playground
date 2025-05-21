@@ -78,13 +78,20 @@ npm run dev
 
 ```bash
 .
-├── app/                 # Frontend code (e.g., Next.js)
-├── .devcontainer/       # Codespaces config and setup script
-│   ├── devcontainer.json
-│   └── setup.sh
-├── test-realm.json      # Realm configuration (URL auto-updated)
-├── infra/               # Infra configs (optional/future)
-└── README.md
+├── .devcontainer/        # Codespaces config and setup script
+├── app/                  # Application routes and API handlers
+├── lib/                  # Helper libraries and utilities
+├── public/               # Static assets (e.g. images, fonts)
+├── tide-modules/         # Custom TideCloak modules
+├── .gitignore
+├── README.md
+├── middleware.js         # Edge/middleware logic
+├── next.config.js        # Next.js configuration
+├── package.json          # NPM dependencies and scripts
+├── postcss.config.js     # PostCSS configuration
+├── tailwind.config.js    # Tailwind CSS configuration
+├── test-realm.json       # TideCloak realm configuration
+├── tidecloak.json        # General TideCloak config
 
 ```
 
