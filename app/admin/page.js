@@ -120,14 +120,14 @@ export default function Admin() {
   }, [isTideAdmin])
 
   // Handles the state of the submit change button, disable if there's no change
-  useEffect(() => {
-    if (hasDobReadPerm === IAMService.hasOneRole("_tide_dob.selfdecrypt")
-      && hasDobWritePerm === IAMService.hasOneRole("_tide_dob.selfencrypt")
-      && hasCcReadPerm === IAMService.hasOneRole("_tide_cc.selfdecrypt")
-      && hasCcWritePerm === IAMService.hasOneRole("_tide_cc.selfencrypt")){
-        setHasChanges(false); 
-    }
-  }, [hasDobReadPerm, hasDobWritePerm, hasCcReadPerm, hasCcWritePerm])
+  // useEffect(() => {
+  //   if (hasDobReadPerm === IAMService.hasOneRole("_tide_dob.selfdecrypt")
+  //     && hasDobWritePerm === IAMService.hasOneRole("_tide_dob.selfencrypt")
+  //     && hasCcReadPerm === IAMService.hasOneRole("_tide_cc.selfdecrypt")
+  //     && hasCcWritePerm === IAMService.hasOneRole("_tide_cc.selfencrypt")){
+  //       setHasChanges(false); 
+  //   }
+  // }, [hasDobReadPerm, hasDobWritePerm, hasCcReadPerm, hasCcWritePerm])
 
   // Get current logged in user
   const getLoggedUser = async () => { 
@@ -213,9 +213,6 @@ export default function Admin() {
    */
   const handleAdminPermissionSubmit = async (e) => {
     e.preventDefault();
-
-    // Return the check boxes back to the current permissions the token holds
-    setUserPermissions(); 
 
     const token = await IAMService.getToken();
 
@@ -546,15 +543,13 @@ export default function Admin() {
         // Get a new token to have check the currently assigned roles to the logged in user
         await IAMService.updateToken();
 
-        // Update check boxes to reflect the change in token's permissions
-        await setUserPermissions();
         setUpdatingToken(false); 
 
         // Reset states for next change request
         setApprovals([false, false, false, false, false]);
         setTotalApproved(1);
-        setActiveRequestIndex(prev => prev + 1);
-        setExpandedIndex(prev => prev + 1);
+        //setActiveRequestIndex(prev => prev + 1);
+        //setExpandedIndex(prev => prev + 1);
       }
     };
 

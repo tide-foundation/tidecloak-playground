@@ -94,7 +94,7 @@ function DecryptedRow({ isUser, user, username, dob, cc }) {
                 }
                 else {                                          // No DoB Read permission, Yes CC Read Permission
                     setDecryptedDob(dob); 
-                    setDecryptedCc(decryptedData[1]); 
+                    setDecryptedCc(decryptedData[0]); 
                 }
 
                 setDecrypted(true);
