@@ -121,10 +121,10 @@ export default function Admin() {
 
   // Handles the state of the submit change button, disable if there's no change
   useEffect(() => {
-    if (hasDobReadPerm === IAMService.hasOneRole("_tide_dob.read")
-      && hasDobWritePerm === IAMService.hasOneRole("_tide_dob.write")
-      && hasCcReadPerm === IAMService.hasOneRole("_tide_cc.read")
-      && hasCcWritePerm === IAMService.hasOneRole("_tide_cc.write")){
+    if (hasDobReadPerm === IAMService.hasOneRole("_tide_dob.selfdecrypt")
+      && hasDobWritePerm === IAMService.hasOneRole("_tide_dob.selfencrypt")
+      && hasCcReadPerm === IAMService.hasOneRole("_tide_cc.selfdecrypt")
+      && hasCcWritePerm === IAMService.hasOneRole("_tide_cc.selfencrypt")){
         setHasChanges(false); 
     }
   }, [hasDobReadPerm, hasDobWritePerm, hasCcReadPerm, hasCcWritePerm])
@@ -145,11 +145,11 @@ export default function Admin() {
   // Get the current user realm roles to prefill the boxes and for updating the permissions
   const setUserPermissions = async () => { 
     if (loggedUser){
-      setHasDobReadPerm(IAMService.hasOneRole("_tide_dob.read"));
-      setHasDobWritePerm(IAMService.hasOneRole("_tide_dob.write"));
+      setHasDobReadPerm(IAMService.hasOneRole("_tide_dob.selfdecrypt"));
+      setHasDobWritePerm(IAMService.hasOneRole("_tide_dob.selfencrypt"));
 
-      setHasCcReadPerm(IAMService.hasOneRole("_tide_cc.read"));
-      setHasCcWritePerm(IAMService.hasOneRole("_tide_cc.write"));
+      setHasCcReadPerm(IAMService.hasOneRole("_tide_cc.selfdecrypt"));
+      setHasCcWritePerm(IAMService.hasOneRole("_tide_cc.selfencrypt"));
     }
   };
 
@@ -237,8 +237,8 @@ export default function Admin() {
     // Compare the current checkbox state with the current permissions. Note: token roles only update when a role change request COMMITS.
     // If the states don't match, a change request is required.
     // Date of Birth
-    if (hasDobReadPerm !== IAMService.hasOneRole("_tide_dob.read")){      
-      const readRole = await appService.getRealmRole(baseURL, realm, "_tide_dob.read", updatedToken);
+    if (hasDobReadPerm !== IAMService.hasOneRole("_tide_dob.selfdecrypt")){      
+      const readRole = await appService.getRealmRole(baseURL, realm, "_tide_dob.selfdecrypt", updatedToken);
       if (hasDobReadPerm === true){
         await appService.assignRealmRole(baseURL, realm, loggedUser.id, readRole, updatedToken);
       }
@@ -247,8 +247,8 @@ export default function Admin() {
       }
     }
 
-    if (hasDobWritePerm !== IAMService.hasOneRole("_tide_dob.write")){
-      const writeRole = await appService.getRealmRole(baseURL, realm, "_tide_dob.write", updatedToken);
+    if (hasDobWritePerm !== IAMService.hasOneRole("_tide_dob.selfencrypt")){
+      const writeRole = await appService.getRealmRole(baseURL, realm, "_tide_dob.selfencrypt", updatedToken);
       if (hasDobWritePerm === true){
         await appService.assignRealmRole(baseURL, realm, loggedUser.id, writeRole, updatedToken);
       }
@@ -258,8 +258,8 @@ export default function Admin() {
     }
 
     // Credit Card
-    if (hasCcReadPerm !== IAMService.hasOneRole("_tide_cc.read")){
-      const readRole = await appService.getRealmRole(baseURL, realm, "_tide_cc.read", updatedToken);
+    if (hasCcReadPerm !== IAMService.hasOneRole("_tide_cc.selfdecrypt")){
+      const readRole = await appService.getRealmRole(baseURL, realm, "_tide_cc.selfdecrypt", updatedToken);
       if (hasCcReadPerm === true){
         await appService.assignRealmRole(baseURL, realm, loggedUser.id, readRole, updatedToken);
       }
@@ -268,8 +268,8 @@ export default function Admin() {
       }
     }
 
-    if (hasCcWritePerm !== IAMService.hasOneRole("_tide_cc.write")){
-      const writeRole = await appService.getRealmRole(baseURL, realm, "_tide_cc.write", updatedToken);
+    if (hasCcWritePerm !== IAMService.hasOneRole("_tide_cc.selfencrypt")){
+      const writeRole = await appService.getRealmRole(baseURL, realm, "_tide_cc.selfencrypt", updatedToken);
       if (hasCcWritePerm === true){
         await appService.assignRealmRole(baseURL, realm, loggedUser.id, writeRole, updatedToken);
       }

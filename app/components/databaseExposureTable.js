@@ -42,8 +42,8 @@ function DecryptedRow({ isUser, user, username, dob, cc }) {
     // If new user data arrives reset to potentially decrypt again
     useEffect(() => {
         setDecrypted(false);
-        setCanReadDob(IAMService.hasOneRole("_tide_dob.read"));
-        setCanReadCc(IAMService.hasOneRole("_tide_cc.read"));
+        setCanReadDob(IAMService.hasOneRole("_tide_dob.selfdecrypt"));
+        setCanReadCc(IAMService.hasOneRole("_tide_cc.selfdecrypt"));
     }, [user])
 
     // Calls on Decrypt button being selected to update the fields
@@ -80,26 +80,33 @@ function DecryptedRow({ isUser, user, username, dob, cc }) {
 
         setAnimating(true);
         setTimeout(async () => {
-            const decryptedData = await IAMService.doDecrypt(encryptedData);
-            
-            // Set data to show at roughly same time, only decrypt the attributes user has read permissions to
-            if (encryptedData.length === 2){
-                setDecryptedDob(decryptedData[0]); 
-                setDecryptedCc(decryptedData[1]); 
-            }
-            else if (encryptedData[0].tags[0] === "dob"){   // Yes DoB Read permission, No CC Read Permission
-                setDecryptedDob(decryptedData[0]); 
-                setDecryptedCc(cc);
-            }
-            else {                                          // No DoB Read permission, Yes CC Read Permission
-                setDecryptedDob(dob); 
-                setDecryptedCc(decryptedData[1]); 
-            }
 
-            setDecrypted(true);
-            setAnimating(false);
-            setDecryptionStatus("Decrypted successfully!");
-            setTimeout(() => setDecryptionStatus(""), 3000);
+            if (encryptedData.length > 0){
+                const decryptedData = await IAMService.doDecrypt(encryptedData);
+                // Set data to show at roughly same time, only decrypt the attributes user has read permissions to
+                if (encryptedData.length === 2){                // Yes DoB Read permission, Yes CC Read Permission
+                    setDecryptedDob(decryptedData[0]); 
+                    setDecryptedCc(decryptedData[1]); 
+                }
+                else if (encryptedData[0].tags[0] === "dob"){   // Yes DoB Read permission, No CC Read Permission
+                    setDecryptedDob(decryptedData[0]); 
+                    setDecryptedCc(cc);
+                }
+                else {                                          // No DoB Read permission, Yes CC Read Permission
+                    setDecryptedDob(dob); 
+                    setDecryptedCc(decryptedData[1]); 
+                }
+
+                setDecrypted(true);
+                setAnimating(false);
+                setDecryptionStatus("Decrypted successfully!");
+                setTimeout(() => setDecryptionStatus(""), 3000);
+            }
+            else {
+                setDecryptedCc(cc);                             // No DoB Read permission, No CC Read Permission
+                setDecryptedDob(dob); 
+            }
+            
         }, 800);
     };
     
