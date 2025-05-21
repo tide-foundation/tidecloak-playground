@@ -8,7 +8,7 @@ A secure, privacy-first identity and data management sandbox built with TideCloa
 
 Launch a preconfigured development environment directly in your browser:
 
-[![Open in Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new?repo=984597831)
+[![Open in Codespaces](https://github.com/codespaces/badge.svg)](https://codespace.new/tide-foundation/tidecloak-playground?quickstart=1)
 
 **While you wait (7 mins or so), here's what happens automatically:**
 
