@@ -36,6 +36,7 @@ These are auto-forwarded and opened in your browser.
 > _(Currently GitHub restricts us from automating this step, so you'll have to do it manually)_
 
 Go to the Ports tab in Codespaces, find port `Tidecloak Server (8080)`, and right-click → `Port visibility` → 'Public'
+![how to make public](https://raw.githubusercontent.com/tide-foundation/tidecloakspaces/main/image/README/tidecloak_howto_makepublic.gif)
 
 **b) Your Next.js app secured by Tidecloak is now ready for you to take for a spin**
 
