@@ -7,8 +7,8 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
     const [masterToken, setMasterToken] = useState(null);
 
     let restartCounter = 0;
-    
 
+    
     // Initialiser
     const steps = [
         "Getting Token",
@@ -36,6 +36,42 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
         }
     }, [masterToken]);
 
+    function parseJwt(token) {
+        try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(
+                atob(base64)
+                    .split('')
+                    .map(c => `%${('00' + c.charCodeAt(0).toString(16)).slice(-2)}`)
+                    .join('')
+            );
+            return JSON.parse(jsonPayload);
+        } catch (e) {
+            console.error('Failed to parse JWT:', e);
+            return null;
+        }
+    }
+
+
+    function isTokenExpired(token) {
+        const payload = parseJwt(token);
+        if (!payload || !payload.exp) return true;
+
+        const currentTime = Math.floor(Date.now() / 1000); // current time in seconds
+        return payload.exp < currentTime;
+    }
+
+    // Instead of fetching master token on each request, check if current token has expired and fetch when it is.
+    // Not sure which is more efficient, making another fetch request verses parsing the token and checking exp (this just saves us making extra requests when token is not yet expired......).
+    const getOrRefreshMasterToken = async () => {
+        if (masterToken === null || isTokenExpired(masterToken)) {
+            await getMasterToken(); // This updates masterToken via setMasterToken
+        }
+        return masterToken;
+    };
+
+
     // Master token required for each step in initialisation
     const getMasterToken = async () => {
         const response = await fetch(`/api/getMasterToken`, {
@@ -62,11 +98,12 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // Create the demo realm using the settings provided in test-realm.json
     const createRealm = async () => {
+        const  token = await getOrRefreshMasterToken();
         setCurrentStep(1);
         const response = await fetch(`/api/createRealm`, {
             method: "GET",
             headers: {
-                "Authorization": `Bearer ${masterToken}`
+                "Authorization": `Bearer ${token}`
             }
         });
         
@@ -78,11 +115,11 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // On error during initialisation process remove the IDP first, if IDP doesn't attempt to delete the realm
     const deleteIDP = async () => {
-        
+        const  token = await getOrRefreshMasterToken();
         const response = await fetch(`/api/deleteIDP`, {
             method: "GET",
             headers: {
-                "Authorization": `Bearer ${masterToken}`
+                "Authorization": `Bearer ${token}`
             }
         })
 
@@ -94,10 +131,11 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // On error during initialisation delete the realm after removing the IDP
     const deleteRealm = async () => {
+        const  token = await getOrRefreshMasterToken();
         const response = await fetch(`/api/deleteRealm`, {
             method: "GET",
             headers: {
-                "Authorization": `Bearer ${masterToken}`
+                "Authorization": `Bearer ${token}`
             }
         })
 
@@ -109,11 +147,12 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // Activate the Tide IDP License to enable IGA
     const getLicense = async ()  => {
+        const  token = await getOrRefreshMasterToken();
         setCurrentStep(2);
         const response = await fetch(`/api/getLicense`, {
             method: "GET",
             headers: {
-                "Authorization": `Bearer ${masterToken}`
+                "Authorization": `Bearer ${token}`
             }
         })
 
@@ -125,10 +164,11 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // Enable IGA (activate once and leave on)
     const toggleIGA = async () => {
+        const  token = await getOrRefreshMasterToken();
         const response = await fetch(`/api/toggleIGA`, {
             method: "GET",
             headers: {
-                "Authorization": `Bearer ${masterToken}`
+                "Authorization": `Bearer ${token}`
             }
         })
 
@@ -140,11 +180,12 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // Create 5 users including the demo user
     const createUsers = async () => {
+        const  token = await getOrRefreshMasterToken();
         setCurrentStep(3);
         const response = await fetch(`/api/createUsers`, {
             method: "GET",
             headers: {
-                "Authorization": `Bearer ${masterToken}`
+                "Authorization": `Bearer ${token}`
             }
         })
 
@@ -156,11 +197,12 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // Assign the demo user the minimum realm roles required
     const assignRealmRoles = async () => {
+        const  token = await getOrRefreshMasterToken();
         setCurrentStep(4);
         const response = await fetch(`/api/assignRealmRoles`, {
             method: "GET",
             headers: {
-                "Authorization": `Bearer ${masterToken}`
+                "Authorization": `Bearer ${token}`
             }
         })
 
@@ -172,11 +214,12 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // Approve and Commit all Clients change requests
     const commitClients = async () => {
+        const  token = await getOrRefreshMasterToken();
         setCurrentStep(5);
         const response = await fetch(`/api/commitClients`, {
             method: "GET",
             headers: {
-                "Authorization": `Bearer ${masterToken}`
+                "Authorization": `Bearer ${token}`
             }
         })
 
@@ -188,10 +231,11 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // Update the Custom Domain URL for the Tide Enclave to work
     const updateCustomDomainURL = async () => {
+        const  token = await getOrRefreshMasterToken();
         const response = await fetch(`/api/updateCustomDomainURL`, {
             method: "GET",
             headers: {
-                "Authorization": `Bearer ${masterToken}`
+                "Authorization": `Bearer ${token}`
             }
         })
 
@@ -203,10 +247,11 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // Sign the new settings after updating the Custom Domain URL
     const signSettings = async () => {
+        const  token = await getOrRefreshMasterToken();
         const response = await fetch(`/api/signSettings`, {
             method: "GET",
             headers: {
-                "Authorization": `Bearer ${masterToken}`
+                "Authorization": `Bearer ${token}`
             }
         })
 
@@ -218,10 +263,11 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // Sign the new settings after updating the Custom Domain URL
     const getAdapter = async () => {
+        const  token = await getOrRefreshMasterToken();
         const response = await fetch(`/api/getAdapter`, {
             method: "GET",
             headers: {
-                "Authorization": `Bearer ${masterToken}`
+                "Authorization": `Bearer ${token}`
             }
         })
 
