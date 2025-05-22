@@ -44,6 +44,6 @@ next-env.d.ts
 !.vscode/extensions.json
 package-lock.json
 keycloakdb.*
-keycloak.json
+tidecloak.json
 keys.json
 *Zone.Identifier
