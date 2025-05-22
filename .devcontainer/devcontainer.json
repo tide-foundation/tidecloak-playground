@@ -36,5 +36,5 @@
   },
 
   "postCreateCommand": "chmod +x .devcontainer/setup.sh && ./.devcontainer/setup.sh",
-  "postStartCommand": "npm run start"
+  "postStartCommand": "npm run dev"
 }
