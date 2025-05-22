@@ -19,7 +19,7 @@ export default function Admin() {
   // Navigator
   const router = useRouter();
   // Shared context data
-  const {baseURL, realm, authenticated, setShowModal } = useAppContext();
+  const {baseURL, realm, authenticated } = useAppContext();
   // Admin state of the logged in demo user
   const [isTideAdmin, setIsTideAdmin] = useState(false);
   // Object representation of the logged in user
@@ -191,10 +191,10 @@ export default function Admin() {
 
         if (response.ok) {
             // Force update of token without logging out
-            setShowModal(true);
+           
             await IAMService.updateToken();
             setIsTideAdmin(true); 
-            setShowModal(false);
+           
             console.log("Admin Role Assigned");
         }
     }
@@ -203,7 +203,7 @@ export default function Admin() {
     }
   };
 
-  // Get latest change requests for canceling and updating them
+  // Get latest change requests to display and update when pressing commit
   const getChangeRequests = async () => {
     
     const token = await IAMService.getToken();
@@ -217,6 +217,7 @@ export default function Admin() {
     
   }
 
+  // Fetch all realm role objects to assign to user based on check box states
   const getRealmRoles = async () => {
     const token = await IAMService.getToken();
     setDobWriteRole(await appService.getRealmRole(baseURL, realm, "_tide_dob.selfencrypt", token));
@@ -225,7 +226,6 @@ export default function Admin() {
     setCcWriteRole(await appService.getRealmRole(baseURL, realm, "_tide_cc.selfencrypt", token));
   }
 
-  
   /**
    * Assign or unassign the logged in user realm roles (pemissions)
    * @param {*} e - the form's event, when Submit Changes button is clicked
@@ -233,68 +233,33 @@ export default function Admin() {
   const handleAdminPermissionSubmit = async (e) => {
     e.preventDefault();
 
-    const updatedToken = await IAMService.getToken();
+    const token = await IAMService.getToken();
 
     // Clear cached data of the demo admins who have approved for a reset
     localStorage.removeItem("approvals");
 
-    // Get all then cancel all requests before assigning new ones, disable boxes while token is updating duplicate fetches
-    // which causes errors
-    const allRequests = await appService.getUserRequests(baseURL, realm, updatedToken); // Including the denied requests
-  
-    console.log(allRequests);
+    // Get all then cancel all requests before assigning new ones
+    const allRequests = await appService.getUserRequests(baseURL, realm, token); // Including the denied requests
     await cancelRequests(allRequests);
-    // Roles drafted are counted as assigned to token by TideCloak, so cancel the requests then update the token
-    // Don't need to show modal here, because no permissions are committed
-    //await IAMService.updateToken();
-    //const updatedToken = await IAMService.getToken();
-   
+  
+    // Compare the current checkbox state with the current permissions. Note: token roles only update when a role change request commits.
+    // If the states don't match, a change request is required and made.
+    const checkBoxPerms = [hasDobReadPerm, hasDobWritePerm, hasCcReadPerm, hasCcWritePerm];
+    const roles = ["_tide_dob.selfdecrypt", "_tide_dob.selfencrypt", "_tide_cc.selfdecrypt", "_tide_cc.selfencrypt"];
+    const rolesInfo = [dobReadRole, dobWriteRole, ccReadRole, ccWriteRole];
 
-    
-    
-    // Compare the current checkbox state with the current permissions. Note: token roles only update when a role change request COMMITS.
-    // If the states don't match, a change request is required.
-    // Date of Birth
-    console.log(hasDobReadPerm);
-    console.log(IAMService.hasOneRole("_tide_dob.selfdecrypt"));
-    
-    if (hasDobReadPerm && !IAMService.hasOneRole("_tide_dob.selfdecrypt")){      
-      await appService.assignRealmRole(baseURL, realm, loggedUser.id, dobReadRole, updatedToken);
+    for (let i = 0; i < checkBoxPerms.length; i++){
+      if (checkBoxPerms[i] && !IAMService.hasOneRole(roles[i])){      
+        await appService.assignRealmRole(baseURL, realm, loggedUser.id, rolesInfo[i], token);
+      }
+      else if (!checkBoxPerms[i] && IAMService.hasOneRole(roles[i])){
+        await appService.unassignRealmRole(baseURL, realm, loggedUser.id, rolesInfo[i], token);
+      }
     }
-    if (!hasDobReadPerm && IAMService.hasOneRole("_tide_dob.selfdecrypt")){
-      await appService.unassignRealmRole(baseURL, realm, loggedUser.id, dobReadRole, updatedToken);
-    }
-
-    if (hasDobWritePerm && !IAMService.hasOneRole("_tide_dob.selfencrypt")){
-      await appService.assignRealmRole(baseURL, realm, loggedUser.id, dobWriteRole, updatedToken);
-    }
-    if (!hasDobWritePerm && IAMService.hasOneRole("_tide_dob.selfencrypt")){
-      await appService.unassignRealmRole(baseURL, realm, loggedUser.id, dobWriteRole, updatedToken);
-    }
-
-    // // Credit Card
-    // if (hasCcReadPerm !== IAMService.hasOneRole("_tide_cc.selfdecrypt")){
-      
-    //   if (hasCcReadPerm === true){
-    //     await appService.assignRealmRole(baseURL, realm, loggedUser.id, ccReadRole, updatedToken);
-    //   }
-    //   else {
-    //     await appService.unassignRealmRole(baseURL, realm, loggedUser.id, ccReadRole, updatedToken);
-    //   }
-    // }
-
-    // if (hasCcWritePerm !== IAMService.hasOneRole("_tide_cc.selfencrypt")){
-      
-    //   if (hasCcWritePerm === true){
-    //     await appService.assignRealmRole(baseURL, realm, loggedUser.id, ccWriteRole, updatedToken);
-    //   }
-    //   else {
-    //     await appService.unassignRealmRole(baseURL, realm, loggedUser.id, ccWriteRole, updatedToken);
-    //   }
-    // }
 
     // Get the latest change requests
-    getChangeRequests();
+    const newRequests = await appService.getUserRequests(baseURL, realm, token);
+    setRequests(newRequests);
 
     // Set first change request as the one currently opened
     setActiveRequestIndex(0);
@@ -302,7 +267,6 @@ export default function Admin() {
     // Reset form state
     setHasChanges(false);
   };
-
 
   /**
    * Each is a card the represents the change request, its status, action, admins approved and user's action button
@@ -549,12 +513,12 @@ export default function Admin() {
 
         // Clear the locally stored approved users array
         localStorage.removeItem("approvals");
-        setShowModal(true);
+        
         
         // Get a new token to have check the currently assigned roles to the logged in user
         await IAMService.updateToken();
 
-        setShowModal(false); 
+       
 
         // Reset states for next change request
         setApprovals([false, false, false, false, false]);
@@ -569,17 +533,18 @@ export default function Admin() {
     // If submit button is pressed again, cancel all the change requests
     const cancelRequests = async (requests) => {
       const token = await IAMService.getToken();
-      
-        requests.map(async (request) => {
+        
+      for (let i = 0; i < requests.length; i++) {
+          const request = requests[i];
+          
           const body = JSON.stringify({
-            "actionType": request.actionType,
-            "changeSetId": request.draftRecordId,
-            "changeSetType": request.changeSetType
+            actionType: request.actionType,
+            changeSetId: request.draftRecordId,
+            changeSetType: request.changeSetType
           });
 
-          const response = await appService.cancelChange(baseURL, realm, body, token);
-        })
-      setRequests([]);
+        const response = await appService.cancelChange(baseURL, realm, body, token);
+      }
     };
 
     return (
