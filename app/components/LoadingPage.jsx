@@ -4,8 +4,10 @@ import '../styles/spinKit.css';
 export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     const [currentStep, setCurrentStep] = useState(0);
-    const [masterToken, setMasterToken] = useState(null);
-    const [restartCounter, setRestartCounter ] = useState(0)
+    const [restartCounter, setRestartCounter] = useState(0)
+
+    // let restartCounter = 0;
+    
 
     // Initialiser
     const steps = [
@@ -18,57 +20,8 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
     ];
 
     useEffect(() => {
-        if (isInitializing){
-            try {
-                getMasterToken();
-            }
-            catch (error){
-                console.log(error);
-            }
-        }
+        initialize();
     }, []);
-
-    useEffect(() => {
-        if (masterToken){
-            initialize();
-        }
-    }, [masterToken]);
-
-    function parseJwt(token) {
-        try {
-            const base64Url = token.split('.')[1];
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(
-                atob(base64)
-                    .split('')
-                    .map(c => `%${('00' + c.charCodeAt(0).toString(16)).slice(-2)}`)
-                    .join('')
-            );
-            return JSON.parse(jsonPayload);
-        } catch (e) {
-            console.error('Failed to parse JWT:', e);
-            return null;
-        }
-    }
-
-
-    function isTokenExpired(token) {
-        const payload = parseJwt(token);
-        if (!payload || !payload.exp) return true;
-
-        const currentTime = Math.floor(Date.now() / 1000); // current time in seconds
-        return payload.exp < currentTime;
-    }
-
-    // Instead of fetching master token on each request, check if current token has expired and fetch when it is.
-    // Not sure which is more efficient, making another fetch request verses parsing the token and checking exp (this just saves us making extra requests when token is not yet expired......).
-    const getOrRefreshMasterToken = async () => {
-        if (masterToken === null || isTokenExpired(masterToken)) {
-            await getMasterToken(); // This updates masterToken via setMasterToken
-        }
-        return masterToken;
-    };
-
 
     // Master token required for each step in initialisation
     const getMasterToken = async () => {
@@ -90,18 +43,18 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
             throw new Error(errorMessage);
         }
         const data = await response.json();
-        setMasterToken(data.body);
+        return data.body
                 
     };
 
     // Create the demo realm using the settings provided in test-realm.json
     const createRealm = async () => {
-        const  token = await getOrRefreshMasterToken();
+        const masterToken = await getMasterToken();
         setCurrentStep(1);
         const response = await fetch(`/api/createRealm`, {
             method: "GET",
             headers: {
-                "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer ${masterToken}`
             }
         });
         
@@ -113,11 +66,11 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // On error during initialisation process remove the IDP first, if IDP doesn't attempt to delete the realm
     const deleteIDP = async () => {
-        const  token = await getOrRefreshMasterToken();
+        const masterToken = await getMasterToken();
         const response = await fetch(`/api/deleteIDP`, {
             method: "GET",
             headers: {
-                "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer ${masterToken}`
             }
         })
 
@@ -129,11 +82,11 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // On error during initialisation delete the realm after removing the IDP
     const deleteRealm = async () => {
-        const  token = await getOrRefreshMasterToken();
+        const masterToken = await getMasterToken();
         const response = await fetch(`/api/deleteRealm`, {
             method: "GET",
             headers: {
-                "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer ${masterToken}`
             }
         })
 
@@ -145,12 +98,12 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // Activate the Tide IDP License to enable IGA
     const getLicense = async ()  => {
-        const  token = await getOrRefreshMasterToken();
+        const masterToken = await getMasterToken();
         setCurrentStep(2);
         const response = await fetch(`/api/getLicense`, {
             method: "GET",
             headers: {
-                "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer ${masterToken}`
             }
         })
 
@@ -162,11 +115,11 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // Enable IGA (activate once and leave on)
     const toggleIGA = async () => {
-        const  token = await getOrRefreshMasterToken();
+        const masterToken = await getMasterToken();
         const response = await fetch(`/api/toggleIGA`, {
             method: "GET",
             headers: {
-                "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer ${masterToken}`
             }
         })
 
@@ -178,12 +131,12 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // Create 5 users including the demo user
     const createUsers = async () => {
-        const  token = await getOrRefreshMasterToken();
+        const masterToken = await getMasterToken();
         setCurrentStep(3);
         const response = await fetch(`/api/createUsers`, {
             method: "GET",
             headers: {
-                "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer ${masterToken}`
             }
         })
 
@@ -195,12 +148,12 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // Assign the demo user the minimum realm roles required
     const assignRealmRoles = async () => {
-        const  token = await getOrRefreshMasterToken();
+        const masterToken = await getMasterToken();
         setCurrentStep(4);
         const response = await fetch(`/api/assignRealmRoles`, {
             method: "GET",
             headers: {
-                "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer ${masterToken}`
             }
         })
 
@@ -212,12 +165,12 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // Approve and Commit all Clients change requests
     const commitClients = async () => {
-        const  token = await getOrRefreshMasterToken();
+        const masterToken = await getMasterToken();
         setCurrentStep(5);
         const response = await fetch(`/api/commitClients`, {
             method: "GET",
             headers: {
-                "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer ${masterToken}`
             }
         })
 
@@ -229,11 +182,11 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // Update the Custom Domain URL for the Tide Enclave to work
     const updateCustomDomainURL = async () => {
-        const  token = await getOrRefreshMasterToken();
+        const masterToken = await getMasterToken();
         const response = await fetch(`/api/updateCustomDomainURL`, {
             method: "GET",
             headers: {
-                "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer ${masterToken}`
             }
         })
 
@@ -245,11 +198,11 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // Sign the new settings after updating the Custom Domain URL
     const signSettings = async () => {
-        const  token = await getOrRefreshMasterToken();
+        const masterToken = await getMasterToken();
         const response = await fetch(`/api/signSettings`, {
             method: "GET",
             headers: {
-                "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer ${masterToken}`
             }
         })
 
@@ -261,11 +214,11 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // Sign the new settings after updating the Custom Domain URL
     const getAdapter = async () => {
-        const  token = await getOrRefreshMasterToken();
+        const masterToken = await getMasterToken();
         const response = await fetch(`/api/getAdapter`, {
             method: "GET",
             headers: {
-                "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer ${masterToken}`
             }
         })
 
@@ -300,11 +253,9 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
             setCurrentStep(0);
 
 
-            const incrementedCount = restartCounter + 1;
-            setRestartCounter(incrementedCount);
-            console.log("Times restarted: " + incrementedCount);
+            restartCounter = restartCounter + 1;
+            console.log("Times restarted: " + restartCounter);
 
-            // If it fails on step 1 (createRealm) restart initalizer 
             if (restartCounter < 2){
                 await initialize();
             }
@@ -331,33 +282,22 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
             <h1 className="text-2xl font-bold mb-6 text-gray-800">
                 Initializing your demo app
             </h1>
-            <ul className="list-inside space-y-2 text-gray-700">
-  {steps.map((msg, i) => (
-    <li key={i} className="flex items-center gap-2">
-      <div className="w-4 h-4 flex items-center justify-center">
-        {i < currentStep ? (
-          <div className="w-2 h-2 bg-gray-300 rounded-full" />
-        ) : i === currentStep ? (
-          <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-        ) : (
-          <div className="w-2 h-2 bg-gray-400 rounded-full" />
-        )}
-      </div>
-      <span
-        className={
-          i < currentStep
-            ? "opacity-50 line-through"
-            : i === currentStep
-            ? "font-semibold text-blue-700"
-            : ""
-        }
-      >
-        {msg}
-      </span>
-    </li>
-  ))}
-</ul>
-
+            <ul className="list-disc list-inside space-y-2 text-gray-700">
+                {steps.map((msg, i) => (
+                    <li
+                        key={i}
+                        className={
+                            i < currentStep
+                                ? 'opacity-50 line-through'
+                                : i === currentStep
+                                    ? 'font-semibold'
+                                    : ''
+                        }
+                    >
+                        {msg}
+                    </li>
+                ))}
+            </ul>
         </div>
     );
 }
