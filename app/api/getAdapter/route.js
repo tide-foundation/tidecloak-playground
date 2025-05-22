@@ -6,23 +6,16 @@ import apiService from "../apiService";
 /**
  * This endpoint is only for fetching adapter configurations and writing to the empty tidecloak.json object to access the administration console.
  * This is the final step in initialisation, and if tidecloak.json is empty, triggers the client side UI to display the fresh start process again.
- * @param {Object} request - contains master token in the authorization header
  * @returns {Promise<Object>} - status reponse for client side to use
  */
-export async function GET(request){
+export async function GET(){
 
     const realm = configs.realm;
     const baseURL = configs.baseURL;
     const clientName = settings.clients[0].clientId; 
 
-    const authHeader = request.headers.get("authorization");
-
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return new Response(JSON.stringify({ error: "Unauthorized: Missing or invalid token"}), {status: 400});
-    }
-
-    // To get the token without the leading "Bearer "
-    const masterToken = authHeader.split(" ")[1];
+    // Fetch a master token with the default admin and password (set in the command for setting up keycloak) from the default keycloak admin-cli client
+    const masterToken = await apiService.getMasterToken(baseURL);
 
     try {
         // Get the client representation to fetch the adapter with the client ID

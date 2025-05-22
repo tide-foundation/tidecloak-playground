@@ -1,13 +1,10 @@
-import {useState, useEffect} from 'react';
+import { useState, useEffect } from 'react';
 import '../styles/spinKit.css';
 
-export default function LoadingPage({ isInitializing, setIsInitializing}) {
+export default function LoadingPage({ isInitializing, setIsInitializing }) {
 
     const [currentStep, setCurrentStep] = useState(0);
     const [restartCounter, setRestartCounter] = useState(0)
-
-    // let restartCounter = 0;
-    
 
     // Initialiser
     const steps = [
@@ -20,45 +17,25 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
     ];
 
     useEffect(() => {
-        initialize();
+        if (isInitializing) {
+            try {
+                initialize();
+            }
+            catch (error) {
+                console.log(error);
+            }
+        }
     }, []);
 
-    // Master token required for each step in initialisation
-    const getMasterToken = async () => {
-        const response = await fetch(`/api/getMasterToken`, {
-            method: "GET"
-        }); 
-        
-        if (!response.ok) {
-            const contentType = response.headers.get("content-type");
-        
-            let errorMessage = "Failed to fetch master token.";
-            if (contentType && contentType.includes("application/json")) {
-                const errorResponse = await response.json();
-                errorMessage = errorResponse.error || errorMessage;
-            } else {
-                errorMessage = await response.text();  // Read raw text if not JSON
-            }
-        
-            throw new Error(errorMessage);
-        }
-        const data = await response.json();
-        return data.body
-                
-    };
 
     // Create the demo realm using the settings provided in test-realm.json
     const createRealm = async () => {
-        const masterToken = await getMasterToken();
         setCurrentStep(1);
         const response = await fetch(`/api/createRealm`, {
             method: "GET",
-            headers: {
-                "Authorization": `Bearer ${masterToken}`
-            }
         });
-        
-        if (!response.ok){
+
+        if (!response.ok) {
             const errorResponse = await response.json();
             throw new Error(errorResponse.error || "Failed to create the realm.");
         }
@@ -66,15 +43,12 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // On error during initialisation process remove the IDP first, if IDP doesn't attempt to delete the realm
     const deleteIDP = async () => {
-        const masterToken = await getMasterToken();
         const response = await fetch(`/api/deleteIDP`, {
             method: "GET",
-            headers: {
-                "Authorization": `Bearer ${masterToken}`
-            }
+
         })
 
-        if (!response.ok){
+        if (!response.ok) {
             const errorResponse = await response.json();
             throw new Error(errorResponse.error || "Failed to delete the IDP, manual deletion of IDP then realm required via Keycloak.");
         }
@@ -82,32 +56,26 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // On error during initialisation delete the realm after removing the IDP
     const deleteRealm = async () => {
-        const masterToken = await getMasterToken();
         const response = await fetch(`/api/deleteRealm`, {
             method: "GET",
-            headers: {
-                "Authorization": `Bearer ${masterToken}`
-            }
+
         })
 
-        if (!response.ok){
+        if (!response.ok) {
             const errorResponse = await response.json();
             throw new Error(errorResponse.error || "Failed to delete the realm, manual deletion of realm required via Keycloak.");
         }
     }
 
     // Activate the Tide IDP License to enable IGA
-    const getLicense = async ()  => {
-        const masterToken = await getMasterToken();
+    const getLicense = async () => {
         setCurrentStep(2);
         const response = await fetch(`/api/getLicense`, {
             method: "GET",
-            headers: {
-                "Authorization": `Bearer ${masterToken}`
-            }
+
         })
 
-        if (!response.ok){
+        if (!response.ok) {
             const errorResponse = await response.json();
             throw new Error(errorResponse.error || "Failed to activate IDP license.");
         }
@@ -115,15 +83,12 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // Enable IGA (activate once and leave on)
     const toggleIGA = async () => {
-        const masterToken = await getMasterToken();
         const response = await fetch(`/api/toggleIGA`, {
             method: "GET",
-            headers: {
-                "Authorization": `Bearer ${masterToken}`
-            }
+
         })
 
-        if (!response.ok){
+        if (!response.ok) {
             const errorResponse = await response.json();
             throw new Error(errorResponse.error || "Failed to toggle IGA on.");
         }
@@ -131,16 +96,13 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // Create 5 users including the demo user
     const createUsers = async () => {
-        const masterToken = await getMasterToken();
         setCurrentStep(3);
         const response = await fetch(`/api/createUsers`, {
             method: "GET",
-            headers: {
-                "Authorization": `Bearer ${masterToken}`
-            }
+
         })
 
-        if (!response.ok){
+        if (!response.ok) {
             const errorResponse = await response.json();
             throw new Error(errorResponse.error || "Failed to create users.");
         }
@@ -148,16 +110,13 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // Assign the demo user the minimum realm roles required
     const assignRealmRoles = async () => {
-        const masterToken = await getMasterToken();
         setCurrentStep(4);
         const response = await fetch(`/api/assignRealmRoles`, {
             method: "GET",
-            headers: {
-                "Authorization": `Bearer ${masterToken}`
-            }
+
         })
 
-        if (!response.ok){
+        if (!response.ok) {
             const errorResponse = await response.json();
             throw new Error(errorResponse.error || "Failed to assign roles to the demo user.");
         }
@@ -165,16 +124,13 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // Approve and Commit all Clients change requests
     const commitClients = async () => {
-        const masterToken = await getMasterToken();
         setCurrentStep(5);
         const response = await fetch(`/api/commitClients`, {
             method: "GET",
-            headers: {
-                "Authorization": `Bearer ${masterToken}`
-            }
+
         })
 
-        if (!response.ok){
+        if (!response.ok) {
             const errorResponse = await response.json();
             throw new Error(errorResponse.error || "Failed to approve and commit clients.");
         }
@@ -182,15 +138,12 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // Update the Custom Domain URL for the Tide Enclave to work
     const updateCustomDomainURL = async () => {
-        const masterToken = await getMasterToken();
         const response = await fetch(`/api/updateCustomDomainURL`, {
             method: "GET",
-            headers: {
-                "Authorization": `Bearer ${masterToken}`
-            }
+
         })
 
-        if (!response.ok){
+        if (!response.ok) {
             const errorResponse = await response.json();
             throw new Error(errorResponse.error || "Failed to update the Custom Domain URL for the Tide IDP.");
         }
@@ -198,15 +151,12 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // Sign the new settings after updating the Custom Domain URL
     const signSettings = async () => {
-        const masterToken = await getMasterToken();
         const response = await fetch(`/api/signSettings`, {
             method: "GET",
-            headers: {
-                "Authorization": `Bearer ${masterToken}`
-            }
+
         })
 
-        if (!response.ok){
+        if (!response.ok) {
             const errorResponse = await response.json();
             throw new Error(errorResponse.error || "Failed to sign the realm settings.");
         }
@@ -214,22 +164,19 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
     // Sign the new settings after updating the Custom Domain URL
     const getAdapter = async () => {
-        const masterToken = await getMasterToken();
         const response = await fetch(`/api/getAdapter`, {
             method: "GET",
-            headers: {
-                "Authorization": `Bearer ${masterToken}`
-            }
+
         })
 
-        if (!response.ok){
+        if (!response.ok) {
             const errorResponse = await response.json();
             throw new Error(errorResponse.error || "Failed to get adapter for the client.");
         }
     }
 
-    
-    
+
+
     const initialize = async () => {
         try {
             await createRealm();
@@ -244,7 +191,7 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
 
             setIsInitializing(false);
         }
-        catch (error){
+        catch (error) {
             // Delete IDP then realm if an error occurs in initialisation in preparation for restarting the process
             console.log(error);
             await deleteIDP();
@@ -253,13 +200,15 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
             setCurrentStep(0);
 
 
-            restartCounter = restartCounter + 1;
-            console.log("Times restarted: " + restartCounter);
+            const incrementedCount = restartCounter + 1;
+            setRestartCounter(incrementedCount);
+            console.log("Times restarted: " + incrementedCount);
 
-            if (restartCounter < 2){
+            // If it fails on step 1 (createRealm) restart initalizer 
+            if (restartCounter < 2) {
                 await initialize();
             }
-            
+
         }
 
     };
@@ -282,22 +231,33 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
             <h1 className="text-2xl font-bold mb-6 text-gray-800">
                 Initializing your demo app
             </h1>
-            <ul className="list-disc list-inside space-y-2 text-gray-700">
+            <ul className="list-inside space-y-2 text-gray-700">
                 {steps.map((msg, i) => (
-                    <li
-                        key={i}
-                        className={
-                            i < currentStep
-                                ? 'opacity-50 line-through'
-                                : i === currentStep
-                                    ? 'font-semibold'
-                                    : ''
-                        }
-                    >
-                        {msg}
+                    <li key={i} className="flex items-center gap-2">
+                        <div className="w-4 h-4 flex items-center justify-center">
+                            {i < currentStep ? (
+                                <div className="w-2 h-2 bg-gray-300 rounded-full" />
+                            ) : i === currentStep ? (
+                                <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                                <div className="w-2 h-2 bg-gray-400 rounded-full" />
+                            )}
+                        </div>
+                        <span
+                            className={
+                                i < currentStep
+                                    ? "opacity-50 line-through"
+                                    : i === currentStep
+                                        ? "font-semibold text-blue-700"
+                                        : ""
+                            }
+                        >
+                            {msg}
+                        </span>
                     </li>
                 ))}
             </ul>
+
         </div>
     );
 }
