@@ -4,21 +4,15 @@ import apiService from "../apiService";
 /**
  * This endpoint is only for deleting the realm on error within initialisation.
  * Deletion of IDP is required before deletion of the realm.
- * @params {Object} request - contains the master token in authorization header
  * @return {Promse<Object>} - status responses for client side to use
  */
-export async function GET(request){
+export async function GET(){
 
     const realm = configs.realm;
     const baseURL = configs.baseURL;
 
-    const authHeader = request.headers.get("authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return new Response(JSON.stringify({ error: "Unauthorized: Missing or invalid token"}), {status: 400});
-    }
-
-    // To get the token without the leading "Bearer "
-    const masterToken = authHeader.split(" ")[1];
+    // Fetch a master token with the default admin and password (set in the command for setting up keycloak) from the default keycloak admin-cli client
+    const masterToken = await apiService.getMasterToken(baseURL);
 
     // Need to delete IDP first, before deletion of realm.
     try {

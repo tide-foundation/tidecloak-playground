@@ -4,23 +4,15 @@ import apiService from "../apiService";
 
 /**
  * This endpoint is only for fetching, approving and committing the clients (IGA) as part of the initialisation process
- * @param {Object} request - with the master token in the header
  * @returns {Promise<Object>} - status response to be handled on client side
  */
-export async function GET(request){
+export async function GET(){
 
     const realm = configs.realm;
     const baseURL = configs.baseURL;
-    
 
-    const authHeader = request.headers.get("authorization");
-
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return new Response(JSON.stringify({ error: "Unauthorized: Missing or invalid token"}), {status: 400});
-    }
-
-    // To get the token without the leading "Bearer "
-    const masterToken = authHeader.split(" ")[1];
+    // Fetch a master token with the default admin and password (set in the command for setting up keycloak) from the default keycloak admin-cli client
+    const masterToken = await apiService.getMasterToken(baseURL);
     
     try {
         // Fetch the change requests to for signage upon approval

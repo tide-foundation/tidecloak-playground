@@ -4,22 +4,13 @@ import apiService from "../apiService";
 /**
  * This endpoint is only for creating the user and providing them a URL to link their admin account to Tide on initialisation.
  * 
- * @param {Object} request - contains master token within the authorization header
  * @returns {Promise<Object>} - response status for client side to use in initialiser
  */
-export async function GET(request){
-
+export async function GET(){
     const realm = configs.realm;
     const baseURL = configs.baseURL;
-
-    const authHeader = request.headers.get("authorization");
-
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return new Response(JSON.stringify({ error: "Unauthorized: Missing or invalid token"}), {status: 400});
-    }
-
-    // To get the token without the leading "Bearer "
-    const masterToken = authHeader.split(" ")[1];
+    
+    const masterToken = await apiService.getMasterToken(baseURL);
   
     // Dummy users to create
     // const users = [

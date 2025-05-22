@@ -2,22 +2,15 @@ import configs from "../apiConfigs";
 import apiService from "../apiService";
 /**
  * This custom Tide endpoint is only for toggling IGA on after an IDP has been created.
- * @param {Object} request - contains the master token in the authorization header 
  * @returns {Promise<Object>} - response status for client side to use
  */
-export async function GET(request){
+export async function GET(){
 
     const realm = configs.realm;
     const baseURL = configs.baseURL;
 
-    const authHeader = request.headers.get("authorization");
-
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return new Response(JSON.stringify({ error: "Unauthorized: Missing or invalid token"}), {status: 400});
-    }
-
-    // To get the token without the leading "Bearer "
-    const masterToken = authHeader.split(" ")[1];
+    // Fetch a master token with the default admin and password (set in the command for setting up keycloak) from the default keycloak admin-cli client
+    const masterToken = await apiService.getMasterToken(baseURL);
 
     try {
         // Toggle IGA to be true and it should remain true for the Admin Console.
