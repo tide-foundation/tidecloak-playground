@@ -36,6 +36,8 @@ These are auto-forwarded and opened in your browser.
 > _(Currently GitHub restricts us from automating this step, so you'll have to do it manually)_
 
 Go to the Ports tab in Codespaces, find port `Tidecloak Server (8080)`, and right-click → `Port visibility` → 'Public'
+
+
 ![how to make public](https://raw.githubusercontent.com/tide-foundation/tidecloakspaces/main/image/README/tidecloak_howto_makepublic.gif)
 
 **b) Your Next.js app secured by Tidecloak is now ready for you to take for a spin**
@@ -52,7 +54,6 @@ Then in the **Ports tab** click on the **Forwarded addess** in the format of _ht
 > When you click `Login` for the first time, you'll see the below Github warning. Just press `Continue` to move on.
 
 <img src="https://raw.githubusercontent.com/tide-foundation/tidecloakspaces/main/image/README/1743562446996.png" alt="Codespaces warning" style="border: 2px solid #ccc; border-radius: 6px;" />
-
 
 ## 🔧 Development Environment
 
@@ -96,7 +97,6 @@ npm run dev
 ├── tidecloak.json        # General TideCloak config
 
 ```
-
 
 ## 🤝 Contributing
 
