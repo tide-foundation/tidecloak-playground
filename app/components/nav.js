@@ -32,6 +32,13 @@ export default function Nav() {
         </button>
 
         <button
+          onClick={() => handleNavigate("/databaseExposure")}
+          className={`px-4 py-2 rounded transition ${getButtonClasses("/databaseExposure")}`}
+        >
+          Database Exposure
+        </button>
+
+        <button
           onClick={() => handleNavigate("/admin")}
           className={`px-4 py-2 rounded transition ${getButtonClasses("/admin")}`}
         >

@@ -2,6 +2,7 @@
   "name": "Tidecloak Demo",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:18",
   "postCreateCommand": "chmod +x .devcontainer/setup.sh && ./.devcontainer/setup.sh && chmod +x .devcontainer/command.sh && npm install",
+  "postStartCommand": ".devcontainer/command.sh",
   "customizations": {
     "vscode": {
       "extensions": [
@@ -12,8 +13,7 @@
       ],
       "settings": {
         "terminal.integrated.defaultProfile.linux": "bash"
-      },
-      "postStartCommand": ".devcontainer/command.sh"
+      }
     }
   },
   "forwardPorts": [3000, 8080],

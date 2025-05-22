@@ -15,14 +15,6 @@
         "description": "Tide E2EE self-decrypt DoB data"
       },
       {
-        "name": "_tide_dob.read",
-        "description": "Tide read DoB data permission"
-      },
-      {
-        "name": "_tide_dob.write",
-        "description": "Tide write DoB data permission"
-      },
-      {
         "name": "_tide_cc.selfencrypt",
         "description": "Tide E2EE self-encrypt Credit Card data"
       },
@@ -31,23 +23,11 @@
         "description": "Tide E2EE self-decrypt Credit Card data"
       },
       {
-        "name": "_tide_cc.read",
-        "description": "Tide read Credit Card data permission"
-      },
-      {
-        "name": "_tide_cc.write",
-        "description": "Tide write Credit Card data permission"
-      },
-      {
         "name": "default-roles-tidecloak-demo",
         "description": "${role_default-roles}",
         "composite": true,
         "composites": {
           "realm": [
-            "_tide_dob.selfencrypt",
-            "_tide_dob.selfdecrypt",
-            "_tide_cc.selfencrypt",
-            "_tide_cc.selfdecrypt"
           ],
           "client": {
             "realm-management": [
