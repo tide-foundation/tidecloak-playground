@@ -3,6 +3,7 @@
 
 import "./styles/tailwind.css";
 import "./styles/spinKit.css";  // Import your spinKit styles
+import "./styles/loading.css"
 import { useEffect } from "react";
 import { Provider } from "./context/context";
 import Nav from "./components/nav";
