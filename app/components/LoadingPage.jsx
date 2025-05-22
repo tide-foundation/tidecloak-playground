@@ -331,22 +331,33 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
             <h1 className="text-2xl font-bold mb-6 text-gray-800">
                 Initializing your demo app
             </h1>
-            <ul className="list-disc list-inside space-y-2 text-gray-700">
-                {steps.map((msg, i) => (
-                    <li
-                        key={i}
-                        className={
-                            i < currentStep
-                                ? 'opacity-50 line-through'
-                                : i === currentStep
-                                    ? 'font-semibold'
-                                    : ''
-                        }
-                    >
-                        {msg}
-                    </li>
-                ))}
-            </ul>
+            <ul className="list-inside space-y-2 text-gray-700">
+  {steps.map((msg, i) => (
+    <li key={i} className="flex items-center gap-2">
+      <div className="w-4 h-4 flex items-center justify-center">
+        {i < currentStep ? (
+          <div className="w-2 h-2 bg-gray-300 rounded-full" />
+        ) : i === currentStep ? (
+          <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        ) : (
+          <div className="w-2 h-2 bg-gray-400 rounded-full" />
+        )}
+      </div>
+      <span
+        className={
+          i < currentStep
+            ? "opacity-50 line-through"
+            : i === currentStep
+            ? "font-semibold text-blue-700"
+            : ""
+        }
+      >
+        {msg}
+      </span>
+    </li>
+  ))}
+</ul>
+
         </div>
     );
 }
