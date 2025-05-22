@@ -7,6 +7,29 @@ import { useEffect } from "react";
 import { Provider } from "./context/context";
 import Nav from "./components/nav";
 import Footer from "./components/footer";
+import { useAppContext } from "./context/context";
+
+import Modal from "./components/modal";
+
+/**
+ * 
+ * @param {*} param0 
+ * @returns 
+ */
+function LoadingScreen({ children }) {
+  const { showModal, contextLoading } = useAppContext();
+
+  if (contextLoading) return null;
+
+  return (
+    <>
+      {showModal && <Modal />}
+      <Nav />
+      <main className="flex-grow w-full pt-6">{children}</main>
+      <Footer />
+    </>
+  );
+}
 
 /**
  * Similar to index.js in React, this provides the root entry point of the application, sharing components across all wrapped pages.
@@ -14,6 +37,7 @@ import Footer from "./components/footer";
  * @returns {JSX.Element} - The general layout wrapping all child components to share common style, nav and footer.
  */
 export default function RootLayout({ children }) {
+ 
   useEffect(() => {
     // Remove any unexpected extension classes (e.g., ClickUp)
     const body = document.querySelector('body');
@@ -21,7 +45,7 @@ export default function RootLayout({ children }) {
   }, []);
 
   return (
-    <html lang="en">
+    <html lang="en" className="h-full">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -32,11 +56,9 @@ export default function RootLayout({ children }) {
         <meta name="robots" content="index, follow" />
         <link rel="icon" href="/favicon.ico" />
       </head>
-      <body className="min-h-screen flex flex-col bg-white">
+      <body className="min-h-screen h-full flex flex-col bg-white">
         <Provider>
-          <Nav />
-          <main className="flex-grow">{children}</main>
-          <Footer />
+          <LoadingScreen>{children}</LoadingScreen>
         </Provider>
       </body>
     </html>

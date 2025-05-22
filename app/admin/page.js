@@ -19,7 +19,7 @@ export default function Admin() {
   // Navigator
   const router = useRouter();
   // Shared context data
-  const {baseURL, realm, authenticated } = useAppContext();
+  const {baseURL, realm, authenticated, setShowModal } = useAppContext();
   // Admin state of the logged in demo user
   const [isTideAdmin, setIsTideAdmin] = useState(false);
   // Object representation of the logged in user
@@ -36,8 +36,10 @@ export default function Admin() {
 
   // Show page only if loaded
   const [loading, setLoading] = useState(true);
-  // Give token time to load before continuing
-  const  [updatingToken, setUpdatingToken] = useState(false);
+
+  // // Give token time to load before continuing
+  // const  [updatingToken, setUpdatingToken] = useState(false);
+
   // True when boxes don't match the token's roles
   const [hasChanges, setHasChanges] = useState(false);
   // All user change requests
@@ -70,6 +72,15 @@ export default function Admin() {
 
   // State of whether the first QuorumDashBoard (card) has ran. Used to prevent too many animations, only 3 is needed.
   const quorumDashRef  = useRef(false);
+
+  const [dobWriteRole, setDobWriteRole] = useState();
+  const [dobReadRole, setDobReadRole] = useState();
+  const [ccWriteRole, setCcWriteRole] = useState();
+  const [ccReadRole, setCcReadRole] = useState();
+
+  useEffect(() =>{
+    getRealmRoles();
+  }, [])
 
   // For demo purposes, fetched stored or store data of admins who have approved locally
   useEffect(() => {
@@ -180,10 +191,10 @@ export default function Admin() {
 
         if (response.ok) {
             // Force update of token without logging out
-            setUpdatingToken(true);
-            await IAMService.updateToken(); //-1 to update it immediately
+            setShowModal(true);
+            await IAMService.updateToken();
             setIsTideAdmin(true); 
-            setUpdatingToken(false);
+            setShowModal(false);
             console.log("Admin Role Assigned");
         }
     }
@@ -206,6 +217,14 @@ export default function Admin() {
     
   }
 
+  const getRealmRoles = async () => {
+    const token = await IAMService.getToken();
+    setDobWriteRole(await appService.getRealmRole(baseURL, realm, "_tide_dob.selfencrypt", token));
+    setDobReadRole(await appService.getRealmRole(baseURL, realm, "_tide_dob.selfdecrypt", token));
+    setCcReadRole(await appService.getRealmRole(baseURL, realm, "_tide_cc.selfdecrypt", token));
+    setCcWriteRole(await appService.getRealmRole(baseURL, realm, "_tide_cc.selfencrypt", token));
+  }
+
   
   /**
    * Assign or unassign the logged in user realm roles (pemissions)
@@ -214,66 +233,65 @@ export default function Admin() {
   const handleAdminPermissionSubmit = async (e) => {
     e.preventDefault();
 
-    const token = await IAMService.getToken();
+    const updatedToken = await IAMService.getToken();
 
     // Clear cached data of the demo admins who have approved for a reset
     localStorage.removeItem("approvals");
 
     // Get all then cancel all requests before assigning new ones, disable boxes while token is updating duplicate fetches
     // which causes errors
-    const allRequests = await appService.getUserRequests(baseURL, realm, token); // Including the denied requests
+    const allRequests = await appService.getUserRequests(baseURL, realm, updatedToken); // Including the denied requests
   
-    setUpdatingToken(true);
+    console.log(allRequests);
     await cancelRequests(allRequests);
-    
     // Roles drafted are counted as assigned to token by TideCloak, so cancel the requests then update the token
-    await IAMService.updateToken();
-    const updatedToken = await IAMService.getToken();
-    setUpdatingToken(false);
+    // Don't need to show modal here, because no permissions are committed
+    //await IAMService.updateToken();
+    //const updatedToken = await IAMService.getToken();
+   
+
+    
     
     // Compare the current checkbox state with the current permissions. Note: token roles only update when a role change request COMMITS.
     // If the states don't match, a change request is required.
     // Date of Birth
-    if (hasDobReadPerm !== IAMService.hasOneRole("_tide_dob.selfdecrypt")){      
-      const readRole = await appService.getRealmRole(baseURL, realm, "_tide_dob.selfdecrypt", updatedToken);
-      if (hasDobReadPerm === true){
-        await appService.assignRealmRole(baseURL, realm, loggedUser.id, readRole, updatedToken);
-      }
-      else {
-        await appService.unassignRealmRole(baseURL, realm, loggedUser.id, readRole, updatedToken);
-      }
+    console.log(hasDobReadPerm);
+    console.log(IAMService.hasOneRole("_tide_dob.selfdecrypt"));
+    
+    if (hasDobReadPerm && !IAMService.hasOneRole("_tide_dob.selfdecrypt")){      
+      await appService.assignRealmRole(baseURL, realm, loggedUser.id, dobReadRole, updatedToken);
+    }
+    if (!hasDobReadPerm && IAMService.hasOneRole("_tide_dob.selfdecrypt")){
+      await appService.unassignRealmRole(baseURL, realm, loggedUser.id, dobReadRole, updatedToken);
     }
 
-    if (hasDobWritePerm !== IAMService.hasOneRole("_tide_dob.selfencrypt")){
-      const writeRole = await appService.getRealmRole(baseURL, realm, "_tide_dob.selfencrypt", updatedToken);
-      if (hasDobWritePerm === true){
-        await appService.assignRealmRole(baseURL, realm, loggedUser.id, writeRole, updatedToken);
-      }
-      else {
-        await appService.unassignRealmRole(baseURL, realm, loggedUser.id, writeRole, updatedToken);
-      }
+    if (hasDobWritePerm && !IAMService.hasOneRole("_tide_dob.selfencrypt")){
+      await appService.assignRealmRole(baseURL, realm, loggedUser.id, dobWriteRole, updatedToken);
+    }
+    if (!hasDobWritePerm && IAMService.hasOneRole("_tide_dob.selfencrypt")){
+      await appService.unassignRealmRole(baseURL, realm, loggedUser.id, dobWriteRole, updatedToken);
     }
 
-    // Credit Card
-    if (hasCcReadPerm !== IAMService.hasOneRole("_tide_cc.selfdecrypt")){
-      const readRole = await appService.getRealmRole(baseURL, realm, "_tide_cc.selfdecrypt", updatedToken);
-      if (hasCcReadPerm === true){
-        await appService.assignRealmRole(baseURL, realm, loggedUser.id, readRole, updatedToken);
-      }
-      else {
-        await appService.unassignRealmRole(baseURL, realm, loggedUser.id, readRole, updatedToken);
-      }
-    }
+    // // Credit Card
+    // if (hasCcReadPerm !== IAMService.hasOneRole("_tide_cc.selfdecrypt")){
+      
+    //   if (hasCcReadPerm === true){
+    //     await appService.assignRealmRole(baseURL, realm, loggedUser.id, ccReadRole, updatedToken);
+    //   }
+    //   else {
+    //     await appService.unassignRealmRole(baseURL, realm, loggedUser.id, ccReadRole, updatedToken);
+    //   }
+    // }
 
-    if (hasCcWritePerm !== IAMService.hasOneRole("_tide_cc.selfencrypt")){
-      const writeRole = await appService.getRealmRole(baseURL, realm, "_tide_cc.selfencrypt", updatedToken);
-      if (hasCcWritePerm === true){
-        await appService.assignRealmRole(baseURL, realm, loggedUser.id, writeRole, updatedToken);
-      }
-      else {
-        await appService.unassignRealmRole(baseURL, realm, loggedUser.id, writeRole, updatedToken);
-      }
-    }
+    // if (hasCcWritePerm !== IAMService.hasOneRole("_tide_cc.selfencrypt")){
+      
+    //   if (hasCcWritePerm === true){
+    //     await appService.assignRealmRole(baseURL, realm, loggedUser.id, ccWriteRole, updatedToken);
+    //   }
+    //   else {
+    //     await appService.unassignRealmRole(baseURL, realm, loggedUser.id, ccWriteRole, updatedToken);
+    //   }
+    // }
 
     // Get the latest change requests
     getChangeRequests();
@@ -531,11 +549,12 @@ export default function Admin() {
 
         // Clear the locally stored approved users array
         localStorage.removeItem("approvals");
-        setUpdatingToken(true);
+        setShowModal(true);
+        
         // Get a new token to have check the currently assigned roles to the logged in user
         await IAMService.updateToken();
 
-        setUpdatingToken(false); 
+        setShowModal(false); 
 
         // Reset states for next change request
         setApprovals([false, false, false, false, false]);
@@ -560,7 +579,7 @@ export default function Admin() {
 
           const response = await appService.cancelChange(baseURL, realm, body, token);
         })
-      
+      setRequests([]);
     };
 
     return (
@@ -637,11 +656,11 @@ export default function Admin() {
                         <label className="block font-semibold text-sm mb-1">Date of Birth</label>
                         <div className="flex gap-6">
                           <label className="flex items-center gap-2">
-                            <input type="checkbox" name="dob.read" checked={hasDobReadPerm} onChange={e => setHasDobReadPerm(e.target.checked)} disabled={updatingToken}/>
+                            <input type="checkbox" name="dob.read" checked={hasDobReadPerm} onChange={e => setHasDobReadPerm(e.target.checked)}/>
                             <span>Read</span>
                           </label>
                           <label className="flex items-center gap-2">
-                            <input type="checkbox" name="dob.write" checked={hasDobWritePerm} onChange={e => setHasDobWritePerm(e.target.checked)} disabled={updatingToken}/>
+                            <input type="checkbox" name="dob.write" checked={hasDobWritePerm} onChange={e => setHasDobWritePerm(e.target.checked)}/>
                             <span>Write</span>
                           </label>
                         </div>
@@ -652,11 +671,11 @@ export default function Admin() {
                         <label className="block font-semibold text-sm mb-1">Credit Card Number</label>
                         <div className="flex gap-6">
                           <label className="flex items-center gap-2">
-                            <input type="checkbox" name="cc.read" checked={hasCcReadPerm} onChange={e => setHasCcReadPerm(e.target.checked)} disabled={updatingToken}/>
+                            <input type="checkbox" name="cc.read" checked={hasCcReadPerm} onChange={e => setHasCcReadPerm(e.target.checked)}/>
                             <span>Read</span>
                           </label>
                           <label className="flex items-center gap-2">
-                            <input type="checkbox" name="cc.write" checked={hasCcWritePerm} onChange={e => setHasCcWritePerm(e.target.checked)} disabled={updatingToken}/>
+                            <input type="checkbox" name="cc.write" checked={hasCcWritePerm} onChange={e => setHasCcWritePerm(e.target.checked)}/>
                             <span>Write</span>
                           </label>
                         </div>
@@ -780,6 +799,6 @@ export default function Admin() {
         </div>
         <div className="h-10"></div>
         </main>
-        : null
+      : null
     )
 }

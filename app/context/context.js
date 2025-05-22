@@ -22,19 +22,26 @@ if (adapter && Object.keys(adapter).length > 0){
  * @returns {JSX.Element} - HTML, wrapped around everything in layout.js
  */
 export const Provider = ({ children }) => {
-
     const [authenticated, setAuthenticated] = useState(false);
     const [contextLoading, setContextLoading] = useState(true);
+    const [showModal, setShowModal] = useState(false);
 
     useEffect(() => {
         IAMService.initIAM((auth) => {
             setAuthenticated(auth)
             setContextLoading(false);
+            console.log("IM REINITIING");
           });
     }, [])
 
+    useEffect(() => {
+        if (authenticated){
+            console.log(IAMService.getToken());
+        }
+    }, [authenticated])
+
     return (
-        <Context.Provider value={{realm, baseURL, authenticated, contextLoading}}>
+        <Context.Provider value={{realm, baseURL, authenticated, contextLoading, setShowModal, showModal}}>
             {children}
         </Context.Provider>
     )
