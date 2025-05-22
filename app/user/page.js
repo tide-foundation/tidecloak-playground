@@ -7,6 +7,7 @@ import appService from "../../lib/appService";
 import { usePathname } from "next/navigation";
 import AccordionBox from "../components/accordionBox";
 import Button from "../components/button";
+import { loadingSquareFullPage } from "../components/loadingSquare";
 
 /**
  * Page containing read and write functionality of user data (on top) and the decryption component (below).
@@ -32,6 +33,8 @@ export default function User(){
     
     // Show the page only after all data loaded
     const [pageLoading, setPageLoading] = useState(true);
+    const [overlayLoading, setOverlayLoading] = useState(false);
+
 
     // Data values for user information component
     const [formData, setFormData] = useState({
@@ -208,6 +211,7 @@ export default function User(){
 
     // On Save changes button clicked, encrypt the updated data and store in TideCloak
     const handleFormSubmit = async (e) => {
+        setOverlayLoading(true);
         try {
             // Don't perform regular browser operations for this form
             e.preventDefault();
@@ -277,8 +281,10 @@ export default function User(){
                 setTimeout(() => setUserFeedback(""), 3000); // Clear after 3 seconds
                 getAllUsers(); 
             }
+          setOverlayLoading(false);
         }
         catch (error) {
+          setOverlayLoading(false);
           console.log(error);
         } 
     };
@@ -287,6 +293,7 @@ export default function User(){
         !contextLoading && !pageLoading
         ?
         <main className="flex-grow w-full pt-6 pb-16">
+        {overlayLoading && loadingSquareFullPage()}
         <div className="w-full px-8 max-w-screen-md mx-auto flex flex-col items-start gap-8">
         <div className="w-full max-w-3xl">
         {pathname === "/user" && (
@@ -420,6 +427,6 @@ export default function User(){
         </div>
         <div className="h-10"></div>
         </main>
-        : null 
+        : loadingSquareFullPage() 
     )
 };

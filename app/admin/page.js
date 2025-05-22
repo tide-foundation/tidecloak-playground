@@ -8,6 +8,7 @@ import AccordionBox from "../components/accordionBox";
 import Button from "../components/button";
 import { FaCheckCircle, FaChevronRight } from "react-icons/fa";
 import { usePathname, useRouter } from "next/navigation";
+import { loadingSquareFullPage } from "../components/loadingSquare";
 
 /**
  * Admin page for elavating the demo user to a Tide admin and managing their read and write permissions for Date of Birth and Credit Card
@@ -36,6 +37,8 @@ export default function Admin() {
 
   // Show page only if loaded
   const [loading, setLoading] = useState(true);
+  const [loadingOverlay, setLoadingOverlay] = useState(false);
+
   // Give token time to load before continuing
   const  [updatingToken, setUpdatingToken] = useState(false);
   // True when boxes don't match the token's roles
@@ -212,77 +215,84 @@ export default function Admin() {
    * @param {*} e - the form's event, when Submit Changes button is clicked
    */
   const handleAdminPermissionSubmit = async (e) => {
-    e.preventDefault();
+    setLoadingOverlay(true);
+    try{
+      e.preventDefault();
 
-    const token = await IAMService.getToken();
+      const token = await IAMService.getToken();
 
-    // Clear cached data of the demo admins who have approved for a reset
-    localStorage.removeItem("approvals");
+      // Clear cached data of the demo admins who have approved for a reset
+      localStorage.removeItem("approvals");
 
-    // Get all then cancel all requests before assigning new ones, disable boxes while token is updating duplicate fetches
-    // which causes errors
-    const allRequests = await appService.getUserRequests(baseURL, realm, token); // Including the denied requests
-  
-    setUpdatingToken(true);
-    await cancelRequests(allRequests);
+      // Get all then cancel all requests before assigning new ones, disable boxes while token is updating duplicate fetches
+      // which causes errors
+      const allRequests = await appService.getUserRequests(baseURL, realm, token); // Including the denied requests
     
-    // Roles drafted are counted as assigned to token by TideCloak, so cancel the requests then update the token
-    await IAMService.updateToken();
-    const updatedToken = await IAMService.getToken();
-    setUpdatingToken(false);
-    
-    // Compare the current checkbox state with the current permissions. Note: token roles only update when a role change request COMMITS.
-    // If the states don't match, a change request is required.
-    // Date of Birth
-    if (hasDobReadPerm !== IAMService.hasOneRole("_tide_dob.selfdecrypt")){      
-      const readRole = await appService.getRealmRole(baseURL, realm, "_tide_dob.selfdecrypt", updatedToken);
-      if (hasDobReadPerm === true){
-        await appService.assignRealmRole(baseURL, realm, loggedUser.id, readRole, updatedToken);
+      setUpdatingToken(true);
+      await cancelRequests(allRequests);
+      
+      // Roles drafted are counted as assigned to token by TideCloak, so cancel the requests then update the token
+      await IAMService.updateToken();
+      const updatedToken = await IAMService.getToken();
+      setUpdatingToken(false);
+      
+      // Compare the current checkbox state with the current permissions. Note: token roles only update when a role change request COMMITS.
+      // If the states don't match, a change request is required.
+      // Date of Birth
+      if (hasDobReadPerm !== IAMService.hasOneRole("_tide_dob.selfdecrypt")){      
+        const readRole = await appService.getRealmRole(baseURL, realm, "_tide_dob.selfdecrypt", updatedToken);
+        if (hasDobReadPerm === true){
+          await appService.assignRealmRole(baseURL, realm, loggedUser.id, readRole, updatedToken);
+        }
+        else {
+          await appService.unassignRealmRole(baseURL, realm, loggedUser.id, readRole, updatedToken);
+        }
       }
-      else {
-        await appService.unassignRealmRole(baseURL, realm, loggedUser.id, readRole, updatedToken);
+
+      if (hasDobWritePerm !== IAMService.hasOneRole("_tide_dob.selfencrypt")){
+        const writeRole = await appService.getRealmRole(baseURL, realm, "_tide_dob.selfencrypt", updatedToken);
+        if (hasDobWritePerm === true){
+          await appService.assignRealmRole(baseURL, realm, loggedUser.id, writeRole, updatedToken);
+        }
+        else {
+          await appService.unassignRealmRole(baseURL, realm, loggedUser.id, writeRole, updatedToken);
+        }
       }
+
+      // Credit Card
+      if (hasCcReadPerm !== IAMService.hasOneRole("_tide_cc.selfdecrypt")){
+        const readRole = await appService.getRealmRole(baseURL, realm, "_tide_cc.selfdecrypt", updatedToken);
+        if (hasCcReadPerm === true){
+          await appService.assignRealmRole(baseURL, realm, loggedUser.id, readRole, updatedToken);
+        }
+        else {
+          await appService.unassignRealmRole(baseURL, realm, loggedUser.id, readRole, updatedToken);
+        }
+      }
+
+      if (hasCcWritePerm !== IAMService.hasOneRole("_tide_cc.selfencrypt")){
+        const writeRole = await appService.getRealmRole(baseURL, realm, "_tide_cc.selfencrypt", updatedToken);
+        if (hasCcWritePerm === true){
+          await appService.assignRealmRole(baseURL, realm, loggedUser.id, writeRole, updatedToken);
+        }
+        else {
+          await appService.unassignRealmRole(baseURL, realm, loggedUser.id, writeRole, updatedToken);
+        }
+      }
+
+      // Get the latest change requests
+      getChangeRequests();
+
+      // Set first change request as the one currently opened
+      setActiveRequestIndex(0);
+      setExpandedIndex(0);
+      // Reset form state
+      setHasChanges(false);
+      setLoadingOverlay(false);
+    }catch(e){
+      setLoadingOverlay(false);
+      throw e;
     }
-
-    if (hasDobWritePerm !== IAMService.hasOneRole("_tide_dob.selfencrypt")){
-      const writeRole = await appService.getRealmRole(baseURL, realm, "_tide_dob.selfencrypt", updatedToken);
-      if (hasDobWritePerm === true){
-        await appService.assignRealmRole(baseURL, realm, loggedUser.id, writeRole, updatedToken);
-      }
-      else {
-        await appService.unassignRealmRole(baseURL, realm, loggedUser.id, writeRole, updatedToken);
-      }
-    }
-
-    // Credit Card
-    if (hasCcReadPerm !== IAMService.hasOneRole("_tide_cc.selfdecrypt")){
-      const readRole = await appService.getRealmRole(baseURL, realm, "_tide_cc.selfdecrypt", updatedToken);
-      if (hasCcReadPerm === true){
-        await appService.assignRealmRole(baseURL, realm, loggedUser.id, readRole, updatedToken);
-      }
-      else {
-        await appService.unassignRealmRole(baseURL, realm, loggedUser.id, readRole, updatedToken);
-      }
-    }
-
-    if (hasCcWritePerm !== IAMService.hasOneRole("_tide_cc.selfencrypt")){
-      const writeRole = await appService.getRealmRole(baseURL, realm, "_tide_cc.selfencrypt", updatedToken);
-      if (hasCcWritePerm === true){
-        await appService.assignRealmRole(baseURL, realm, loggedUser.id, writeRole, updatedToken);
-      }
-      else {
-        await appService.unassignRealmRole(baseURL, realm, loggedUser.id, writeRole, updatedToken);
-      }
-    }
-
-    // Get the latest change requests
-    getChangeRequests();
-
-    // Set first change request as the one currently opened
-    setActiveRequestIndex(0);
-    setExpandedIndex(0);
-    // Reset form state
-    setHasChanges(false);
   };
 
 
@@ -510,40 +520,48 @@ export default function Admin() {
   }
 
   const addCommit = async (request) => {
-      const token = await IAMService.getToken();
+      setLoadingOverlay(true);
+      try{
 
-      const body = JSON.stringify({
-        "actionType": request.actionType,
-        "changeSetId": request.draftRecordId,
-        "changeSetType": request.changeSetType
-      });
-      
-      const response = await appService.commitChange(baseURL, realm, body, token);
-      
-      if (response.ok){
-        // Hard code the change, because keycloak removes committed change requests
-        if (requests[activeRequestIndex].deleteStatus){
-          requests[activeRequestIndex].deleteStatus = "COMMITTED";
+        const token = await IAMService.getToken();
+
+        const body = JSON.stringify({
+          "actionType": request.actionType,
+          "changeSetId": request.draftRecordId,
+          "changeSetType": request.changeSetType
+        });
+        
+        const response = await appService.commitChange(baseURL, realm, body, token);
+        
+        if (response.ok){
+          // Hard code the change, because keycloak removes committed change requests
+          if (requests[activeRequestIndex].deleteStatus){
+            requests[activeRequestIndex].deleteStatus = "COMMITTED";
+          }
+          else {
+            requests[activeRequestIndex].status = "COMMITTED";
+          }
+
+          // Clear the locally stored approved users array
+          localStorage.removeItem("approvals");
+          setUpdatingToken(true);
+          // Get a new token to have check the currently assigned roles to the logged in user
+          await IAMService.updateToken();
+
+          setUpdatingToken(false); 
+
+          // Reset states for next change request
+          setApprovals([false, false, false, false, false]);
+          setTotalApproved(1);
+          if (requests.length !== activeRequestIndex + 1 ){
+            setActiveRequestIndex(prev => prev + 1);
+            setExpandedIndex(prev => prev + 1);
+          }
         }
-        else {
-          requests[activeRequestIndex].status = "COMMITTED";
-        }
-
-        // Clear the locally stored approved users array
-        localStorage.removeItem("approvals");
-        setUpdatingToken(true);
-        // Get a new token to have check the currently assigned roles to the logged in user
-        await IAMService.updateToken();
-
-        setUpdatingToken(false); 
-
-        // Reset states for next change request
-        setApprovals([false, false, false, false, false]);
-        setTotalApproved(1);
-        if (requests.length !== activeRequestIndex + 1 ){
-          setActiveRequestIndex(prev => prev + 1);
-          setExpandedIndex(prev => prev + 1);
-        }
+        setLoadingOverlay(false);
+      }catch(e){
+        setLoadingOverlay(false);
+        throw e;
       }
     };
 
@@ -567,6 +585,7 @@ export default function Admin() {
       !loading && IAMService.isLoggedIn()
       ?
       <main className="flex-grow w-full pt-6">
+      {loadingOverlay && loadingSquareFullPage()}
       <div className="w-full px-8 max-w-screen-md mx-auto flex flex-col items-start gap-8">
       <div className="w-full max-w-3xl">
         {pathname === "/admin" && (
@@ -780,6 +799,6 @@ export default function Admin() {
         </div>
         <div className="h-10"></div>
         </main>
-        : null
+        : loadingSquareFullPage()
     )
 }

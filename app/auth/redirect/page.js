@@ -6,6 +6,7 @@ import { useAppContext } from "../../context/context";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import IAMService from "../../../lib/IAMService";
+import { loadingSquareFullPage } from "../../components/loadingSquare";
 
 export default function RedirectPage() {
 
@@ -31,6 +32,10 @@ export default function RedirectPage() {
       }                
     }       
   }, [contextLoading]);
+
+  if(contextLoading){
+    return loadingSquareFullPage();
+  }
 
   return;
 }
