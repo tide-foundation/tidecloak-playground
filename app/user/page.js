@@ -7,8 +7,6 @@ import appService from "../../lib/appService";
 import { usePathname } from "next/navigation";
 import AccordionBox from "../components/accordionBox";
 import Button from "../components/button";
-import DatabaseExposureTable from "../components/databaseExposureTable";
-import { base64ToBytes, bytesToBase64 } from "tidecloak-js";
 
 /**
  * Page containing read and write functionality of user data (on top) and the decryption component (below).
@@ -31,10 +29,7 @@ export default function User(){
     const [userFeedback, setUserFeedback] = useState("");
     // Expandable extra user information
     const [showUserInfoAccordion, setShowUserInfoAccordion] = useState(false);
-    // Expandable extra databaseExposureTable information
-    const [showExposureAccordion, setShowExposureAccordion] = useState(false);
-    // Further expandable information
-    const [showDeepDive, setShowDeepDive] = useState(false);
+    
     // Show the page only after all data loaded
     const [pageLoading, setPageLoading] = useState(true);
 
@@ -419,63 +414,6 @@ export default function User(){
 
                   )}
                 </form>
-
-                <div className="border-t pt-6">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-2xl font-semibold">Database Exposure Simulation</h3>
-
-                    <button
-                      onClick={() => setShowExposureAccordion(prev => !prev)}
-                      className="text-2xl hover:scale-110 transition-transform"
-                      aria-label="Toggle explanation"
-                    >
-                      {showExposureAccordion ? "🤯" : "🤔"}
-                    </button>
-                  </div>
-
-                  <p className="text-sm text-gray-600 mb-4">This simulates a user table leak through unprotected API or misconfigured server.</p>
-
-                  <AccordionBox title="What does this simulate?" isOpen={showExposureAccordion}>
-                    <p>
-                      This simulation shows what happens when an encrypted user table is leaked.
-                      Try decrypting your own row — other rows will remain locked unless you have access.
-                    </p>
-
-                    <div className="flex justify-end">
-                      <button
-                        onClick={() => setShowDeepDive(prev => !prev)}
-                        className="flex items-center gap-2 ml-auto text-xs font-medium text-blue-700 hover:text-blue-900 transition"
-                        aria-label="Show technical explanation"
-                      >
-                        <span className="underline">Technical Deep Dive</span>
-                        <span className="text-xl">🤓</span>
-                      </button>
-                    </div>
-
-                    {showDeepDive && (
-                      <div className="mt-3 border-t pt-4 space-y-3 text-xs text-gray-700">
-                        <p>
-                          🔐 Each record is encrypted at rest. Even if the table is exfiltrated, fields like DOB and CC remain opaque unless a valid JWT with <code className="bg-gray-100 px-1 py-0.5 rounded">read</code> rights is presented.
-                          The decryption flow references permissions attached to the JWT — not role-based access.
-                        </p>
-                        <div className="w-full overflow-auto">
-                          <img
-                            src="/diagrams/db-decrypt-flow.svg"
-                            alt="Decryption permission flow diagram"
-                            className="w-full max-w-md border rounded shadow"
-                          />
-                        </div>
-                        <p className="italic text-gray-500">
-                          Excerpted from the <a href="https://github.com/tide-foundation/tidecloakspaces" className="underline text-blue-600" target="_blank" rel="noopener noreferrer">TideCloakSpaces</a> repo.
-                        </p>
-                      </div>
-                    )}
-                  </AccordionBox>
-
-                  <DatabaseExposureTable users={users} loggedUser={loggedUser} encryptedDob={encryptedDob} encryptedCc={encryptedCc}/>
-
-                </div>
-
               </div>
             )}
         </div>

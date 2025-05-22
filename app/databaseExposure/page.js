@@ -1,7 +1,10 @@
+"use client";
 import IAMService from "../../lib/IAMService";
 import { useState, useEffect, useMemo } from "react";
 import Button from "../components/button";
 import {useAppContext} from '../context/context'
+import appService from "../../lib/appService";
+import AccordionBox from "../components/accordionBox";
 
 // Animation only
 function DecryptingText({ text, speed = 30 }) {
@@ -148,50 +151,135 @@ function DecryptedRow({ isUser, user, username, dob, cc }) {
     </div>
     );
 }
- 
 
 // The Decryptable Cards
-export default function DatabaseExposureTable({users, loggedUser, encryptedDob, encryptedCc}) {
-    // Memorise the current array, only rerender if this array changes
+export default function DatabaseExposure({ encryptedDob, encryptedCc}) {
     
-    const memoUsers = useMemo(() => users, [users]);
-    const {contextLoading} = useAppContext();
-   
-    // Swap first position with logged in user to put them on top of the stack
-    for (let i = 0; i < memoUsers.length; i++) {
-        if (i !== 0 && memoUsers[i].id === loggedUser.id) {
-            const temp = memoUsers[0];
-            memoUsers[0] = memoUsers[i];
-            memoUsers[i] = temp;
-            break;
+    const {baseURL, realm, contextLoading} = useAppContext();
+
+    const [loggedUser, setLoggedUser] = useState();
+
+    const [users, setUsers] = useState([]);
+
+    // Expandable extra databaseExposureTable information
+    const [showExposureAccordion, setShowExposureAccordion] = useState(false);
+    // Further expandable information
+    const [showDeepDive, setShowDeepDive] = useState(false);
+
+    useEffect(() => {
+        if (!contextLoading){
+            getLoggedUser();
         }
-    }
+        
+    }, [contextLoading])
+
+
+    // Populate the Database Exposure cards, and set the current logged users
+    const getLoggedUser = async () => {
+      const token = await IAMService.getToken(); 
+      const users = await appService.getUsers(baseURL, realm, token);
+      setUsers(users);
+      const loggedVuid = await IAMService.getValueFromToken("vuid");
+      const loggedInUser = users.find(user => {
+        if (user.attributes?.vuid[0] === loggedVuid){
+            return user;
+        }
+      });
+      setLoggedUser(loggedInUser);
+    };
     
+    useEffect(() => {
+        if (users.length > 0){
+            console.log(users);
+        }
+        
+    }, [users]);
 
     return (
-        <div className="mt-6 space-y-6 pb-24 md:pb-36">
-            {
-                // Let the data load first
-                memoUsers && !contextLoading
-                ?
-                memoUsers.map((user, i) => (
-                    
-                  <DecryptedRow key={i}
-                  isUser={user.attributes?.vuid
-                    ? user.attributes.vuid[0] === IAMService.getValueFromToken("vuid") ? true : false
-                    : false}
-                   user={user}
-                  username={user.username}
-                  dob={user.attributes?.vuid
-                    ? user.attributes.vuid[0] === IAMService.getValueFromToken("vuid") ? encryptedDob : user.attributes.dob
-                    : user.attributes?.dob}
-                  cc={user.attributes?.vuid
-                    ? user.attributes.vuid[0] === IAMService.getValueFromToken("vuid") ? encryptedCc : user.attributes.cc
-                    : user.attributes?.cc}
-                  />
-                ))
-                : null
-            }
-        </div> 
+        !contextLoading 
+        ?
+        <main className="flex-grow w-full pt-6 pb-16">
+        <div className="w-full px-8 max-w-screen-md mx-auto flex flex-col items-start gap-8">
+        <div className="w-full max-w-3xl"/>
+            <div>
+                <div className="flex justify-between items-center">
+                <h3 className="text-2xl font-semibold">Database Exposure Simulation</h3>
+
+                <button
+                    onClick={() => setShowExposureAccordion(prev => !prev)}
+                    className="text-2xl hover:scale-110 transition-transform"
+                    aria-label="Toggle explanation"
+                >
+                    {showExposureAccordion ? "🤯" : "🤔"}
+                </button>
+                </div>
+
+                <p className="text-sm text-gray-600 mb-4">This simulates a user table leak through unprotected API or misconfigured server.</p>
+
+                <AccordionBox title="What does this simulate?" isOpen={showExposureAccordion}>
+                <p>
+                    This simulation shows what happens when an encrypted user table is leaked.
+                    Try decrypting your own row — other rows will remain locked unless you have access.
+                </p>
+
+                <div className="flex justify-end">
+                    <button
+                    onClick={() => setShowDeepDive(prev => !prev)}
+                    className="flex items-center gap-2 ml-auto text-xs font-medium text-blue-700 hover:text-blue-900 transition"
+                    aria-label="Show technical explanation"
+                    >
+                    <span className="underline">Technical Deep Dive</span>
+                    <span className="text-xl">🤓</span>
+                    </button>
+                </div>
+
+                {showDeepDive && (
+                    <div className="mt-3 border-t pt-4 space-y-3 text-xs text-gray-700">
+                    <p>
+                        🔐 Each record is encrypted at rest. Even if the table is exfiltrated, fields like DOB and CC remain opaque unless a valid JWT with <code className="bg-gray-100 px-1 py-0.5 rounded">read</code> rights is presented.
+                        The decryption flow references permissions attached to the JWT — not role-based access.
+                    </p>
+                    <div className="w-full overflow-auto">
+                        <img
+                        src="/diagrams/db-decrypt-flow.svg"
+                        alt="Decryption permission flow diagram"
+                        className="w-full max-w-md border rounded shadow"
+                        />
+                    </div>
+                    <p className="italic text-gray-500">
+                        Excerpted from the <a href="https://github.com/tide-foundation/tidecloakspaces" className="underline text-blue-600" target="_blank" rel="noopener noreferrer">TideCloakSpaces</a> repo.
+                    </p>
+                    </div>
+                )}
+                </AccordionBox>
+            </div>
+            <div className="mt-6 space-y-6 pb-24 md:pb-36">
+                {
+                    // Let the data load first
+                    users.length > 0 && !contextLoading
+                    ?
+                    users.map((user, i) => (
+                        
+                    <DecryptedRow key={i}
+                    isUser={user.attributes?.vuid
+                        ? user.attributes.vuid[0] === IAMService.getValueFromToken("vuid") ? true : false
+                        : false}
+                    user={user}
+                    username={user.username}
+                    dob={user.attributes?.vuid
+                        ? user.attributes.vuid[0] === IAMService.getValueFromToken("vuid") ? user.attributes.dob[0] : user.attributes.dob
+                        : user.attributes?.dob}
+                    cc={user.attributes?.vuid
+                        ? user.attributes.vuid[0] === IAMService.getValueFromToken("vuid") ? user.attributes.cc[0] : user.attributes.cc
+                        : user.attributes?.cc}
+                    />
+                    ))
+                    : null
+                }
+            </div>    
+        </div>
+        <div className="h-10"/>
+        </main>
+        : null
     );
 }
