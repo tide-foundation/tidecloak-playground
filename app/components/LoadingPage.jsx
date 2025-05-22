@@ -4,7 +4,6 @@ import '../styles/spinKit.css';
 export default function LoadingPage({ isInitializing, setIsInitializing }) {
 
     const [currentStep, setCurrentStep] = useState(0);
-    const [masterToken, setMasterToken] = useState(null);
     const [restartCounter, setRestartCounter] = useState(0)
 
     // Initialiser
@@ -201,8 +200,9 @@ export default function LoadingPage({ isInitializing, setIsInitializing }) {
             setCurrentStep(0);
 
 
-            restartCounter = restartCounter + 1;
-            console.log("Times restarted: " + restartCounter);
+            const incrementedCount = restartCounter + 1;
+            setRestartCounter(incrementedCount);
+            console.log("Times restarted: " + incrementedCount);
 
             // If it fails on step 1 (createRealm) restart initalizer 
             if (restartCounter < 2) {
