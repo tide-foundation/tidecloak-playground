@@ -21,9 +21,11 @@ export async function GET(){
 
         for (let i = 0; i < clientsChangeRequests.length; i++) {
             const changeRequest = clientsChangeRequests[i];
-        
-            const approveResult = await apiService.signChangeRequest(baseURL, realm, changeRequest, masterToken);
-            const commitResult = await apiService.commitChangeRequest(baseURL, realm, changeRequest, masterToken);
+
+            // get token again as sign and commit might take longer then 1 min (default master token exp)
+            const token = await apiService.getMasterToken(baseURL);
+            const approveResult = await apiService.signChangeRequest(baseURL, realm, changeRequest, token);
+            const commitResult = await apiService.commitChangeRequest(baseURL, realm, changeRequest, token);
         }
 
         return new Response(JSON.stringify({ok: true}), {status: 200});     
