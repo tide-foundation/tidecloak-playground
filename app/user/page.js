@@ -7,7 +7,6 @@ import appService from "../../lib/appService";
 import { usePathname } from "next/navigation";
 import AccordionBox from "../components/accordionBox";
 import Button from "../components/button";
-import DatabaseExposureTable from "../components/databaseExposureTable";
 
 /**
  * Page containing read and write functionality of user data (on top) and the decryption component (below).
@@ -30,10 +29,7 @@ export default function User(){
     const [userFeedback, setUserFeedback] = useState("");
     // Expandable extra user information
     const [showUserInfoAccordion, setShowUserInfoAccordion] = useState(false);
-    // Expandable extra databaseExposureTable information
-    const [showExposureAccordion, setShowExposureAccordion] = useState(false);
-    // Further expandable information
-    const [showDeepDive, setShowDeepDive] = useState(false);
+    
     // Show the page only after all data loaded
     const [pageLoading, setPageLoading] = useState(true);
 
@@ -85,105 +81,110 @@ export default function User(){
       setLoggedUser(loggedInUser);
     };
 
-    // Decrypt the logged in user's data
+     // Decrypt the logged in user's data
     const getUserData = async () => { 
       // Let context data load first
       if (loggedUser){
           try {
-            // If user has no read permission don't decrypt the data if it's already stored encrypted
-            if (!IAMService.hasOneRole("_tide_cc.read")){
+            let arrayToDecrypt = [];
+
+            // Date of Birth
+            if (loggedUser.attributes.dob && IAMService.hasOneRole("_tide_dob.selfdecrypt")){
+              arrayToDecrypt.push({
+                "encrypted": loggedUser.attributes.dob[0],
+                "tags": ["dob"]
+              })
+            }
+
+            // Credit Card
+            if (loggedUser.attributes.cc && IAMService.hasOneRole("_tide_cc.selfdecrypt")){
+               arrayToDecrypt.push({
+                "encrypted": loggedUser.attributes.cc[0],
+                "tags": ["cc"]
+              })
+            }
+
+            if (arrayToDecrypt.length === 0){
+              throw new Error("No Read Permissions. Displaying only encrypted data.");
+            }
+
+            if (arrayToDecrypt.length > 0){
+              const decryptedData = await IAMService.doDecrypt(arrayToDecrypt);
               
-              if (loggedUser.attributes.cc){
-                setFormData(prev => ({...prev, cc: loggedUser.attributes.cc[0]}));                                               
+              if (arrayToDecrypt.length === 2){
+                // User Information
+                setFormData(prev => ({...prev, dob: decryptedData[0]}));
+                setFormData(prev => ({...prev, cc: decryptedData[1]}));
+                // Database Exposure Simulation and for Accordion
+                setEncryptedDob(loggedUser.attributes.dob[0]); 
+                setEncryptedCc(loggedUser.attributes.cc[0]); 
+              }
+              else if (arrayToDecrypt[0].tags[0] === "dob"){
+                // User Information
+                setFormData(prev => ({...prev, dob: decryptedData[0]}));
+                setFormData(prev => ({...prev, cc: loggedUser.attributes.cc[0]}));
+                // Database Exposure Simulation
+                setEncryptedDob(loggedUser.attributes.dob[0]); 
+                setEncryptedCc(loggedUser.attributes.cc[0]); 
+              }
+              else { 
+                // User Information
+                setFormData(prev => ({...prev, dob: loggedUser.attributes.dob[0]}));
+                setFormData(prev => ({...prev, cc: decryptedData[0]}));
+                // Database Exposure Simulation
+                setEncryptedDob(loggedUser.attributes.dob[0]); 
+                setEncryptedCc(loggedUser.attributes.cc[0]); 
               }
             }
-
-            // Return to 0000-00-00 for default
-            if (!IAMService.hasOneRole("_tide_dob.read")){
-              setFormData(prev => ({...prev, dob: "0000-00-00"}));
-            }
-
-            // Fill the fields if logged user has the attributes and permissions
-            if (loggedUser.attributes.dob && IAMService.hasOneRole("_tide_dob.read") && IAMService.hasOneRole("_tide_dob.selfdecrypt")){                                                           
-              // DOB format in Keycloak needs to be "YYYY-MM-DD" to display
-              const decryptedDob = await IAMService.doDecrypt([
-                {
-                  "encrypted": loggedUser.attributes.dob[0],
-                  "tags": ["dob"]
-                }
-              ])
-
-              // Display this in accordion
-              setEncryptedDob(loggedUser.attributes.dob[0]);   
-
-              // Store to display the decrypted data, accounting for when the data is an array or not
-              if (loggedUser.attributes.dob[0]){
-                setFormData(prev => ({...prev, dob: decryptedDob[0]}));
-              }
-              else {
-                setFormData(prev => ({...prev, dob: decryptedDob}));
-              }
-            }
-            else {
-              // Set it still for the databaseExposureTable
-              setEncryptedDob(loggedUser.attributes.dob[0]);   
-            }
-          
-            if (loggedUser.attributes.cc && IAMService.hasOneRole("_tide_cc.read") && IAMService.hasOneRole("_tide_cc.selfdecrypt")){                                                               
-              const decryptedCc = await IAMService.doDecrypt([
-                  {
-                    "encrypted": loggedUser.attributes.cc[0],
-                    "tags": ["cc"]
-                  }
-              ])
-              // Display this in accordion
-              setEncryptedCc(loggedUser.attributes.cc[0]); 
-
-              // Accounting for when the data is an array or not
-              if (loggedUser.attributes.cc[0]){
-                  setFormData(prev => ({...prev, cc: decryptedCc[0]}));
-              }
-              else {
-                  setFormData(prev => ({...prev, cc: decryptedCc}));
-              }
-            }    
-            else {
-              // Set it still for the databaseExposureTable
-              setEncryptedCc(loggedUser.attributes.cc[0]); 
-            }   
-
             // Show the data at once
             setPageLoading(false);
 
           } catch (error){
-            // Set the raw data into the fields as they don't need to be decrypted (If they were saved not encrypted in TideCloak)
-            setFormData(prev => ({...prev, dob: loggedUser.attributes.dob[0]}));
-            setFormData(prev => ({...prev, cc: loggedUser.attributes.cc[0]}));
 
-            // Data in TideCloak is not encrypted yet, so encrypt instead
+            let arrayToEncrypt = []; 
+            
+            // Date of Birth
             if (loggedUser.attributes.dob){
-              const encryptedDob = await IAMService.doEncrypt([
-                {
+              if (/[a-zA-Z]/.test(loggedUser.attributes.dob[0])){
+                setFormData(prev => ({...prev, dob: loggedUser.attributes.dob[0]}))
+                setEncryptedDob(loggedUser.attributes.dob[0]); 
+              }
+              else {
+                arrayToEncrypt.push({
                   "data": loggedUser.attributes.dob[0],
                   "tags": ["dob"]
-                }
-              ])
-              // Update the user with the encrypted data to prevent storage as raw
-              loggedUser.attributes.dob = encryptedDob[0];
-              // Display the encrypted data in the dataExposureTable
-              setEncryptedDob(encryptedDob[0]);
+                })
+              }
             }
-            
+          
+            // Credit Card
             if (loggedUser.attributes.cc){
-              const encryptedCc = await IAMService.doEncrypt([
-                {
+              if (/[a-zA-Z]/.test(loggedUser.attributes.cc[0])){
+                setFormData(prev => ({...prev, cc: loggedUser.attributes.cc[0]}));
+                setEncryptedCc(loggedUser.attributes.cc[0]); 
+              }
+              else {
+                arrayToEncrypt.push({
                   "data": loggedUser.attributes.cc[0],
                   "tags": ["cc"]
-                }
-              ])
-              loggedUser.attributes.cc = encryptedCc[0];
-              
-              setEncryptedCc(encryptedCc[0]);
+                })
+              }
+            }
+            
+            if (arrayToEncrypt.length > 0){
+              // User Information
+              setFormData(prev => ({...prev, dob: loggedUser.attributes.dob}));
+              setFormData(prev => ({...prev, cc: loggedUser.attributes.cc}));
+
+              const encryptedData = await IAMService.doEncrypt(arrayToEncrypt);
+             
+              // Database Exposure Simulation
+              setEncryptedDob(encryptedData[0]); 
+              setEncryptedCc(encryptedData[1]); 
+
+              // Encrypted data to be saved on server for demo user to be decrypted with the same key.
+              loggedUser.attributes.dob = encryptedData[0];
+              loggedUser.attributes.cc = encryptedData[1];
             }
 
             // Save the updated user object to TideCloak
@@ -210,28 +211,60 @@ export default function User(){
         try {
             // Don't perform regular browser operations for this form
             e.preventDefault();
-            // Encrypt, update the user object, and display the data in the dataExposureTable
-            if (formData.dob !== ""){
-                const encryptedDob = await IAMService.doEncrypt([
-                {
+
+            let arrayToEncrypt = [];
+
+            if (formData.dob !== "" && IAMService.hasOneRole("_tide_dob.selfencrypt")){ 
+              if (loggedUser.attributes.dob){
+                if (/[a-zA-Z]/.test(formData.dob)){
+                  console.log("DoB can't have letters. Don't encrypt as it may already be encrypted.");
+                }
+                else {
+                  arrayToEncrypt.push({
                     "data": formData.dob,
                     "tags": ["dob"]
+                  })
                 }
-                ]);
-                loggedUser.attributes.dob = encryptedDob[0];
-                setEncryptedDob(encryptedDob[0]);
-         
+              }
             }
 
-            if (formData.cc !== ""){
-                const encryptedCc = await IAMService.doEncrypt([
-                {
+            if (formData.cc !== "" && IAMService.hasOneRole("_tide_cc.selfencrypt")){
+              if (loggedUser.attributes.cc){
+                if (/[a-zA-Z]/.test(formData.cc)){
+                  console.log("CC can't have letters. Don't encrypt as it may already be encrypted.");
+                }
+                else {
+                  arrayToEncrypt.push({
                     "data": formData.cc,
                     "tags": ["cc"]
+                  })
                 }
-                ]);
-                loggedUser.attributes.cc = encryptedCc[0];
-                setEncryptedCc(encryptedCc[0]);
+              }
+            }
+
+            // if (arrayToEncrypt.length === 0){
+            //   console.log("No Write Permissions. Displaying only current data.");
+            // }
+
+            if (arrayToEncrypt.length > 0){
+              const encryptedData = await IAMService.doEncrypt(arrayToEncrypt);
+              if (arrayToEncrypt.length === 2){
+                setEncryptedDob(encryptedData[0]);
+                setEncryptedCc(encryptedData[1]); 
+                loggedUser.attributes.dob = encryptedData[0];
+                loggedUser.attributes.cc = encryptedData[1];
+              }
+              else if (arrayToEncrypt[0].tags[0] === "dob"){
+                setEncryptedDob(encryptedData[0]);
+                setEncryptedCc(loggedUser.attributes.cc[0]);
+                loggedUser.attributes.dob = encryptedData[0];
+              }
+              else {
+                setEncryptedDob(loggedUser.attributes.dob[0]);
+                setEncryptedCc(encryptedData[0]); 
+                loggedUser.attributes.cc = encryptedData[0];
+              }
+
             }
 
             // Store the data
@@ -287,8 +320,8 @@ export default function User(){
                 <form className="space-y-6" onSubmit={handleFormSubmit}>
                   {
                     ["dob", "cc"].map((field) => {
-                      const readPerms = IAMService.hasOneRole(field === "dob"? "_tide_dob.read" : "_tide_cc.read");
-                      const writePerms = IAMService.hasOneRole(field === "dob"? "_tide_dob.write" : "_tide_cc.write");
+                      const readPerms = IAMService.hasOneRole(field === "dob"? "_tide_dob.selfdecrypt" : "_tide_cc.selfdecrypt");
+                      const writePerms = IAMService.hasOneRole(field === "dob"? "_tide_dob.selfencrypt" : "_tide_cc.selfencrypt");
                       const canRead = readPerms? true: false;
                       const canWrite = writePerms? true: false;
                       const label = field === "dob" ? "Date of Birth" : "Credit Card Number";
@@ -371,7 +404,7 @@ export default function User(){
                     })
                   }
                   {
-                  (IAMService.hasOneRole("_tide_dob.write") || IAMService.hasOneRole("_tide_cc.write")) && (
+                  (IAMService.hasOneRole("_tide_dob.selfencrypt") || IAMService.hasOneRole("_tide_cc.selfencrypt")) && (
                     <div className="flex items-center gap-3">
                       <Button type="submit">Save Changes</Button>
                       {userFeedback && (
@@ -381,63 +414,6 @@ export default function User(){
 
                   )}
                 </form>
-
-                <div className="border-t pt-6">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-2xl font-semibold">Database Exposure Simulation</h3>
-
-                    <button
-                      onClick={() => setShowExposureAccordion(prev => !prev)}
-                      className="text-2xl hover:scale-110 transition-transform"
-                      aria-label="Toggle explanation"
-                    >
-                      {showExposureAccordion ? "🤯" : "🤔"}
-                    </button>
-                  </div>
-
-                  <p className="text-sm text-gray-600 mb-4">This simulates a user table leak through unprotected API or misconfigured server.</p>
-
-                  <AccordionBox title="What does this simulate?" isOpen={showExposureAccordion}>
-                    <p>
-                      This simulation shows what happens when an encrypted user table is leaked.
-                      Try decrypting your own row — other rows will remain locked unless you have access.
-                    </p>
-
-                    <div className="flex justify-end">
-                      <button
-                        onClick={() => setShowDeepDive(prev => !prev)}
-                        className="flex items-center gap-2 ml-auto text-xs font-medium text-blue-700 hover:text-blue-900 transition"
-                        aria-label="Show technical explanation"
-                      >
-                        <span className="underline">Technical Deep Dive</span>
-                        <span className="text-xl">🤓</span>
-                      </button>
-                    </div>
-
-                    {showDeepDive && (
-                      <div className="mt-3 border-t pt-4 space-y-3 text-xs text-gray-700">
-                        <p>
-                          🔐 Each record is encrypted at rest. Even if the table is exfiltrated, fields like DOB and CC remain opaque unless a valid JWT with <code className="bg-gray-100 px-1 py-0.5 rounded">read</code> rights is presented.
-                          The decryption flow references permissions attached to the JWT — not role-based access.
-                        </p>
-                        <div className="w-full overflow-auto">
-                          <img
-                            src="/diagrams/db-decrypt-flow.svg"
-                            alt="Decryption permission flow diagram"
-                            className="w-full max-w-md border rounded shadow"
-                          />
-                        </div>
-                        <p className="italic text-gray-500">
-                          Excerpted from the <a href="https://github.com/tide-foundation/tidecloakspaces" className="underline text-blue-600" target="_blank" rel="noopener noreferrer">TideCloakSpaces</a> repo.
-                        </p>
-                      </div>
-                    )}
-                  </AccordionBox>
-
-                  <DatabaseExposureTable users={users} loggedUser={loggedUser} encryptedDob={encryptedDob} encryptedCc={encryptedCc}/>
-
-                </div>
-
               </div>
             )}
         </div>

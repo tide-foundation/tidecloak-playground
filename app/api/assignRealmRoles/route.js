@@ -23,8 +23,9 @@ export async function GET(){
     // Minimal realm roles to be assigned to demo user
     // These roles need to be assigned manually here instead of importing under the default composite role, else they can't be removed
     const assignRealmRoles = [
-        "_tide_dob.read", "_tide_dob.write",
-        "_tide_cc.read", "_tide_cc.write",
+        "_tide_dob.selfencrypt",
+        "_tide_dob.selfdecrypt",
+        "_tide_cc.selfencrypt",
     ];
 
     try {

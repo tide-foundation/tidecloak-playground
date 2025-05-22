@@ -120,14 +120,14 @@ export default function Admin() {
   }, [isTideAdmin])
 
   // Handles the state of the submit change button, disable if there's no change
-  useEffect(() => {
-    if (hasDobReadPerm === IAMService.hasOneRole("_tide_dob.read")
-      && hasDobWritePerm === IAMService.hasOneRole("_tide_dob.write")
-      && hasCcReadPerm === IAMService.hasOneRole("_tide_cc.read")
-      && hasCcWritePerm === IAMService.hasOneRole("_tide_cc.write")){
-        setHasChanges(false); 
-    }
-  }, [hasDobReadPerm, hasDobWritePerm, hasCcReadPerm, hasCcWritePerm])
+  // useEffect(() => {
+  //   if (hasDobReadPerm === IAMService.hasOneRole("_tide_dob.selfdecrypt")
+  //     && hasDobWritePerm === IAMService.hasOneRole("_tide_dob.selfencrypt")
+  //     && hasCcReadPerm === IAMService.hasOneRole("_tide_cc.selfdecrypt")
+  //     && hasCcWritePerm === IAMService.hasOneRole("_tide_cc.selfencrypt")){
+  //       setHasChanges(false); 
+  //   }
+  // }, [hasDobReadPerm, hasDobWritePerm, hasCcReadPerm, hasCcWritePerm])
 
   // Get current logged in user
   const getLoggedUser = async () => { 
@@ -145,11 +145,11 @@ export default function Admin() {
   // Get the current user realm roles to prefill the boxes and for updating the permissions
   const setUserPermissions = async () => { 
     if (loggedUser){
-      setHasDobReadPerm(IAMService.hasOneRole("_tide_dob.read"));
-      setHasDobWritePerm(IAMService.hasOneRole("_tide_dob.write"));
+      setHasDobReadPerm(IAMService.hasOneRole("_tide_dob.selfdecrypt"));
+      setHasDobWritePerm(IAMService.hasOneRole("_tide_dob.selfencrypt"));
 
-      setHasCcReadPerm(IAMService.hasOneRole("_tide_cc.read"));
-      setHasCcWritePerm(IAMService.hasOneRole("_tide_cc.write"));
+      setHasCcReadPerm(IAMService.hasOneRole("_tide_cc.selfdecrypt"));
+      setHasCcWritePerm(IAMService.hasOneRole("_tide_cc.selfencrypt"));
     }
   };
 
@@ -181,7 +181,7 @@ export default function Admin() {
         if (response.ok) {
             // Force update of token without logging out
             setUpdatingToken(true);
-            await IAMService.updateIAMToken(); //-1 to update it immediately
+            await IAMService.updateToken(); //-1 to update it immediately
             setIsTideAdmin(true); 
             setUpdatingToken(false);
             console.log("Admin Role Assigned");
@@ -214,9 +214,6 @@ export default function Admin() {
   const handleAdminPermissionSubmit = async (e) => {
     e.preventDefault();
 
-    // Return the check boxes back to the current permissions the token holds
-    setUserPermissions(); 
-
     const token = await IAMService.getToken();
 
     // Clear cached data of the demo admins who have approved for a reset
@@ -230,15 +227,15 @@ export default function Admin() {
     await cancelRequests(allRequests);
     
     // Roles drafted are counted as assigned to token by TideCloak, so cancel the requests then update the token
-    await IAMService.updateIAMToken();
+    await IAMService.updateToken();
     const updatedToken = await IAMService.getToken();
     setUpdatingToken(false);
     
     // Compare the current checkbox state with the current permissions. Note: token roles only update when a role change request COMMITS.
     // If the states don't match, a change request is required.
     // Date of Birth
-    if (hasDobReadPerm !== IAMService.hasOneRole("_tide_dob.read")){      
-      const readRole = await appService.getRealmRole(baseURL, realm, "_tide_dob.read", updatedToken);
+    if (hasDobReadPerm !== IAMService.hasOneRole("_tide_dob.selfdecrypt")){      
+      const readRole = await appService.getRealmRole(baseURL, realm, "_tide_dob.selfdecrypt", updatedToken);
       if (hasDobReadPerm === true){
         await appService.assignRealmRole(baseURL, realm, loggedUser.id, readRole, updatedToken);
       }
@@ -247,8 +244,8 @@ export default function Admin() {
       }
     }
 
-    if (hasDobWritePerm !== IAMService.hasOneRole("_tide_dob.write")){
-      const writeRole = await appService.getRealmRole(baseURL, realm, "_tide_dob.write", updatedToken);
+    if (hasDobWritePerm !== IAMService.hasOneRole("_tide_dob.selfencrypt")){
+      const writeRole = await appService.getRealmRole(baseURL, realm, "_tide_dob.selfencrypt", updatedToken);
       if (hasDobWritePerm === true){
         await appService.assignRealmRole(baseURL, realm, loggedUser.id, writeRole, updatedToken);
       }
@@ -258,8 +255,8 @@ export default function Admin() {
     }
 
     // Credit Card
-    if (hasCcReadPerm !== IAMService.hasOneRole("_tide_cc.read")){
-      const readRole = await appService.getRealmRole(baseURL, realm, "_tide_cc.read", updatedToken);
+    if (hasCcReadPerm !== IAMService.hasOneRole("_tide_cc.selfdecrypt")){
+      const readRole = await appService.getRealmRole(baseURL, realm, "_tide_cc.selfdecrypt", updatedToken);
       if (hasCcReadPerm === true){
         await appService.assignRealmRole(baseURL, realm, loggedUser.id, readRole, updatedToken);
       }
@@ -268,8 +265,8 @@ export default function Admin() {
       }
     }
 
-    if (hasCcWritePerm !== IAMService.hasOneRole("_tide_cc.write")){
-      const writeRole = await appService.getRealmRole(baseURL, realm, "_tide_cc.write", updatedToken);
+    if (hasCcWritePerm !== IAMService.hasOneRole("_tide_cc.selfencrypt")){
+      const writeRole = await appService.getRealmRole(baseURL, realm, "_tide_cc.selfencrypt", updatedToken);
       if (hasCcWritePerm === true){
         await appService.assignRealmRole(baseURL, realm, loggedUser.id, writeRole, updatedToken);
       }
@@ -309,18 +306,10 @@ export default function Admin() {
       }
     
       // When committed
-      if (requestStatus === "Committed") {
+      if (requestStatus === "COMMITTED" && requests.length === activeRequestIndex + 1 ) {
         return (
           <div className="bg-white border rounded-lg p-6 shadow space-y-4 mt-8">
 
-          <div className="flex justify-between items-center">
-            <h3 className="text-xl font-bold text-gray-800">Change Request</h3>
-          </div>
-  
-  
-          <pre className="bg-gray-50 border text-sm rounded p-4 overflow-auto">
-            {JSON.stringify(request.value, null, 2)}
-          </pre>
           <div className="mt-4">
             <div className="text-sm text-gray-700 flex items-center gap-2">
               <FaCheckCircle className="text-green-500" />
@@ -488,22 +477,22 @@ export default function Admin() {
         </div>
 
         <div className="pt-4">
-          { request.deleteStatus !== "APPROVED" && request.status !== "APPROVED"? (
+          { request.deleteStatus === "DRAFT" || request.status === "DRAFT"? (
             <Button onClick={() => {handleUserApprove(request)}} disabled={pending}>
               Review
             </Button>
 
-          ) : request.deleteStatus === "COMMITTED" || request.status === "COMMITTED"? (
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                router.push("/user");
-              }}
-              className="text-blue-600 hover:underline text-sm font-medium"
-            >
-              View on User Page →
-            </a>
+          // ) : request.deleteStatus === "COMMITTED" || request.status === "COMMITTED"? (
+          //   <a
+          //     href="#"
+          //     onClick={(e) => {
+          //       e.preventDefault();
+          //       router.push("/user");
+          //     }}
+          //     className="text-blue-600 hover:underline text-sm font-medium"
+          //   >
+          //     View on User Page →
+          //   </a>
 
           ) : !pending && (request.deleteStatus === "APPROVED" || request.status === "APPROVED") ? (
             <Button className="bg-green-600 hover:bg-green-700" onClick={onCommit}>
@@ -544,17 +533,17 @@ export default function Admin() {
         localStorage.removeItem("approvals");
         setUpdatingToken(true);
         // Get a new token to have check the currently assigned roles to the logged in user
-        await IAMService.updateIAMToken();
+        await IAMService.updateToken();
 
-        // Update check boxes to reflect the change in token's permissions
-        await setUserPermissions();
         setUpdatingToken(false); 
 
         // Reset states for next change request
         setApprovals([false, false, false, false, false]);
         setTotalApproved(1);
-        setActiveRequestIndex(prev => prev + 1);
-        setExpandedIndex(prev => prev + 1);
+        if (requests.length !== activeRequestIndex + 1 ){
+          setActiveRequestIndex(prev => prev + 1);
+          setExpandedIndex(prev => prev + 1);
+        }
       }
     };
 
