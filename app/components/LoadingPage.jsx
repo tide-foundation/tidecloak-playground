@@ -353,7 +353,7 @@ export default function LoadingPage({ isInitializing, setIsInitializing}) {
         }
       >
         {msg}
-      </span>
+      </span> 
     </li>
   ))}
 </ul>
