@@ -28,7 +28,7 @@ docker run -d \
 echo "📦 Installing Node.js dependencies..."
 npm install
 
-echo "🏗️ Building Next.js app..."
+echo "🏗️ Building Playground app..."
 #npm run build
 
 echo ""
