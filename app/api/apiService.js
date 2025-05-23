@@ -736,6 +736,39 @@ async function signSettings(baseURL, realm, token){
     return {ok: true, status: response.status};
 }
 
+async function uploadImage(baseURL, realm, token, formData){
+    const response = await fetch(`${baseURL}/admin/realms/${realm}/tide-idp-admin-resources/images/upload`, {
+        method: 'POST',
+        headers: {
+            "Content-Type": "application/json",
+            "authorization": `Bearer ${token}`,
+        },
+        body: formData
+    });
+    
+    if (!response.ok) {
+       throw new Error("Unable to upload images to Tide IDP.")
+    }
+
+    return {ok: true, status: response.status};
+}
+
+async function deleteImage(baseURL, realm, token, type){
+    const response = await fetch(`${baseURL}/admin/realms/${realm}/tide-idp-admin-resources/images/${type}/delete`, {
+        method: 'DELETE',
+        headers: {
+            "Content-Type": "application/json",
+            "authorization": `Bearer ${token}`,
+        },
+    });
+    
+    if (!response.ok) {
+       throw new Error(`Unable to delete ${type} image from Tide IDP.`)
+    }
+
+    return {ok: true, status: response.status};
+}
+
 const apiService = {
     getMasterToken,
     getUsersChangeRequests,
@@ -761,7 +794,9 @@ const apiService = {
     getClientID,
     getClientAdapter,
     updateSelfRegister,
-    getUsers
+    getUsers,
+    uploadImage,
+    deleteImage
 }
 
 export default apiService;
