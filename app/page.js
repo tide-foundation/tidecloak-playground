@@ -6,34 +6,35 @@ import Button from "./components/button";
 import kcData from "/tidecloak.json";
 import {useAppContext} from "./context/context";
 import IAMService from "../lib/IAMService";
-import appService from "../lib/appService";
 import { usePathname, useRouter } from "next/navigation";
 import {
   FaExclamationCircle,
 } from "react-icons/fa";
 import LoadingPage from "./components/LoadingPage";
+import appService from "../lib/appService";
 
 /**
  * "/" path containing the Login page, logouts including token expiration is redirected here
  * @returns {JSX.Element} - HTML rendering the "/" path containing login functionality, message on token expiration and TideCloak backend address
  */
 export default function Login() {
+  // Shared context data to check if already authenticated skip this login screen
+  const {authenticated, baseURL} = useAppContext();
+
   // Current path "/"
   const pathname = usePathname();
   // Navigation manager
   const router = useRouter();
   // Expandable extra information
   const [showLoginAccordion, setShowLoginAccordion] = useState(false);
-  // Shared context data to check if already authenticated skip this login screen
-  const {authenticated, realm, baseURL} = useAppContext();
   // State for error message when token expires
   const [showError, setShowError] = useState(false);
   // TideCloak address
   const [adminAddress, setAdminAddress] = useState("Need to setup backend first.");
   // State to show initialiser when the tidecloak.json file has an empty object
   const [isInitializing, setIsInitializing] = useState(false);
-  // Invite URL to link Tide account to TideCloak
-  const [inviteURL, setInviteURL] = useState();
+  
+  const [portIsPublic, setPortIsPublic] = useState(true);
 
   // Check authentication from context
   useEffect(() => {
@@ -59,13 +60,32 @@ export default function Login() {
     if (tokenExpired){
       setShowError(true);
     }
+    checkTideCloakPort();
+    
   }, [])
+
+  // Can't connect to TideCloak if the ports are not public
+  // It's public if there's a response
+  const checkTideCloakPort = async () => {
+    const url = `${baseURL}/realms/master/.well-known/openid-configuration`;
+    const response = await appService.checkPort(url);
+    
+    if (response.ok){
+      console.log("TideCloak port is public.");
+    }
+    else {
+      setPortIsPublic(false);
+      console.log("TideCloak port is private, please change to public to allow connections.");
+    }
+  };
 
 
   // Redirect to Tide Enclave to sign in or link Tide account based on existence of user's VUID checked on backend to make inviteURL.
   const handleLogin = async () => {
     // If previously logged in remove this session variable.
     sessionStorage.removeItem("tokenExpired"); 
+    // Turn of the message if TideCloak port wasn't public before
+    setPortIsPublic(true);
 
     // Generate invite link
     const response = await fetch(`/api/inviteUser`, {
@@ -91,7 +111,7 @@ export default function Login() {
 
   // Show the initialiser
   if (isInitializing) {
-    return <LoadingPage isInitializing={isInitializing} setIsInitializing={setIsInitializing} setInviteURL={setInviteURL}/>;
+    return <LoadingPage isInitializing={isInitializing} setIsInitializing={setIsInitializing}/>;
   }
   
   return (
@@ -138,6 +158,15 @@ export default function Login() {
                     <div className="mt-2 flex items-center text-red-600 text-sm">
                       <FaExclamationCircle className="mr-1" />
                       <span>Session expired.</span>
+                    </div>
+                    : null
+                  }
+                  {
+                    !portIsPublic
+                    ? 
+                    <div className="mt-2 flex items-center text-red-600 text-sm">
+                      <FaExclamationCircle className="mr-1" />
+                      <span>TideCloak port is private, make it public to allow connections.</span>
                     </div>
                     : null
                   }
