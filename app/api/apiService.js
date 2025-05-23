@@ -4,22 +4,22 @@
  * @param {String} baseURL - url body provided in the apiConfigs.js
  * @returns {Promise<Object>} - response status with Master Token
  */
-async function getMasterToken(baseURL){
+async function getMasterToken(baseURL) {
 
     const envConfig = {
-        USERNAME: process.env.KC_USERNAME ?? (() =>{
+        USERNAME: process.env.KC_USERNAME ?? (() => {
             console.log("KC_USERNAME not set in .env, using default.");
             return "admin";
         })(),
-        PASSWORD: process.env.KC_PASSWORD ?? (() =>{
+        PASSWORD: process.env.KC_PASSWORD ?? (() => {
             console.log("KC_PASSWORD not set in .env, using default.");
             return "password";
         })(),
-        GRANTTYPE: process.env.GRANT_TYPE ?? (() =>{
+        GRANTTYPE: process.env.GRANT_TYPE ?? (() => {
             console.log("GRANT_TYPE not set in .env, using default.");
             return "password";
         })(),
-        CLIENTID: process.env.CLIENT_ID ?? (() =>{
+        CLIENTID: process.env.CLIENT_ID ?? (() => {
             console.log("CLIENT_ID not set in .env, using default.");
             return "admin-cli";
         })()
@@ -38,13 +38,13 @@ async function getMasterToken(baseURL){
             "client_id": envConfig.CLIENTID
         })
     });
-    
+
     if (!response.ok) {
         throw new Error(response.status + ": Unable to fetch master token")
-    } 
-    
+    }
+
     //Converting from a ReadableStream to access the master token.
-    const data = await response.json(); 
+    const data = await response.json();
     return data.access_token;
 
 }
@@ -57,7 +57,7 @@ async function getMasterToken(baseURL){
  * @param {JSON} settings - imported settings from the test-realm.json
  * @returns {Promise<Object>} - response status 
  */
-async function createDefaultRealm(baseURL, settings, token){
+async function createDefaultRealm(baseURL, settings, token) {
     const response = await fetch(`${baseURL}/admin/realms`, {
         method: 'POST',
         headers: {
@@ -77,7 +77,7 @@ async function createDefaultRealm(baseURL, settings, token){
         return new Error("Failed to create realm.");
     }
 
-    return {ok: true, status: response.status};
+    return { ok: true, status: response.status };
 };
 
 
@@ -89,7 +89,7 @@ async function createDefaultRealm(baseURL, settings, token){
  * @param {string} token - master token
  * @returns {Promise<Object>} - response status  
  */
-async function deleteIDP(baseURL, realm, token){ 
+async function deleteIDP(baseURL, realm, token) {
     const response = await fetch(`${baseURL}/admin/realms/${realm}/identity-provider/instances/tide`, {
         method: 'DELETE',
         headers: {
@@ -99,20 +99,20 @@ async function deleteIDP(baseURL, realm, token){
     });
 
     // Account for if the IDP already doesn't exist, delete realm anyways
-    if (response.status === 404){
+    if (response.status === 404) {
         console.log("Failed to delete IDP, IDP not found. Attempting to delete realm.");
-        const deleteRealmResp = await deleteRealm(baseURL, realm, token); 
-        if (!deleteRealmResp.ok){
+        const deleteRealmResp = await deleteRealm(baseURL, realm, token);
+        if (!deleteRealmResp.ok) {
             throw new Error("Failed to delete realm. Manual deletion of realm required via Keycloak.");
         }
         else {
-            return {ok: true, status: deleteRealmResp.status};
+            return { ok: true, status: deleteRealmResp.status };
         }
     } else if (!response.ok) {
         throw new Error("Failed to delete IDP. Manual deletion of IDP then realm via Keycloak required.");
     };
 
-    return {ok: true, status: response.status};
+    return { ok: true, status: response.status };
 };
 
 /**
@@ -123,7 +123,7 @@ async function deleteIDP(baseURL, realm, token){
  * @param {string} token - master token
  * @returns {Promise<Object>} - status responses
  */
-async function deleteRealm(baseURL, realm, token){
+async function deleteRealm(baseURL, realm, token) {
     const response = await fetch(`${baseURL}/admin/realms/${realm}`, {
         method: 'DELETE',
         headers: {
@@ -132,16 +132,16 @@ async function deleteRealm(baseURL, realm, token){
         },
     });
 
-    if (response.status === 404){
+    if (response.status === 404) {
         console.log("Realm not found. Possibly already deleted.");
-        return {ok: true, status: 200};
+        return { ok: true, status: 200 };
     }
 
-    if (!response.ok){
+    if (!response.ok) {
         return new Error("Failed to delete the realm. Manual deletion of realm required via Keycloak.");
     }
 
-    return {ok: true, status: response.status};
+    return { ok: true, status: response.status };
 };
 
 /**
@@ -152,7 +152,7 @@ async function deleteRealm(baseURL, realm, token){
  * @param {string} token - master token
  * @returns {Promise<Object>} - response status 
  */
-async function createUser(baseURL, realm, token, username, dob, cc){
+async function createUser(baseURL, realm, token, username, dob, cc) {
     const response = await fetch(`${baseURL}/admin/realms/${realm}/users`, {
         method: 'POST',
         headers: {
@@ -174,17 +174,17 @@ async function createUser(baseURL, realm, token, username, dob, cc){
     });
 
     console.log(response);
-    
+
     // Conflict case, but there should only be one user on initialisation.
-    if (response.status === 409){
+    if (response.status === 409) {
         throw new Error("User already exists.");
     }
-    
-    if (!response.ok){
+
+    if (!response.ok) {
         throw new Error("Failed to create demo user.");
     }
 
-    return {ok: true, status: response.status};
+    return { ok: true, status: response.status };
 };
 
 /**
@@ -195,7 +195,7 @@ async function createUser(baseURL, realm, token, username, dob, cc){
  * @param {string} token - master token
  * @returns {Promise<Object>} - response status with demo user's object
  */
-async function getDemoUser(baseURL, realm, token){
+async function getDemoUser(baseURL, realm, token) {
     const response = await fetch(`${baseURL}/admin/realms/${realm}/users?username=demouser`, {
         method: 'GET',
         headers: {
@@ -204,17 +204,17 @@ async function getDemoUser(baseURL, realm, token){
         },
     });
 
-    if (!response.ok){
+    if (!response.ok) {
         throw new Error("Failed to get the demo user.");
     }
 
     const demoUser = await response.json();
-   
-    if (demoUser.length === 0){
-        throw new Error("User not found. Check user exists in Keycloak."); 
+
+    if (demoUser.length === 0) {
+        throw new Error("User not found. Check user exists in Keycloak.");
     }
 
-    return {ok: true, status: 200, body: demoUser[0]};
+    return { ok: true, status: 200, body: demoUser[0] };
 };
 
 /** 
@@ -225,8 +225,8 @@ async function getDemoUser(baseURL, realm, token){
  * @param {string} token - master token
  * @returns {Promise<Object>} - A promise object with and array of clients
  */
-async function getRealmManagement(baseURL, realm, token){
-    const response = await fetch(`${baseURL}/admin/realms/${realm}/clients`, { 
+async function getRealmManagement(baseURL, realm, token) {
+    const response = await fetch(`${baseURL}/admin/realms/${realm}/clients`, {
         method: 'GET',
         headers: {
             "Content-Type": "application/json",
@@ -241,8 +241,8 @@ async function getRealmManagement(baseURL, realm, token){
     const clients = await response.json();
     // Find this client which manages the tide-realm-admin role
     const realmManagementClient = clients.find((client) => client.clientId === "realm-management");
-    
-    return {ok: true, status: response.status, body: realmManagementClient};
+
+    return { ok: true, status: response.status, body: realmManagementClient };
 }
 
 /**
@@ -254,8 +254,8 @@ async function getRealmManagement(baseURL, realm, token){
  * @param {*} token 
  * @returns 
  */
-async function getAvailableClientRoles(baseURL, realm, userId, clientId, token){
-    const response = await fetch(`${baseURL}/admin/realms/${realm}/users/${userId}/role-mappings/clients/${clientId}/available`, { 
+async function getAvailableClientRoles(baseURL, realm, userId, clientId, token) {
+    const response = await fetch(`${baseURL}/admin/realms/${realm}/users/${userId}/role-mappings/clients/${clientId}/available`, {
         method: 'GET',
         headers: {
             "Content-Type": "application/json",
@@ -267,9 +267,9 @@ async function getAvailableClientRoles(baseURL, realm, userId, clientId, token){
         throw new Error("Failed to get available client roles.");
     }
 
-    const availableRoles = await response.json(); 
-    
-    return {ok: true, status: response.status, body: availableRoles};
+    const availableRoles = await response.json();
+
+    return { ok: true, status: response.status, body: availableRoles };
 }
 
 /**
@@ -282,8 +282,8 @@ async function getAvailableClientRoles(baseURL, realm, userId, clientId, token){
  * @param {*} token 
  * @returns 
  */
-async function assignClientRole(baseURL, realm, userId, clientId, role, token){
-    const response = await fetch(`${baseURL}/admin/realms/${realm}/users/${userId}/role-mappings/clients/${clientId}`, { 
+async function assignClientRole(baseURL, realm, userId, clientId, role, token) {
+    const response = await fetch(`${baseURL}/admin/realms/${realm}/users/${userId}/role-mappings/clients/${clientId}`, {
         method: 'POST',
         headers: {
             "Content-Type": "application/json",
@@ -295,11 +295,11 @@ async function assignClientRole(baseURL, realm, userId, clientId, role, token){
         }])
     });
 
-    if (!response.ok){
+    if (!response.ok) {
         throw new Error("Unable to assign client role to user.");
     }
 
-    return {ok: true, status: response.status};
+    return { ok: true, status: response.status };
 }
 
 /**
@@ -310,8 +310,8 @@ async function assignClientRole(baseURL, realm, userId, clientId, role, token){
  * @param {*} token 
  * @returns 
  */
-async function getAvailableRealmRoles(baseURL, realm, userId, token){
-    const response = await fetch(`${baseURL}/admin/realms/${realm}/users/${userId}/role-mappings/realm/available`, { 
+async function getAvailableRealmRoles(baseURL, realm, userId, token) {
+    const response = await fetch(`${baseURL}/admin/realms/${realm}/users/${userId}/role-mappings/realm/available`, {
         method: 'GET',
         headers: {
             "Content-Type": "application/json",
@@ -323,9 +323,9 @@ async function getAvailableRealmRoles(baseURL, realm, userId, token){
         throw new Error("Failed to get available realm roles.")
     }
 
-    const availableRoles = await response.json(); 
-    
-    return {ok: true, status: response.status, body: availableRoles};
+    const availableRoles = await response.json();
+
+    return { ok: true, status: response.status, body: availableRoles };
 }
 
 /**
@@ -337,8 +337,8 @@ async function getAvailableRealmRoles(baseURL, realm, userId, token){
  * @param {*} token 
  * @returns 
  */
-async function assignRealmRole(baseURL, realm, userId, role, token){
-    const response = await fetch(`${baseURL}/admin/realms/${realm}/users/${userId}/role-mappings/realm`, { 
+async function assignRealmRole(baseURL, realm, userId, role, token) {
+    const response = await fetch(`${baseURL}/admin/realms/${realm}/users/${userId}/role-mappings/realm`, {
         method: 'POST',
         headers: {
             "Content-Type": "application/json",
@@ -350,11 +350,11 @@ async function assignRealmRole(baseURL, realm, userId, role, token){
         }])
     });
 
-    if (!response.ok){
+    if (!response.ok) {
         throw new Error("Failed to assign realm role to user.");
     }
 
-    return {ok: true, status: response.status};
+    return { ok: true, status: response.status };
 }
 
 /**
@@ -366,7 +366,7 @@ async function assignRealmRole(baseURL, realm, userId, role, token){
  * @param {string} token - master token
  * @returns {Promise<Object>} - response status with client ID
  */
-async function getClientID(baseURL, realm, clientName, token){
+async function getClientID(baseURL, realm, clientName, token) {
     const response = await fetch(`${baseURL}/admin/realms/${realm}/clients?clientId=${clientName}`, {
         method: 'GET',
         headers: {
@@ -374,12 +374,12 @@ async function getClientID(baseURL, realm, clientName, token){
         },
     });
 
-    if (!response.ok){
+    if (!response.ok) {
         throw new Error(": Unable to find client.")
     }
-   
+
     const client = await response.json();
-    return {ok: true, status: response.status, body: client[0].id};
+    return { ok: true, status: response.status, body: client[0].id };
 };
 
 /**
@@ -391,7 +391,7 @@ async function getClientID(baseURL, realm, clientName, token){
  * @param {string} token - master token
  * @returns {Promise<Object>} - response status with string of configurations
  */
-async function getClientAdapter(baseURL, realm, clientID, token){
+async function getClientAdapter(baseURL, realm, clientID, token) {
     const response = await fetch(`${baseURL}/admin/realms/${realm}/vendorResources/get-installations-provider?clientId=${clientID}&providerId=keycloak-oidc-keycloak-json`, {
         method: 'GET',
         headers: {
@@ -399,20 +399,20 @@ async function getClientAdapter(baseURL, realm, clientID, token){
         },
     });
 
-    if (!response.ok){
-       throw new Error("Failed to get client adapter."); 
+    if (!response.ok) {
+        throw new Error("Failed to get client adapter.");
     }
 
     const configsJSON = await response.json();
     const configsString = JSON.stringify(configsJSON);
 
-    return {ok: true, status: response.status, body: configsString};
+    return { ok: true, status: response.status, body: configsString };
 };
 
-async function updateSelfRegister(baseURL, realm, token){
+async function updateSelfRegister(baseURL, realm, token) {
 
     // Get the realm config first
-     const getResponse = await fetch(`${baseURL}/admin/realms/${realm}`, {
+    const getResponse = await fetch(`${baseURL}/admin/realms/${realm}`, {
         method: 'GET',
         headers: {
             "authorization": `Bearer ${token}`,
@@ -420,7 +420,7 @@ async function updateSelfRegister(baseURL, realm, token){
         }
     });
 
-    if (!getResponse.ok){
+    if (!getResponse.ok) {
         throw new Error("Failed to fetch realm configuration.");
     }
     const realmConfig = await getResponse.json();
@@ -432,39 +432,39 @@ async function updateSelfRegister(baseURL, realm, token){
         method: 'PUT',
         headers: {
             "authorization": `Bearer ${token}`,
-            "Content-Type": "application/json", 
+            "Content-Type": "application/json",
         },
         body: JSON.stringify(
             realmConfig
         )
     });
 
-    if (!putResponse.ok){
-        throw new Error("Failed to turn Self Register off."); 
+    if (!putResponse.ok) {
+        throw new Error("Failed to turn Self Register off.");
     }
 
-    return {ok: true, status: putResponse.status};
+    return { ok: true, status: putResponse.status };
 }
 
 
-async function getUsers(baseURL, realm, token){
-    
-    const response = await fetch(`${baseURL}/admin/realms/${realm}/users`, { 
+async function getUsers(baseURL, realm, token) {
+
+    const response = await fetch(`${baseURL}/admin/realms/${realm}/users`, {
         method: 'GET',
         headers: {
             "Content-Type": "application/json",
             "authorization": `Bearer ${token}`,
         },
     });
-    
-    if (!response.ok){
+
+    if (!response.ok) {
         throw new Error("Failed to get users.")
     }
 
     const data = await response.json();
     return data;
-    
-} 
+
+}
 
 /* TIDE CUSTOM ENDPOINTS */
 
@@ -475,7 +475,7 @@ async function getUsers(baseURL, realm, token){
  * @param {*} token 
  * @returns 
  */
-async function getUsersChangeRequests(baseURL, realm, token){
+async function getUsersChangeRequests(baseURL, realm, token) {
     const response = await fetch(`${baseURL}/admin/realms/${realm}/tide-admin/change-set/users/requests`, {
         method: 'GET',
         headers: {
@@ -483,13 +483,13 @@ async function getUsersChangeRequests(baseURL, realm, token){
         },
     });
 
-    if (!response.ok){
+    if (!response.ok) {
         throw new Error("Failed to get Users change requests.");
     }
 
     const usersChangeReq = await response.json();
 
-    return {ok: true, status: response.status, body: usersChangeReq};
+    return { ok: true, status: response.status, body: usersChangeReq };
 };
 
 /**
@@ -500,7 +500,7 @@ async function getUsersChangeRequests(baseURL, realm, token){
  * @param {*} token 
  * @returns 
  */
-async function signChangeRequest(baseURL, realm, usersChangeReq, token){
+async function signChangeRequest(baseURL, realm, usersChangeReq, token) {
     const response = await fetch(`${baseURL}/admin/realms/${realm}/tide-admin/change-set/sign`, {
         method: 'POST',
         headers: {
@@ -515,11 +515,11 @@ async function signChangeRequest(baseURL, realm, usersChangeReq, token){
         })
     });
 
-    if (!response.ok){
+    if (!response.ok) {
         throw new Error("Failed to sign change request for user.");
     }
 
-    return {ok: true, status: response.status};
+    return { ok: true, status: response.status };
 };
 
 /**
@@ -530,7 +530,7 @@ async function signChangeRequest(baseURL, realm, usersChangeReq, token){
  * @param {*} token 
  * @returns 
  */
-async function commitChangeRequest(baseURL, realm, usersChangeReq, token){
+async function commitChangeRequest(baseURL, realm, usersChangeReq, token) {
     const response = await fetch(`${baseURL}/admin/realms/${realm}/tide-admin/change-set/commit`, {
         method: 'POST',
         headers: {
@@ -545,11 +545,11 @@ async function commitChangeRequest(baseURL, realm, usersChangeReq, token){
         })
     });
 
-    if (!response.ok){
+    if (!response.ok) {
         throw new Error(": Unable to commit change request for user.");
     }
 
-    return {ok: true, status: response.status};
+    return { ok: true, status: response.status };
 };
 
 /** TIDE CUSTOM ENDPOINT
@@ -560,7 +560,7 @@ async function commitChangeRequest(baseURL, realm, usersChangeReq, token){
  * @param {string} token - master token
  * @returns {Promise<Object>} - status response
  */
-async function activateIDPLicense(baseURL, realm, token){
+async function activateIDPLicense(baseURL, realm, token) {
     const response = await fetch(`${baseURL}/admin/realms/${realm}/vendorResources/setUpTideRealm`, {
         method: 'POST',
         headers: {
@@ -570,12 +570,12 @@ async function activateIDPLicense(baseURL, realm, token){
             "email": "email=email@tide.org",
         })
     });
-    
+
     if (!response.ok) {
-       throw new Error("Failed to activate IDP license");
+        throw new Error("Failed to activate IDP license");
     }
 
-    return {ok: true, status: response.status};
+    return { ok: true, status: response.status };
 };
 
 /** TIDE CUSTOM ENDPOINT
@@ -586,7 +586,7 @@ async function activateIDPLicense(baseURL, realm, token){
  * @param {string} token - master token
  * @returns {Promise<Object>} - status response
  */
-async function toggleIGA(baseURL, realm, token){
+async function toggleIGA(baseURL, realm, token) {
     const response = await fetch(`${baseURL}/admin/realms/${realm}/tideAdminResources/toggle-iga`, {
         method: 'POST',
         headers: {
@@ -598,11 +598,11 @@ async function toggleIGA(baseURL, realm, token){
     });
     console.log(response);
 
-    if (!response.ok){
+    if (!response.ok) {
         throw new Error("Failed to toggle IGA on.")
     }
 
-    return {ok: true, status: response.status};
+    return { ok: true, status: response.status };
 };
 
 /** TIDE CUSTOM ENDPOINT
@@ -614,7 +614,7 @@ async function toggleIGA(baseURL, realm, token){
  * @param {string} token - master token
  * @returns {Promise<Object>} - status response with Tide invite link string
  */
-async function createTideInvite(baseURL, realm, userID, token){
+async function createTideInvite(baseURL, realm, userID, token) {
     const response = await fetch(`${baseURL}/admin/realms/${realm}/tideAdminResources/get-required-action-link?userId=${userID}&lifespan=43200`, {
         method: 'POST',
         headers: {
@@ -624,13 +624,13 @@ async function createTideInvite(baseURL, realm, userID, token){
         body: JSON.stringify(["link-tide-account-action"])
     });
 
-    if (!response.ok){
-       throw new Error("Failed to create Tide Invite Link.")
+    if (!response.ok) {
+        throw new Error("Failed to create Tide Invite Link.")
     }
 
     const url = await response.text();
 
-    return {ok: true, status: response.status, body: url}
+    return { ok: true, status: response.status, body: url }
 
 };
 
@@ -642,7 +642,7 @@ async function createTideInvite(baseURL, realm, userID, token){
  * @param {string} token - master token
  * @returns {Promise<Object>} - status response with an array of change requests
  */
-async function getClientsChangeRequests(baseURL, realm, token){
+async function getClientsChangeRequests(baseURL, realm, token) {
     const response = await fetch(`${baseURL}/admin/realms/${realm}/tide-admin/change-set/clients/requests`, {
         method: 'GET',
         headers: {
@@ -650,13 +650,13 @@ async function getClientsChangeRequests(baseURL, realm, token){
         },
     });
 
-    if (!response.ok){
-       throw new Error(": Unable to get client change requests.");
+    if (!response.ok) {
+        throw new Error(": Unable to get client change requests.");
     }
 
     const changeRequests = await response.json()
 
-    return {ok: true, status: response.status, body: changeRequests};
+    return { ok: true, status: response.status, body: changeRequests };
 }
 
 
@@ -668,7 +668,7 @@ async function getClientsChangeRequests(baseURL, realm, token){
  * @param {string} token - master token
  * @returns {Promise<Object>} - status response with the IDP settings to be updated
  */
-async function getIDPSettings(baseURL, realm, token){
+async function getIDPSettings(baseURL, realm, token) {
     const response = await fetch(`${baseURL}/admin/realms/${realm}/identity-provider/instances/tide`, {
         method: 'GET',
         headers: {
@@ -676,12 +676,12 @@ async function getIDPSettings(baseURL, realm, token){
             "authorization": `Bearer ${token}`,
         },
     });
-    if (!response.ok){
+    if (!response.ok) {
         throw new Error("Failed to fetch IDP Settings");
     }
 
     const settings = await response.json();
-    return {ok: true, status: response.status, body: settings};
+    return { ok: true, status: response.status, body: settings };
 }
 
 /** TIDE CUSTOM ENDPOINT
@@ -693,7 +693,7 @@ async function getIDPSettings(baseURL, realm, token){
  * @param {Object} settings - object representation of IDP settings with a config field containing the new CustomAdminUIDomain property custom URL.
  * @returns {Promise<Object>} - status response
  */
-async function updateIDPSettings(baseURL, realm, settings, token){
+async function updateIDPSettings(baseURL, realm, settings, token) {
     const response = await fetch(`${baseURL}/admin/realms/${realm}/identity-provider/instances/tide`, {
         method: 'PUT',
         headers: {
@@ -705,11 +705,11 @@ async function updateIDPSettings(baseURL, realm, settings, token){
         )
     });
 
-    if (!response.ok){
+    if (!response.ok) {
         throw new Error(`Unable to update IDP Settings.`);
     }
 
-    return {ok: true, status: response.status};
+    return { ok: true, status: response.status };
 }
 
 /** TIDE CUSTOM ENDPOINT
@@ -720,7 +720,7 @@ async function updateIDPSettings(baseURL, realm, settings, token){
  * @param {string} token - master token
  * @returns {Promise<Object>} - status response
  */
-async function signSettings(baseURL, realm, token){
+async function signSettings(baseURL, realm, token) {
     const response = await fetch(`${baseURL}/admin/realms/${realm}/vendorResources/sign-idp-settings`, {
         method: 'POST',
         headers: {
@@ -728,13 +728,53 @@ async function signSettings(baseURL, realm, token){
             "authorization": `Bearer ${token}`,
         },
     });
-    
+
     if (!response.ok) {
-       throw new Error("Unable to Sign Settings.")
+        throw new Error("Unable to Sign Settings.")
     }
 
-    return {ok: true, status: response.status};
+    return { ok: true, status: response.status };
 }
+
+async function uploadImage(baseURL, realm, token, formData) {
+    const url = `${baseURL}/admin/realms/${realm}/tide-idp-admin-resources/images/upload`;
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${token}` },
+        body: formData,
+    });
+
+    if (!res.ok) {
+        // pick JSON or text error body
+        const isJson = res.headers.get('Content-Type')?.includes('application/json');
+        const serverMsg = isJson
+            ? await res.json().then(err => err.message ?? JSON.stringify(err))
+            : await res.text();
+
+        throw new Error(
+            `Upload failed: ${res.status} ${res.statusText}` +
+            (serverMsg ? ` — ${serverMsg}` : '')
+        );
+    }
+
+    return { ok: true, status: res.status };
+}
+
+
+async function deleteImage(baseURL, realm, token, type) {
+    const url = `${baseURL}/admin/realms/${realm}/tide-idp-admin-resources/images/${type}/delete`;
+    const res = await fetch(url, {
+        method: 'DELETE',
+        headers: { authorization: `Bearer ${token}` },
+    });
+
+    if (!res.ok) {
+        throw new Error(`Unable to delete ${type} image from Tide IDP (status ${res.status}).`);
+    }
+
+    return { ok: true, status: res.status };
+}
+
 
 const apiService = {
     getMasterToken,
@@ -751,7 +791,7 @@ const apiService = {
     createTideInvite,
     getRealmManagement,
     getAvailableClientRoles,
-    assignClientRole, 
+    assignClientRole,
     getAvailableRealmRoles,
     assignRealmRole,
     getClientsChangeRequests,
@@ -761,7 +801,9 @@ const apiService = {
     getClientID,
     getClientAdapter,
     updateSelfRegister,
-    getUsers
+    getUsers,
+    uploadImage,
+    deleteImage
 }
 
 export default apiService;

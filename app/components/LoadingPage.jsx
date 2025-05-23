@@ -136,15 +136,27 @@ export default function LoadingPage({ isInitializing, setIsInitializing }) {
     }
 
     // Update the Custom Domain URL for the Tide Enclave to work
-    const updateCustomDomainURL = async () => {
-        const response = await fetch(`/api/updateCustomDomainURL`, {
-            method: "GET",
+    const updateCustomDomainURL = async (params = {}) => {
+        const qs = new URLSearchParams(params).toString();
+        const url = `/api/updateCustomDomainURL${qs ? '?' + qs : ''}`;
 
+        const response = await fetch(url, { method: 'GET' });
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.error || 'Failed to update domain URL');
+        }
+        return response;
+    };
+
+    // Upload background and logo image to tidecloak
+    const uploadImages = async () => {
+        const response = await fetch(`/api/uploadImages`, {
+            method: "POST",
         })
 
-        if (!response.ok) {
-            const errorResponse = await response.json();
-            throw new Error(errorResponse.error || "Failed to update the Custom Domain URL for the Tide IDP.");
+        const data = await response.json();
+        if (!response.ok || data.success !== true) {
+            throw new Error(data.message || 'Upload failed');
         }
     }
 
@@ -185,7 +197,9 @@ export default function LoadingPage({ isInitializing, setIsInitializing }) {
             await assignRealmRoles();
             await commitClients();
             await updateCustomDomainURL();
+            await uploadImages();
             await signSettings();
+            await updateCustomDomainURL({linkedTide: true});
             await getAdapter();
 
             setIsInitializing(false);
@@ -200,7 +214,7 @@ export default function LoadingPage({ isInitializing, setIsInitializing }) {
 
 
             restartCounter = restartCounter + 1;
-            
+
             console.log("Times restarted: " + restartCounter);
 
             // If it fails on step 1 (createRealm) restart initalizer 
