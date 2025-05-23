@@ -6,6 +6,7 @@ import {useAppContext} from '../context/context'
 import appService from "../../lib/appService";
 import AccordionBox from "../components/accordionBox";
 import { loadingSquareFullPage } from "../components/loadingSquare";
+import '../styles/spinKit.css';
 
 // Animation only
 function DecryptingText({ text, speed = 30 }) {
@@ -35,7 +36,11 @@ function DecryptingText({ text, speed = 30 }) {
 }
 
 function DecryptedRow({ isUser, user, username, dob, cc }) {
+    // State variable for handling Decrypt Button
     const [decrypted, setDecrypted] = useState(false);
+    // State variable for handling Decrypt Button's spinner
+    const [loadingButton, setLoadingButton] = useState(false);
+
     const [decryptionStatus, setDecryptionStatus] = useState("");
     const [animating, setAnimating] = useState(false);
     const [decryptedDob, setDecryptedDob] = useState("");
@@ -52,6 +57,7 @@ function DecryptedRow({ isUser, user, username, dob, cc }) {
 
     // Calls on Decrypt button being selected to update the fields
     const handleDecrypt = async () => {
+        
         let encryptedData = [];
 
         // Can't decrypt other users
@@ -86,6 +92,7 @@ function DecryptedRow({ isUser, user, username, dob, cc }) {
         setTimeout(async () => {
 
             if (encryptedData.length > 0){
+                setLoadingButton(true);
                 const decryptedData = await IAMService.doDecrypt(encryptedData);
                 // Set data to show at roughly same time, only decrypt the attributes user has read permissions to
                 if (encryptedData.length === 2){                // Yes DoB Read permission, Yes CC Read Permission
@@ -105,13 +112,14 @@ function DecryptedRow({ isUser, user, username, dob, cc }) {
                 setAnimating(false);
                 setDecryptionStatus("Decrypted successfully!");
                 setTimeout(() => setDecryptionStatus(""), 3000);
+                setLoadingButton(false);
             }
             else {
                 setDecryptedCc(cc);                             // No DoB Read permission, No CC Read Permission
                 setDecryptedDob(dob); 
-            }
-            
-        }, 800);
+                setLoadingButton(false);
+            }    
+        }, 800); 
     };
     
     return (
@@ -136,9 +144,16 @@ function DecryptedRow({ isUser, user, username, dob, cc }) {
         </div>
 
         <div className="flex items-center gap-3">
-            <Button onClick={handleDecrypt} disabled={decrypted}>
-            {decrypted ? "✓ Decrypted" : "Decrypt"}
-            </Button>
+            
+            <Button onClick={handleDecrypt} disabled={decrypted ? decrypted : loadingButton}>
+                {decrypted ? "✓ Decrypted" : "Decrypt"}
+            </Button>                 
+            {
+                loadingButton
+                ? <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                : null
+            }
+            
 
             {decryptionStatus && (
             <span

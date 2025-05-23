@@ -9,6 +9,7 @@ import Button from "../components/button";
 import { FaCheckCircle, FaChevronRight } from "react-icons/fa";
 import { usePathname, useRouter } from "next/navigation";
 import { loadingSquareFullPage } from "../components/loadingSquare";
+import '../styles/spinKit.css';
 
 /**
  * Admin page for elavating the demo user to a Tide admin and managing their read and write permissions for Date of Birth and Credit Card
@@ -37,7 +38,10 @@ export default function Admin() {
 
   // Show page only if loaded
   const [loading, setLoading] = useState(true);
+  // Loading overlay for the context
   const [loadingOverlay, setLoadingOverlay] = useState(false);
+  // Spinning loader and button manager
+  const [loadingButton, setLoadingButton] = useState(false);
 
   // True when boxes don't match the token's roles
   const [hasChanges, setHasChanges] = useState(false);
@@ -167,6 +171,7 @@ export default function Admin() {
 
   // Assign this initial user the tide-realm-admin client role managed by the default client Realm Management
   const confirmAdmin = async () => {
+    setLoadingButton(true);
     const token = await IAMService.getToken();
 
     if (!isTideAdmin){
@@ -193,6 +198,7 @@ export default function Admin() {
     else {
         setIsTideAdmin(true);
     }
+    setLoadingButton(false);
   };
 
   // Get latest change requests to display and update when pressing commit
@@ -470,9 +476,17 @@ export default function Admin() {
           //   </a>
 
           ) : !pending && (request.deleteStatus === "APPROVED" || request.status === "APPROVED") ? (
-            <Button className="bg-green-600 hover:bg-green-700" onClick={onCommit}>
-              Commit
-            </Button>
+            <div className="flex items-center gap-x-2">
+              <Button className="bg-green-600 hover:bg-green-700" onClick={onCommit} disabled={loadingButton}>
+                Commit
+              </Button>
+              {
+                loadingButton
+                ? <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                : null
+              }
+              
+            </div>
           ) : (
             <p className="text-sm text-gray-500 italic">
               Awaiting quorum: <strong>{totalApproved} / 3</strong> approved
@@ -485,7 +499,8 @@ export default function Admin() {
   }
 
   const addCommit = async (request) => {
-      setLoadingOverlay(true);
+      setLoadingButton(true);
+      //setLoadingOverlay(true);
       try{
 
         const token = await IAMService.getToken();
@@ -522,9 +537,11 @@ export default function Admin() {
             setExpandedIndex(prev => prev + 1);
           }
         }
-        setLoadingOverlay(false);
+        //setLoadingOverlay(false);
+        setLoadingButton(false);
       }catch(e){
-        setLoadingOverlay(false);
+        //setLoadingOverlay(false);
+        setLoadingButton(false);
         throw e;
       }
     };
@@ -596,7 +613,14 @@ export default function Admin() {
                         With TideCloak, once hardened with a quorum, even the system can't unilaterally grant admin rights.
                         <br /><br /><strong>For this demo, you're a quorum of one.</strong>
                       </p>
-                      <Button onClick={confirmAdmin}>Continue as Admin</Button>
+                      <div className="flex items-center gap-x-2">
+                        <Button onClick={confirmAdmin} disabled={loadingButton}>Continue as Admin</Button>
+                        {
+                          loadingButton
+                          ? <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                          : null
+                        }
+                      </div>
                     </div>
                   )}
                 </div>

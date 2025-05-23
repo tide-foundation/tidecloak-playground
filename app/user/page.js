@@ -8,6 +8,7 @@ import { usePathname } from "next/navigation";
 import AccordionBox from "../components/accordionBox";
 import Button from "../components/button";
 import { loadingSquareFullPage } from "../components/loadingSquare";
+import '../styles/spinKit.css';
 
 /**
  * Page containing read and write functionality of user data (on top) and the decryption component (below).
@@ -35,6 +36,8 @@ export default function User(){
     const [dataLoading, setDataLoading] = useState(false);
     // Show a loading screen while waiting for context with this variable
     const [overlayLoading, setOverlayLoading] = useState(false);
+    // State variable for managing button and its spinner
+    const [loadingButton, setLoadingButton] = useState(false);
 
     // Data values for user information component
     const [formData, setFormData] = useState({
@@ -228,6 +231,8 @@ export default function User(){
 
     // On Save changes button clicked, encrypt the updated data and store in TideCloak
     const handleFormSubmit = async (e) => {
+        setLoadingButton(true);
+
         try {
             // Don't perform regular browser operations for this form
             e.preventDefault();
@@ -262,10 +267,6 @@ export default function User(){
               }
             }
 
-            // if (arrayToEncrypt.length === 0){
-            //   console.log("No Write Permissions. Displaying only current data.");
-            // }
-
             if (arrayToEncrypt.length > 0){
               const encryptedData = await IAMService.doEncrypt(arrayToEncrypt);
               if (arrayToEncrypt.length === 2){
@@ -297,11 +298,13 @@ export default function User(){
                 setTimeout(() => setUserFeedback(""), 3000); // Clear after 3 seconds
                 getAllUsers(); 
             }
-            setOverlayLoading(false);
+            //setOverlayLoading(false);
             setDataLoading(false);
+            setLoadingButton(false);
         }
         catch (error) {
-          setOverlayLoading(false);
+          //setOverlayLoading(false);
+          setLoadingButton(false);
           console.log(error);
         } 
     };
@@ -482,7 +485,14 @@ export default function User(){
                   {
                   (IAMService.hasOneRole("_tide_dob.selfencrypt") || IAMService.hasOneRole("_tide_cc.selfencrypt")) && (
                     <div className="flex items-center gap-3">
-                      <Button type="submit">Save Changes</Button>
+                      <div className="flex items-center gap-x-2">
+                        <Button type="submit" disabled={loadingButton}>Save Changes</Button>
+                        {
+                          loadingButton
+                          ? <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                          : null
+                        }
+                      </div>
                       {userFeedback && (
                         <span className="text-sm text-green-600 font-medium">{userFeedback}</span>
                       )}
