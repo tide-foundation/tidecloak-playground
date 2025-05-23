@@ -8,6 +8,7 @@ import AccordionBox from "../components/accordionBox";
 import Button from "../components/button";
 import { FaCheckCircle, FaChevronRight } from "react-icons/fa";
 import { usePathname, useRouter } from "next/navigation";
+import { loadingSquareFullPage } from "../components/loadingSquare";
 
 /**
  * Admin page for elavating the demo user to a Tide admin and managing their read and write permissions for Date of Birth and Credit Card
@@ -36,9 +37,7 @@ export default function Admin() {
 
   // Show page only if loaded
   const [loading, setLoading] = useState(true);
-
-  // // Give token time to load before continuing
-  // const  [updatingToken, setUpdatingToken] = useState(false);
+  const [loadingOverlay, setLoadingOverlay] = useState(false);
 
   // True when boxes don't match the token's roles
   const [hasChanges, setHasChanges] = useState(false);
@@ -129,16 +128,6 @@ export default function Admin() {
         }
       }
   }, [isTideAdmin])
-
-  // Handles the state of the submit change button, disable if there's no change
-  // useEffect(() => {
-  //   if (hasDobReadPerm === IAMService.hasOneRole("_tide_dob.selfdecrypt")
-  //     && hasDobWritePerm === IAMService.hasOneRole("_tide_dob.selfencrypt")
-  //     && hasCcReadPerm === IAMService.hasOneRole("_tide_cc.selfdecrypt")
-  //     && hasCcWritePerm === IAMService.hasOneRole("_tide_cc.selfencrypt")){
-  //       setHasChanges(false); 
-  //   }
-  // }, [hasDobReadPerm, hasDobWritePerm, hasCcReadPerm, hasCcWritePerm])
 
   // Get current logged in user
   const getLoggedUser = async () => { 
@@ -266,7 +255,8 @@ export default function Admin() {
     setExpandedIndex(0);
     // Reset form state
     setHasChanges(false);
-  };
+    setLoadingOverlay(false);
+  }
 
   /**
    * Each is a card the represents the change request, its status, action, admins approved and user's action button
@@ -492,41 +482,47 @@ export default function Admin() {
   }
 
   const addCommit = async (request) => {
-      const token = await IAMService.getToken();
+      setLoadingOverlay(true);
+      try{
 
-      const body = JSON.stringify({
-        "actionType": request.actionType,
-        "changeSetId": request.draftRecordId,
-        "changeSetType": request.changeSetType
-      });
-      
-      const response = await appService.commitChange(baseURL, realm, body, token);
-      
-      if (response.ok){
-        // Hard code the change, because keycloak removes committed change requests
-        if (requests[activeRequestIndex].deleteStatus){
-          requests[activeRequestIndex].deleteStatus = "COMMITTED";
-        }
-        else {
-          requests[activeRequestIndex].status = "COMMITTED";
-        }
+        const token = await IAMService.getToken();
 
-        // Clear the locally stored approved users array
-        localStorage.removeItem("approvals");
+        const body = JSON.stringify({
+          "actionType": request.actionType,
+          "changeSetId": request.draftRecordId,
+          "changeSetType": request.changeSetType
+        });
         
+        const response = await appService.commitChange(baseURL, realm, body, token);
         
-        // Get a new token to have check the currently assigned roles to the logged in user
-        await IAMService.updateToken();
+        if (response.ok){
+          // Hard code the change, because keycloak removes committed change requests
+          if (requests[activeRequestIndex].deleteStatus){
+            requests[activeRequestIndex].deleteStatus = "COMMITTED";
+          }
+          else {
+            requests[activeRequestIndex].status = "COMMITTED";
+          }
 
-       
+          // Clear the locally stored approved users array
+          localStorage.removeItem("approvals");
+          
+          // Get a new token to have check the currently assigned roles to the logged in user
+          await IAMService.updateToken();
 
-        // Reset states for next change request
-        setApprovals([false, false, false, false, false]);
-        setTotalApproved(1);
-        if (requests.length !== activeRequestIndex + 1 ){
-          setActiveRequestIndex(prev => prev + 1);
-          setExpandedIndex(prev => prev + 1);
+          
+          // Reset states for next change request
+          setApprovals([false, false, false, false, false]);
+          setTotalApproved(1);
+          if (requests.length !== activeRequestIndex + 1 ){
+            setActiveRequestIndex(prev => prev + 1);
+            setExpandedIndex(prev => prev + 1);
+          }
         }
+        setLoadingOverlay(false);
+      }catch(e){
+        setLoadingOverlay(false);
+        throw e;
       }
     };
 
@@ -551,6 +547,7 @@ export default function Admin() {
       !loading && IAMService.isLoggedIn()
       ?
       <main className="flex-grow w-full pt-6">
+      {loadingOverlay && loadingSquareFullPage()}
       <div className="w-full px-8 max-w-screen-md mx-auto flex flex-col items-start gap-8">
       <div className="w-full max-w-3xl">
         {pathname === "/admin" && (
@@ -764,6 +761,6 @@ export default function Admin() {
         </div>
         <div className="h-10"></div>
         </main>
-      : null
+        : loadingSquareFullPage()
     )
 }

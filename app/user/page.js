@@ -7,6 +7,7 @@ import appService from "../../lib/appService";
 import { usePathname } from "next/navigation";
 import AccordionBox from "../components/accordionBox";
 import Button from "../components/button";
+import { loadingSquareFullPage } from "../components/loadingSquare";
 
 /**
  * Page containing read and write functionality of user data (on top) and the decryption component (below).
@@ -32,6 +33,8 @@ export default function User(){
     
     // Show the page only after all data loaded
     const [pageLoading, setPageLoading] = useState(true);
+    const [overlayLoading, setOverlayLoading] = useState(false);
+
 
     // Data values for user information component
     const [formData, setFormData] = useState({
@@ -39,8 +42,6 @@ export default function User(){
         cc: ""
     });
 
-    // All users in the database to populate databaseExposureTable
-    const [users, setUsers] = useState([]);
     // Encrypted Date of Birth from database to decrypted in databaseExposureTable
     const [encryptedDob, setEncryptedDob] = useState("");
     // Encrypted Credit Card from database to decrypted in databaseExposureTable
@@ -71,7 +72,6 @@ export default function User(){
     const getAllUsers = async () => {
       const token = await IAMService.getToken(); 
       const users = await appService.getUsers(baseURL, realm, token);
-      setUsers(users);
       const loggedVuid =  await IAMService.getValueFromToken("vuid");
       const loggedInUser = users.find(user => {
         if (user.attributes?.vuid[0] === loggedVuid){
@@ -81,7 +81,7 @@ export default function User(){
       setLoggedUser(loggedInUser);
     };
 
-     // Decrypt the logged in user's data
+    // Decrypt the logged in user's data
     const getUserData = async () => { 
       // Let context data load first
       if (loggedUser){
@@ -140,9 +140,12 @@ export default function User(){
             setPageLoading(false);
 
           } catch (error){
-
+            // Mainly to handle the raw data from the initialisation. Data needs to be raw initially to be uniquely encrypted and decrypted.
+            
             let arrayToEncrypt = []; 
             
+            // Both fields shouldn't have letters unless it's encrypted, check that they're raw number strings
+            // Or check that they're base64
             // Date of Birth
             if (loggedUser.attributes.dob){
               if (/[a-zA-Z]/.test(loggedUser.attributes.dob[0])){
@@ -172,11 +175,23 @@ export default function User(){
             }
             
             if (arrayToEncrypt.length > 0){
-              // User Information
-              setFormData(prev => ({...prev, dob: loggedUser.attributes.dob}));
-              setFormData(prev => ({...prev, cc: loggedUser.attributes.cc}));
-
+              // Encrypt the data for the first time
               const encryptedData = await IAMService.doEncrypt(arrayToEncrypt);
+
+              // User Information
+              if (IAMService.hasOneRole("_tide_dob.selfdecrypt")){
+                setFormData(prev => ({...prev, dob: loggedUser.attributes.dob}));
+              }
+              else {
+                setFormData(prev => ({...prev, dob: encryptedData[0]}));
+              }
+
+              if (IAMService.hasOneRole("_tide_cc.selfdecrypt")){
+                setFormData(prev => ({...prev, cc: loggedUser.attributes.cc}));
+              }
+              else {
+                setFormData(prev => ({...prev, cc: encryptedData[1]}));
+              }
              
               // Database Exposure Simulation
               setEncryptedDob(encryptedData[0]); 
@@ -208,6 +223,7 @@ export default function User(){
 
     // On Save changes button clicked, encrypt the updated data and store in TideCloak
     const handleFormSubmit = async (e) => {
+        setOverlayLoading(true);
         try {
             // Don't perform regular browser operations for this form
             e.preventDefault();
@@ -277,8 +293,10 @@ export default function User(){
                 setTimeout(() => setUserFeedback(""), 3000); // Clear after 3 seconds
                 getAllUsers(); 
             }
+          setOverlayLoading(false);
         }
         catch (error) {
+          setOverlayLoading(false);
           console.log(error);
         } 
     };
@@ -287,6 +305,7 @@ export default function User(){
         !contextLoading && !pageLoading
         ?
         <main className="flex-grow w-full pt-6 pb-16">
+        {overlayLoading && loadingSquareFullPage()}
         <div className="w-full px-8 max-w-screen-md mx-auto flex flex-col items-start gap-8">
         <div className="w-full max-w-3xl">
         {pathname === "/user" && (
@@ -420,6 +439,6 @@ export default function User(){
         </div>
         <div className="h-10"></div>
         </main>
-        : null 
+        : loadingSquareFullPage() 
     )
 };

@@ -1,18 +1,15 @@
 {
   "name": "Tidecloak Demo",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:18",
-"postCreateCommand": "chmod +x .devcontainer/setup.sh && ./.devcontainer/setup.sh && npm install && npm run dev",
-  "customizations": {
-    "vscode": {
-      "extensions": [
-        "esbenp.prettier-vscode",
-        "dbaeumer.vscode-eslint",
-        "eamodio.gitlens",
-        "ms-azuretools.vscode-docker"
-      ]
+
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest"
     }
   },
+
   "forwardPorts": [3000, 8080],
+
   "portsAttributes": {
     "3000": {
       "label": "Next.js App",
@@ -23,12 +20,21 @@
       "onAutoForward": "openBrowser"
     }
   },
-  "settings": {
-    "terminal.integrated.defaultProfile.linux": "bash"
-  },
-  "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {
-      "version": "latest"
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "eamodio.gitlens",
+        "ms-azuretools.vscode-docker"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
     }
-  }
+  },
+
+  "postCreateCommand": "chmod +x .devcontainer/setup.sh && ./.devcontainer/setup.sh",
+  "postStartCommand": "npm run dev"
 }

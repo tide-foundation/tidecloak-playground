@@ -23,7 +23,13 @@ docker run -d \
   -e KC_BOOTSTRAP_ADMIN_USERNAME=admin \
   -e KC_BOOTSTRAP_ADMIN_PASSWORD=password \
   tideorg/tidecloak-dev:latest
-  
+
+echo "📦 Installing Node.js dependencies..."
+npm install
+
+echo "🏗️ Building Next.js app..."
+# npm run build
+
 echo ""
 echo "✅ Tidecloak Setup complete. You can close this terminal or continue below."
 echo ""
