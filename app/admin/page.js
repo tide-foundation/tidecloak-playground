@@ -39,8 +39,6 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
   const [loadingOverlay, setLoadingOverlay] = useState(false);
 
-  // Give token time to load before continuing
-  const  [updatingToken, setUpdatingToken] = useState(false);
   // True when boxes don't match the token's roles
   const [hasChanges, setHasChanges] = useState(false);
   // All user change requests
@@ -73,6 +71,15 @@ export default function Admin() {
 
   // State of whether the first QuorumDashBoard (card) has ran. Used to prevent too many animations, only 3 is needed.
   const quorumDashRef  = useRef(false);
+
+  const [dobWriteRole, setDobWriteRole] = useState();
+  const [dobReadRole, setDobReadRole] = useState();
+  const [ccWriteRole, setCcWriteRole] = useState();
+  const [ccReadRole, setCcReadRole] = useState();
+
+  useEffect(() =>{
+    getRealmRoles();
+  }, [])
 
   // For demo purposes, fetched stored or store data of admins who have approved locally
   useEffect(() => {
@@ -121,16 +128,6 @@ export default function Admin() {
         }
       }
   }, [isTideAdmin])
-
-  // Handles the state of the submit change button, disable if there's no change
-  // useEffect(() => {
-  //   if (hasDobReadPerm === IAMService.hasOneRole("_tide_dob.selfdecrypt")
-  //     && hasDobWritePerm === IAMService.hasOneRole("_tide_dob.selfencrypt")
-  //     && hasCcReadPerm === IAMService.hasOneRole("_tide_cc.selfdecrypt")
-  //     && hasCcWritePerm === IAMService.hasOneRole("_tide_cc.selfencrypt")){
-  //       setHasChanges(false); 
-  //   }
-  // }, [hasDobReadPerm, hasDobWritePerm, hasCcReadPerm, hasCcWritePerm])
 
   // Get current logged in user
   const getLoggedUser = async () => { 
@@ -183,10 +180,10 @@ export default function Admin() {
 
         if (response.ok) {
             // Force update of token without logging out
-            setUpdatingToken(true);
-            await IAMService.updateToken(); //-1 to update it immediately
+           
+            await IAMService.updateToken();
             setIsTideAdmin(true); 
-            setUpdatingToken(false);
+           
             console.log("Admin Role Assigned");
         }
     }
@@ -195,7 +192,7 @@ export default function Admin() {
     }
   };
 
-  // Get latest change requests for canceling and updating them
+  // Get latest change requests to display and update when pressing commit
   const getChangeRequests = async () => {
     
     const token = await IAMService.getToken();
@@ -209,92 +206,57 @@ export default function Admin() {
     
   }
 
-  
+  // Fetch all realm role objects to assign to user based on check box states
+  const getRealmRoles = async () => {
+    const token = await IAMService.getToken();
+    setDobWriteRole(await appService.getRealmRole(baseURL, realm, "_tide_dob.selfencrypt", token));
+    setDobReadRole(await appService.getRealmRole(baseURL, realm, "_tide_dob.selfdecrypt", token));
+    setCcReadRole(await appService.getRealmRole(baseURL, realm, "_tide_cc.selfdecrypt", token));
+    setCcWriteRole(await appService.getRealmRole(baseURL, realm, "_tide_cc.selfencrypt", token));
+  }
+
   /**
    * Assign or unassign the logged in user realm roles (pemissions)
    * @param {*} e - the form's event, when Submit Changes button is clicked
    */
   const handleAdminPermissionSubmit = async (e) => {
-    setLoadingOverlay(true);
-    try{
-      e.preventDefault();
+    e.preventDefault();
 
-      const token = await IAMService.getToken();
+    const token = await IAMService.getToken();
 
-      // Clear cached data of the demo admins who have approved for a reset
-      localStorage.removeItem("approvals");
+    // Clear cached data of the demo admins who have approved for a reset
+    localStorage.removeItem("approvals");
 
-      // Get all then cancel all requests before assigning new ones, disable boxes while token is updating duplicate fetches
-      // which causes errors
-      const allRequests = await appService.getUserRequests(baseURL, realm, token); // Including the denied requests
-    
-      setUpdatingToken(true);
-      await cancelRequests(allRequests);
-      
-      // Roles drafted are counted as assigned to token by TideCloak, so cancel the requests then update the token
-      await IAMService.updateToken();
-      const updatedToken = await IAMService.getToken();
-      setUpdatingToken(false);
-      
-      // Compare the current checkbox state with the current permissions. Note: token roles only update when a role change request COMMITS.
-      // If the states don't match, a change request is required.
-      // Date of Birth
-      if (hasDobReadPerm !== IAMService.hasOneRole("_tide_dob.selfdecrypt")){      
-        const readRole = await appService.getRealmRole(baseURL, realm, "_tide_dob.selfdecrypt", updatedToken);
-        if (hasDobReadPerm === true){
-          await appService.assignRealmRole(baseURL, realm, loggedUser.id, readRole, updatedToken);
-        }
-        else {
-          await appService.unassignRealmRole(baseURL, realm, loggedUser.id, readRole, updatedToken);
-        }
+    // Get all then cancel all requests before assigning new ones
+    const allRequests = await appService.getUserRequests(baseURL, realm, token); // Including the denied requests
+    await cancelRequests(allRequests);
+  
+    // Compare the current checkbox state with the current permissions. Note: token roles only update when a role change request commits.
+    // If the states don't match, a change request is required and made.
+    const checkBoxPerms = [hasDobReadPerm, hasDobWritePerm, hasCcReadPerm, hasCcWritePerm];
+    const roles = ["_tide_dob.selfdecrypt", "_tide_dob.selfencrypt", "_tide_cc.selfdecrypt", "_tide_cc.selfencrypt"];
+    const rolesInfo = [dobReadRole, dobWriteRole, ccReadRole, ccWriteRole];
+
+    for (let i = 0; i < checkBoxPerms.length; i++){
+      if (checkBoxPerms[i] && !IAMService.hasOneRole(roles[i])){      
+        await appService.assignRealmRole(baseURL, realm, loggedUser.id, rolesInfo[i], token);
       }
-
-      if (hasDobWritePerm !== IAMService.hasOneRole("_tide_dob.selfencrypt")){
-        const writeRole = await appService.getRealmRole(baseURL, realm, "_tide_dob.selfencrypt", updatedToken);
-        if (hasDobWritePerm === true){
-          await appService.assignRealmRole(baseURL, realm, loggedUser.id, writeRole, updatedToken);
-        }
-        else {
-          await appService.unassignRealmRole(baseURL, realm, loggedUser.id, writeRole, updatedToken);
-        }
+      else if (!checkBoxPerms[i] && IAMService.hasOneRole(roles[i])){
+        await appService.unassignRealmRole(baseURL, realm, loggedUser.id, rolesInfo[i], token);
       }
-
-      // Credit Card
-      if (hasCcReadPerm !== IAMService.hasOneRole("_tide_cc.selfdecrypt")){
-        const readRole = await appService.getRealmRole(baseURL, realm, "_tide_cc.selfdecrypt", updatedToken);
-        if (hasCcReadPerm === true){
-          await appService.assignRealmRole(baseURL, realm, loggedUser.id, readRole, updatedToken);
-        }
-        else {
-          await appService.unassignRealmRole(baseURL, realm, loggedUser.id, readRole, updatedToken);
-        }
-      }
-
-      if (hasCcWritePerm !== IAMService.hasOneRole("_tide_cc.selfencrypt")){
-        const writeRole = await appService.getRealmRole(baseURL, realm, "_tide_cc.selfencrypt", updatedToken);
-        if (hasCcWritePerm === true){
-          await appService.assignRealmRole(baseURL, realm, loggedUser.id, writeRole, updatedToken);
-        }
-        else {
-          await appService.unassignRealmRole(baseURL, realm, loggedUser.id, writeRole, updatedToken);
-        }
-      }
-
-      // Get the latest change requests
-      getChangeRequests();
-
-      // Set first change request as the one currently opened
-      setActiveRequestIndex(0);
-      setExpandedIndex(0);
-      // Reset form state
-      setHasChanges(false);
-      setLoadingOverlay(false);
-    }catch(e){
-      setLoadingOverlay(false);
-      throw e;
     }
-  };
 
+    // Get the latest change requests
+    const newRequests = await appService.getUserRequests(baseURL, realm, token);
+    setRequests(newRequests);
+
+    // Set first change request as the one currently opened
+    setActiveRequestIndex(0);
+    setExpandedIndex(0);
+    // Reset form state
+    setHasChanges(false);
+    setLoadingOverlay(false);
+  }
 
   /**
    * Each is a card the represents the change request, its status, action, admins approved and user's action button
@@ -544,12 +506,11 @@ export default function Admin() {
 
           // Clear the locally stored approved users array
           localStorage.removeItem("approvals");
-          setUpdatingToken(true);
+          
           // Get a new token to have check the currently assigned roles to the logged in user
           await IAMService.updateToken();
 
-          setUpdatingToken(false); 
-
+          
           // Reset states for next change request
           setApprovals([false, false, false, false, false]);
           setTotalApproved(1);
@@ -568,17 +529,18 @@ export default function Admin() {
     // If submit button is pressed again, cancel all the change requests
     const cancelRequests = async (requests) => {
       const token = await IAMService.getToken();
-      
-        requests.map(async (request) => {
+        
+      for (let i = 0; i < requests.length; i++) {
+          const request = requests[i];
+          
           const body = JSON.stringify({
-            "actionType": request.actionType,
-            "changeSetId": request.draftRecordId,
-            "changeSetType": request.changeSetType
+            actionType: request.actionType,
+            changeSetId: request.draftRecordId,
+            changeSetType: request.changeSetType
           });
 
-          const response = await appService.cancelChange(baseURL, realm, body, token);
-        })
-      
+        const response = await appService.cancelChange(baseURL, realm, body, token);
+      }
     };
 
     return (
@@ -656,11 +618,11 @@ export default function Admin() {
                         <label className="block font-semibold text-sm mb-1">Date of Birth</label>
                         <div className="flex gap-6">
                           <label className="flex items-center gap-2">
-                            <input type="checkbox" name="dob.read" checked={hasDobReadPerm} onChange={e => setHasDobReadPerm(e.target.checked)} disabled={updatingToken}/>
+                            <input type="checkbox" name="dob.read" checked={hasDobReadPerm} onChange={e => setHasDobReadPerm(e.target.checked)}/>
                             <span>Read</span>
                           </label>
                           <label className="flex items-center gap-2">
-                            <input type="checkbox" name="dob.write" checked={hasDobWritePerm} onChange={e => setHasDobWritePerm(e.target.checked)} disabled={updatingToken}/>
+                            <input type="checkbox" name="dob.write" checked={hasDobWritePerm} onChange={e => setHasDobWritePerm(e.target.checked)}/>
                             <span>Write</span>
                           </label>
                         </div>
@@ -671,11 +633,11 @@ export default function Admin() {
                         <label className="block font-semibold text-sm mb-1">Credit Card Number</label>
                         <div className="flex gap-6">
                           <label className="flex items-center gap-2">
-                            <input type="checkbox" name="cc.read" checked={hasCcReadPerm} onChange={e => setHasCcReadPerm(e.target.checked)} disabled={updatingToken}/>
+                            <input type="checkbox" name="cc.read" checked={hasCcReadPerm} onChange={e => setHasCcReadPerm(e.target.checked)}/>
                             <span>Read</span>
                           </label>
                           <label className="flex items-center gap-2">
-                            <input type="checkbox" name="cc.write" checked={hasCcWritePerm} onChange={e => setHasCcWritePerm(e.target.checked)} disabled={updatingToken}/>
+                            <input type="checkbox" name="cc.write" checked={hasCcWritePerm} onChange={e => setHasCcWritePerm(e.target.checked)}/>
                             <span>Write</span>
                           </label>
                         </div>
