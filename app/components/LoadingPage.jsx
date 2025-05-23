@@ -148,6 +148,18 @@ export default function LoadingPage({ isInitializing, setIsInitializing }) {
         }
     }
 
+    // Upload background and logo image to tidecloak
+    const uploadImages = async () => {
+        const response = await fetch(`/api/uploadImages`, {
+            method: "POST",
+        })
+
+        const data = await response.json();
+        if (!response.ok || data.success !== true) {
+            throw new Error(data.message || 'Upload failed');
+        }
+    }
+
     // Sign the new settings after updating the Custom Domain URL
     const signSettings = async () => {
         const response = await fetch(`/api/signSettings`, {
@@ -185,6 +197,7 @@ export default function LoadingPage({ isInitializing, setIsInitializing }) {
             await assignRealmRoles();
             await commitClients();
             await updateCustomDomainURL();
+            await uploadImages();
             await signSettings();
             await getAdapter();
 
@@ -200,7 +213,7 @@ export default function LoadingPage({ isInitializing, setIsInitializing }) {
 
 
             restartCounter = restartCounter + 1;
-            
+
             console.log("Times restarted: " + restartCounter);
 
             // If it fails on step 1 (createRealm) restart initalizer 
