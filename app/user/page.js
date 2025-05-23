@@ -344,13 +344,57 @@ export default function User(){
 
                 <form className="space-y-6" onSubmit={handleFormSubmit}>
                   {
-                    ["dob", "cc"].map((field) => {
+                    ["dob", "cc"].map((field, i) => {
                       const readPerms = IAMService.hasOneRole(field === "dob"? "_tide_dob.selfdecrypt" : "_tide_cc.selfdecrypt");
                       const writePerms = IAMService.hasOneRole(field === "dob"? "_tide_dob.selfencrypt" : "_tide_cc.selfencrypt");
                       const canRead = readPerms? true: false;
                       const canWrite = writePerms? true: false;
                       const label = field === "dob" ? "Date of Birth" : "Credit Card Number";
-                      if (!canRead && !canWrite) return null;
+                      if (!canRead && !canWrite) return (
+                        <div key={i}>
+                        {showUserInfoAccordion && (
+                            <div className="text-xs text-gray-600 mt-2 space-y-2 bg-gray-50 border border-gray-200 rounded p-3">
+                              <h5 className="font-semibold text-gray-700 text-xs uppercase tracking-wide mb-1">
+                                JWT Permissions & Encrypted Value
+                              </h5>
+                              <div className="flex gap-2">
+                                <span
+                                  className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${canRead ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                                    }`}
+                                >
+                                  {canRead ? "✓" : "✕"} Read
+                                </span>
+                                <span
+                                  className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${canWrite ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                                    }`}
+                                >
+                                  {canWrite ? "✓" : "✕"} Write
+                                </span>
+                              </div>
+
+                             <div className="break-words whitespace-pre-wrap text-sm">
+                              <span className="font-medium text-gray-700">Value in Database:</span>{" "}
+                              <span
+                                onClick={() =>
+                                  setExpandedBlobs((prev) => ({ ...prev, [field]: !prev[field] }))
+                                }
+                                className="text-blue-600 underline cursor-pointer break-words"
+                              >
+                                {
+                                  field === "dob" 
+                                  ? expandedBlobs[field]
+                                    ? encryptedDob
+                                    : shortenString(encryptedDob)
+                                  : expandedBlobs[field]
+                                    ? encryptedCc
+                                    : shortenString(encryptedCc)
+                                }
+                              </span>
+                            </div>
+                            </div>
+                          )}
+                        </div>
+                      )
 
                       return (
                         <div key={field}>

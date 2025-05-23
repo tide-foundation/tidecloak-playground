@@ -20,7 +20,7 @@ export default function Admin() {
   // Navigator
   const router = useRouter();
   // Shared context data
-  const {baseURL, realm, authenticated } = useAppContext();
+  const { baseURL, realm, authenticated, contextLoading } = useAppContext();
   // Admin state of the logged in demo user
   const [isTideAdmin, setIsTideAdmin] = useState(false);
   // Object representation of the logged in user
@@ -77,9 +77,12 @@ export default function Admin() {
   const [ccWriteRole, setCcWriteRole] = useState();
   const [ccReadRole, setCcReadRole] = useState();
 
-  useEffect(() =>{
-    getRealmRoles();
-  }, [])
+  // Wait for context to load first when refreshing browser or similar destruction of context
+  useEffect(() => {
+    if (!contextLoading){
+      getRealmRoles();
+    }
+  }, [contextLoading])
 
   // For demo purposes, fetched stored or store data of admins who have approved locally
   useEffect(() => {
