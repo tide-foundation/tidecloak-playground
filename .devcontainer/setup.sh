@@ -28,7 +28,7 @@ echo "📦 Installing Node.js dependencies..."
 npm install
 
 echo "🏗️ Building Next.js app..."
-# npm run build
+npm run build
 
 echo ""
 echo "✅ Tidecloak Setup complete. You can close this terminal or continue below."
