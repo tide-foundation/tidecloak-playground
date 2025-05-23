@@ -4,11 +4,12 @@ import { useState, useEffect } from "react";
 import AccordionBox from "./components/accordionBox";
 import Button from "./components/button";
 import kcData from "/tidecloak.json";
-import {useAppContext} from "./context/context";
+import { useAppContext } from "./context/context";
 import IAMService from "../lib/IAMService";
 import { usePathname, useRouter } from "next/navigation";
 import {
   FaExclamationCircle,
+  FaCheckCircle
 } from "react-icons/fa";
 import LoadingPage from "./components/LoadingPage";
 import appService from "../lib/appService";
@@ -19,7 +20,7 @@ import appService from "../lib/appService";
  */
 export default function Login() {
   // Shared context data to check if already authenticated skip this login screen
-  const {authenticated, baseURL} = useAppContext();
+  const { authenticated, baseURL } = useAppContext();
 
   // Current path "/"
   const pathname = usePathname();
@@ -33,13 +34,15 @@ export default function Login() {
   const [adminAddress, setAdminAddress] = useState("Need to setup backend first.");
   // State to show initialiser when the tidecloak.json file has an empty object
   const [isInitializing, setIsInitializing] = useState(false);
-  
+
   const [portIsPublic, setPortIsPublic] = useState(true);
+  const [showLinkedTide, setShowLinkedTide] = useState(false);
+
 
   // Check authentication from context
   useEffect(() => {
     // Skip login screen if already logged in
-    if (authenticated){
+    if (authenticated) {
       router.push("/auth/redirect");
     }
     else if (!authenticated && Object.keys(kcData).length === 0) {
@@ -48,7 +51,7 @@ export default function Login() {
     }
 
     // Get the TideCloak address from the tidecloak.json file if its object is filled by TideCloak
-    if (kcData && Object.keys(kcData).length !== 0 && kcData["auth-server-url"]){
+    if (kcData && Object.keys(kcData).length !== 0 && kcData["auth-server-url"]) {
       setAdminAddress(kcData["auth-server-url"]);
     }
   }, [authenticated])
@@ -57,20 +60,47 @@ export default function Login() {
   // Manage whether the token expired error should be shown using cached session data
   useEffect(() => {
     const tokenExpired = sessionStorage.getItem("tokenExpired");
-    if (tokenExpired){
+    if (tokenExpired) {
       setShowError(true);
     }
     checkTideCloakPort();
-    
+    checkTideLinkMsg();
+
+
   }, [])
+
+  const checkTideLinkMsg = async () => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('linkedTide') === 'true') {
+      setShowLinkedTide(true);
+      await updateCustomDomainURL()
+      params.delete('linkedTide');
+      const newQs = params.toString();
+      const newUrl = window.location.pathname + (newQs ? `?${newQs}` : '');
+      window.history.replaceState({}, '', newUrl);
+    }
+
+  }
+
+  // Update the Custom Domain URL for the Tide Enclave to work
+  const updateCustomDomainURL = async () => {
+    const response = await fetch("/api/updateCustomDomainURL", { method: 'GET' });
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error || 'Failed to update domain URL');
+    }
+    return response;
+  };
+
+
 
   // Can't connect to TideCloak if the ports are not public
   // It's public if there's a response
   const checkTideCloakPort = async () => {
     const url = `${baseURL}/realms/master/.well-known/openid-configuration`;
     const response = await appService.checkPort(url);
-    
-    if (response.ok){
+
+    if (response.ok) {
       console.log("TideCloak port is public.");
     }
     else {
@@ -83,16 +113,16 @@ export default function Login() {
   // Redirect to Tide Enclave to sign in or link Tide account based on existence of user's VUID checked on backend to make inviteURL.
   const handleLogin = async () => {
     // If previously logged in remove this session variable.
-    sessionStorage.removeItem("tokenExpired"); 
+    sessionStorage.removeItem("tokenExpired");
     // Turn of the message if TideCloak port wasn't public before
     setPortIsPublic(true);
 
     // Generate invite link
     const response = await fetch(`/api/inviteUser`, {
-        method: "GET",
+      method: "GET",
     })
 
-    if (!response.ok){
+    if (!response.ok) {
       const errorResponse = await response.json();
       throw new Error(errorResponse.error || "Failed generate Tide invite link.");
     }
@@ -100,7 +130,7 @@ export default function Login() {
     const data = await response.json();
 
     // Redirect to invite link to link Tide account when user has no VUID
-    if (data.inviteURL){
+    if (data.inviteURL) {
       router.push(data.inviteURL);
     }
     else {
@@ -111,12 +141,12 @@ export default function Login() {
 
   // Show the initialiser
   if (isInitializing) {
-    return <LoadingPage isInitializing={isInitializing} setIsInitializing={setIsInitializing}/>;
+    return <LoadingPage isInitializing={isInitializing} setIsInitializing={setIsInitializing} />;
   }
-  
+
   return (
     true
-    ?
+      ?
       <main className="flex-grow w-full pt-6 pb-16">
 
         <div className="w-full px-8 max-w-screen-md mx-auto flex flex-col items-start gap-8">
@@ -154,22 +184,29 @@ export default function Login() {
                   <Button onClick={handleLogin}>Login</Button>
                   {
                     showError
-                    ? 
-                    <div className="mt-2 flex items-center text-red-600 text-sm">
-                      <FaExclamationCircle className="mr-1" />
-                      <span>Session expired.</span>
-                    </div>
-                    : null
+                      ?
+                      <div className="mt-2 flex items-center text-red-600 text-sm">
+                        <FaExclamationCircle className="mr-1" />
+                        <span>Session expired.</span>
+                      </div>
+                      : null
                   }
                   {
                     !portIsPublic
-                    ? 
-                    <div className="mt-2 flex items-center text-red-600 text-sm">
-                      <FaExclamationCircle className="mr-1" />
-                      <span>TideCloak port is private, make it public to allow connections.</span>
+                      ?
+                      <div className="mt-2 flex items-center text-red-600 text-sm">
+                        <FaExclamationCircle className="mr-1" />
+                        <span>TideCloak port is private, make it public to allow connections.</span>
+                      </div>
+                      : null
+                  }             
+                  {/* just linked Tide */}
+                  {showLinkedTide && (
+                    <div className="mt-2 flex items-center text-green-600 text-sm">
+                      <FaCheckCircle className="mr-1" />
+                      <span>You have just linked your Tide account!</span>
                     </div>
-                    : null
-                  }
+                  )}
                 </div>
 
                 <div className="border-t border-gray-200 pt-6">
@@ -192,6 +229,6 @@ export default function Login() {
         </div>
         <div className="h-10"></div>
       </main>
-  : null
+      : null
   );
 }
