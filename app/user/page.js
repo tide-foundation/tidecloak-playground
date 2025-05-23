@@ -339,8 +339,15 @@ export default function User(){
 
 
                 <h2 className="text-3xl font-bold mb-4">User Information</h2>
-
-                <p className="text-sm text-gray-600 mb-6">This form is powered by real-time permission logic. Your ability to view or edit each field depends on your current access.</p>
+                {
+                  !IAMService.hasOneRole("_tide_dob.selfdecrypt") && 
+                  !IAMService.hasOneRole("_tide_dob.selfencrypt") &&
+                  !IAMService.hasOneRole("_tide_cc.selfdecrypt") &&
+                  !IAMService.hasOneRole("_tide_cc.selfencrypt")
+                  ? <p className="text-sm text-gray-600 mb-6">You don't have permission to do anything so we won't even show you the form!</p>
+                  : <p className="text-sm text-gray-600 mb-6">This form is powered by real-time permission logic. Your ability to view or edit each field depends on your current access.</p>
+                }
+                
 
                 <form className="space-y-6" onSubmit={handleFormSubmit}>
                   {
