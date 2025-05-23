@@ -61,7 +61,7 @@ function DecryptedRow({ isUser, user, username, dob, cc }) {
         }
         else if (!canReadDob && !canReadCc){
             // Show error if no read permissions at all
-            setDecryptionStatus("Access denied: You lack read permission.");
+            setDecryptionStatus("Access denied: You don't have decryption rights.");
             setTimeout(() => setDecryptionStatus(""), 3000);
             return;
         };
