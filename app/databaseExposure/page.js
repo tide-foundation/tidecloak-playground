@@ -153,11 +153,9 @@ function DecryptedRow({ isUser, user, username, dob, cc }) {
 }
 
 // The Decryptable Cards
-export default function DatabaseExposure({ encryptedDob, encryptedCc}) {
+export default function DatabaseExposure() {
     
     const {baseURL, realm, contextLoading} = useAppContext();
-
-    const [loggedUser, setLoggedUser] = useState();
 
     const [users, setUsers] = useState([]);
 
@@ -168,24 +166,17 @@ export default function DatabaseExposure({ encryptedDob, encryptedCc}) {
 
     useEffect(() => {
         if (!contextLoading){
-            getLoggedUser();
+            getAllUsers();
         }
         
     }, [contextLoading])
 
 
     // Populate the Database Exposure cards, and set the current logged users
-    const getLoggedUser = async () => {
+    const getAllUsers = async () => {
       const token = await IAMService.getToken(); 
       const users = await appService.getUsers(baseURL, realm, token);
       setUsers(users);
-      const loggedVuid = await IAMService.getValueFromToken("vuid");
-      const loggedInUser = users.find(user => {
-        if (user.attributes?.vuid[0] === loggedVuid){
-            return user;
-        }
-      });
-      setLoggedUser(loggedInUser);
     };
 
     return (
