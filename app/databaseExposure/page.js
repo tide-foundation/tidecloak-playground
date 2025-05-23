@@ -187,13 +187,6 @@ export default function DatabaseExposure({ encryptedDob, encryptedCc}) {
       });
       setLoggedUser(loggedInUser);
     };
-    
-    useEffect(() => {
-        if (users.length > 0){
-            console.log(users);
-        }
-        
-    }, [users]);
 
     return (
         !contextLoading 

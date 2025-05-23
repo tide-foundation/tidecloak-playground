@@ -143,6 +143,7 @@ export default function User(){
             // Mainly to handle the raw data from the initialisation. Data needs to be raw initially to be uniquely encrypted and decrypted.
             
             let arrayToEncrypt = []; 
+            setFormData(prev => ({...prev, dob: loggedUser.attributes.dob[0]}));
             
             // Both fields shouldn't have letters unless it's encrypted, check that they're raw number strings
             // Or check that they're base64
@@ -177,17 +178,17 @@ export default function User(){
             if (arrayToEncrypt.length > 0){
               // Encrypt the data for the first time
               const encryptedData = await IAMService.doEncrypt(arrayToEncrypt);
-
-              // User Information
-              if (IAMService.hasOneRole("_tide_dob.selfdecrypt")){
-                setFormData(prev => ({...prev, dob: loggedUser.attributes.dob}));
-              }
-              else {
-                setFormData(prev => ({...prev, dob: encryptedData[0]}));
-              }
+              
+              // // User Information
+              // if (IAMService.hasOneRole("_tide_dob.selfdecrypt")){
+              //   setFormData(prev => ({...prev, dob: loggedUser.attributes.dob[0]}));
+              // }
+              // else {
+              //   setFormData(prev => ({...prev, dob: encryptedData[0]}));
+              // }
 
               if (IAMService.hasOneRole("_tide_cc.selfdecrypt")){
-                setFormData(prev => ({...prev, cc: loggedUser.attributes.cc}));
+                setFormData(prev => ({...prev, cc: loggedUser.attributes.cc[0]}));
               }
               else {
                 setFormData(prev => ({...prev, cc: encryptedData[1]}));

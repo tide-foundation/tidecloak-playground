@@ -25,15 +25,13 @@ export default function Login() {
   // Expandable extra information
   const [showLoginAccordion, setShowLoginAccordion] = useState(false);
   // Shared context data to check if already authenticated skip this login screen
-  const {authenticated, realm, baseURL} = useAppContext();
+  const {authenticated} = useAppContext();
   // State for error message when token expires
   const [showError, setShowError] = useState(false);
   // TideCloak address
   const [adminAddress, setAdminAddress] = useState("Need to setup backend first.");
   // State to show initialiser when the tidecloak.json file has an empty object
   const [isInitializing, setIsInitializing] = useState(false);
-  // Invite URL to link Tide account to TideCloak
-  const [inviteURL, setInviteURL] = useState();
 
   // Check authentication from context
   useEffect(() => {
@@ -91,7 +89,7 @@ export default function Login() {
 
   // Show the initialiser
   if (isInitializing) {
-    return <LoadingPage isInitializing={isInitializing} setIsInitializing={setIsInitializing} setInviteURL={setInviteURL}/>;
+    return <LoadingPage isInitializing={isInitializing} setIsInitializing={setIsInitializing}/>;
   }
   
   return (
