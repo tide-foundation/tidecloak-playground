@@ -1,7 +1,7 @@
 // app/api/upload/route.js
 import fs from 'fs/promises'
 import { NextResponse } from 'next/server'
-import apiService from '@/lib/apiService'
+import apiService from '../apiService'
 import configs from '../apiConfigs'
 
 export const runtime = 'nodejs'
@@ -10,8 +10,8 @@ export async function POST() {
   const { realm, baseURL } = configs
 
   // filenames & paths
-  const logoName = 'my-logo.png'
-  const bgName   = 'my-background.jpg'
+  const logoName = 'playground-logo.png'
+  const bgName   = 'playground-bg.jpg'
   const logoPath = `public/${logoName}`
   const bgPath   = `public/${bgName}`
 
