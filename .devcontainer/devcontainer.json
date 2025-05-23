@@ -5,7 +5,8 @@
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {
       "version": "latest"
-    }
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {}
   },
 
   "forwardPorts": [3000, 8080],
@@ -14,6 +15,7 @@
     "3000": {
       "label": "Next.js App",
       "onAutoForward": "openBrowser"
+
     },
     "8080": {
       "label": "Tidecloak Dev Container",
@@ -36,5 +38,5 @@
   },
 
   "postCreateCommand": "chmod +x .devcontainer/setup.sh && ./.devcontainer/setup.sh",
-  "postStartCommand": "npm run dev"
+  "postStartCommand": "gh codespace ports visibility 8080:public --codespace $CODESPACE_NAME && npm run dev"
 }
