@@ -5,6 +5,7 @@ import Button from "../components/button";
 import {useAppContext} from '../context/context'
 import appService from "../../lib/appService";
 import AccordionBox from "../components/accordionBox";
+import { loadingSquareFullPage } from "../components/loadingSquare";
 
 // Animation only
 function DecryptingText({ text, speed = 30 }) {
@@ -164,10 +165,16 @@ export default function DatabaseExposure() {
     // Further expandable information
     const [showDeepDive, setShowDeepDive] = useState(false);
 
+    // Show a loading screen while waiting for context with this variable
+    const [overlayLoading, setOverlayLoading] = useState(false);
+
+    // Show a loading screen when loading context (such as when refreshing browser) until finish
+    // Fetch all user data when navigating
     useEffect(() => {
         if (!contextLoading){
             getAllUsers();
         }
+        setOverlayLoading(true);
         
     }, [contextLoading])
 
@@ -177,10 +184,12 @@ export default function DatabaseExposure() {
       const token = await IAMService.getToken(); 
       const users = await appService.getUsers(baseURL, realm, token);
       setUsers(users);
+
+      setOverlayLoading(false);
     };
 
     return (
-        !contextLoading 
+        !contextLoading && !overlayLoading
         ?
         <main className="flex-grow w-full pt-6 pb-16">
         <div className="w-full px-8 max-w-screen-md mx-auto flex flex-col items-start gap-8">
@@ -264,6 +273,6 @@ export default function DatabaseExposure() {
         </div>
         <div className="h-10"/>
         </main>
-        : null
+        : loadingSquareFullPage()
     );
 }
