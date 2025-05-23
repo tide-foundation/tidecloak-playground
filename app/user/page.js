@@ -32,9 +32,9 @@ export default function User(){
     const [showUserInfoAccordion, setShowUserInfoAccordion] = useState(false);
     
     // Show the page only after all data loaded
-    const [pageLoading, setPageLoading] = useState(true);
+    const [dataLoading, setDataLoading] = useState(false);
+    // Show a loading screen while waiting for context with this variable
     const [overlayLoading, setOverlayLoading] = useState(false);
-
 
     // Data values for user information component
     const [formData, setFormData] = useState({
@@ -46,6 +46,12 @@ export default function User(){
     const [encryptedDob, setEncryptedDob] = useState("");
     // Encrypted Credit Card from database to decrypted in databaseExposureTable
     const [encryptedCc, setEncryptedCc] = useState("");
+
+    useEffect(() => {
+      if (contextLoading){
+        setOverlayLoading(true);
+      }
+    }, [])
 
     // Runs first, once context verifies user is authenticated populate all users' demo data
     useEffect(() => {
@@ -70,6 +76,8 @@ export default function User(){
 
     // Populate the Database Exposure cards, and set the current logged users
     const getAllUsers = async () => {
+      setDataLoading(true);
+
       const token = await IAMService.getToken(); 
       const users = await appService.getUsers(baseURL, realm, token);
       const loggedVuid =  await IAMService.getValueFromToken("vuid");
@@ -136,8 +144,10 @@ export default function User(){
                 setEncryptedCc(loggedUser.attributes.cc[0]); 
               }
             }
-            // Show the data at once
-            setPageLoading(false);
+            // Close the over
+            setOverlayLoading(false);
+            // Show the data all at once
+            setDataLoading(false);
 
           } catch (error){
             // Mainly to handle the raw data from the initialisation. Data needs to be raw initially to be uniquely encrypted and decrypted.
@@ -178,14 +188,6 @@ export default function User(){
             if (arrayToEncrypt.length > 0){
               // Encrypt the data for the first time
               const encryptedData = await IAMService.doEncrypt(arrayToEncrypt);
-              
-              // // User Information
-              // if (IAMService.hasOneRole("_tide_dob.selfdecrypt")){
-              //   setFormData(prev => ({...prev, dob: loggedUser.attributes.dob[0]}));
-              // }
-              // else {
-              //   setFormData(prev => ({...prev, dob: encryptedData[0]}));
-              // }
 
               if (IAMService.hasOneRole("_tide_cc.selfdecrypt")){
                 setFormData(prev => ({...prev, cc: loggedUser.attributes.cc[0]}));
@@ -210,7 +212,9 @@ export default function User(){
             console.log(error + " User Dob or CC was saved as raw data encrypting it and saving now.");
 
             // Show the data at once
-            setPageLoading(false);
+            setOverlayLoading(false);
+            setDataLoading(false);
+           
           }
       } 
     };
@@ -224,7 +228,6 @@ export default function User(){
 
     // On Save changes button clicked, encrypt the updated data and store in TideCloak
     const handleFormSubmit = async (e) => {
-        setOverlayLoading(true);
         try {
             // Don't perform regular browser operations for this form
             e.preventDefault();
@@ -294,7 +297,8 @@ export default function User(){
                 setTimeout(() => setUserFeedback(""), 3000); // Clear after 3 seconds
                 getAllUsers(); 
             }
-          setOverlayLoading(false);
+            setOverlayLoading(false);
+            setDataLoading(false);
         }
         catch (error) {
           setOverlayLoading(false);
@@ -303,10 +307,11 @@ export default function User(){
     };
 
     return (
-        !contextLoading && !pageLoading
+      !contextLoading && !overlayLoading
+      ?
+        !dataLoading
         ?
         <main className="flex-grow w-full pt-6 pb-16">
-        {overlayLoading && loadingSquareFullPage()}
         <div className="w-full px-8 max-w-screen-md mx-auto flex flex-col items-start gap-8">
         <div className="w-full max-w-3xl">
         {pathname === "/user" && (
@@ -440,6 +445,7 @@ export default function User(){
         </div>
         <div className="h-10"></div>
         </main>
-        : loadingSquareFullPage() 
+        : null
+      :loadingSquareFullPage() 
     )
 };

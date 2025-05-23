@@ -15,6 +15,7 @@ export default function RedirectPage() {
   
   const router = useRouter();
 
+  // Handles redirect when middle detects token expiry
   useEffect(() => {
     if (!contextLoading){
       // Must be placed inside useEffect, because parameters don't exist during build for production
@@ -27,7 +28,12 @@ export default function RedirectPage() {
         sessionStorage.setItem("tokenExpired", "true");
         IAMService.doLogout();
       }
+    }
+  }, [])
 
+  // Handles redirect when loading context
+  useEffect(() => {
+    if (!contextLoading){
       if (authenticated){
         router.push("/user");
       }
