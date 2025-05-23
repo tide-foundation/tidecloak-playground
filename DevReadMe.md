@@ -5,18 +5,18 @@ A secure, privacy-first identity and data management sandbox built with TideCloa
 Setting up can take a while (7 mins or so), so here's what you should expect:
 
 - You'll notice at the `TERMINAL` window below, different progress messages, like:
-- "✔️ Finishing up..."
-- "Running postCreateCommand…" - that can take a while. Patience.
-- "Running postStartCommand…" - That's a bit tricky as this executes the NODE server, so this task will remain running endlessly.
-- After few minutes, a new browser tab will open, so make sure that your browser allows pop ups. If not, you can try opening it yourself at http://localhost:3000
+- "✔️ Finishing up..." - meaning, VSCode web was successfully set up in codespaces.
+- "Running postCreateCommand…" - Setting up NODE and TideCloak docker environments. That can take a while. Patience.
+- "Running postStartCommand…" - This builds and run the NODE server, so this task will remain running endlessly.
+- After few minutes, a new browser tab will eventually open, so make sure that your browser allows pop ups. If not, you can try opening it yourself at http://localhost:3000
 - In the new browser tab, you'll see an "Initializing your demo app" screen. This will automatically run through 6 long steps. We're almost there!
 
 Let's get started!
 
 - You'll finally land on the "Welcome to your demo app" page. Click the `Login` button.
 - Since you're not in the system yet, instead of logging in, you see a "Link your Tide Account" screen. Press Continue to Link your account.
-- The Tide sign-in page will open where you may create a BYOiD Tide account (if you don't have any) on Tide's real global network.
-- Once account created, you'll find youself back at the "Welcome" screen. You can now finally log in the Playground App.
+- The Tide sign-in page will open where you may `Create` a BYOiD Tide account (if you don't have any) on Tide's global Cybersecurity Fabric.
+- Once account linked, you'll find youself back at the "Welcome" screen. You can now finally log in the Playground App.
 
 Playing in the Playground:
 
