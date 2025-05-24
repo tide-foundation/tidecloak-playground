@@ -9,7 +9,8 @@ import Button from "../components/button";
 import { FaCheckCircle, FaChevronRight } from "react-icons/fa";
 import { usePathname, useRouter } from "next/navigation";
 import { loadingSquareFullPage } from "../components/loadingSquare";
-import '../styles/spinKit.css';
+import "../styles/spinKit.css";
+import "../styles/spinner.css";
 
 /**
  * Admin page for elavating the demo user to a Tide admin and managing their read and write permissions for Date of Birth and Credit Card
@@ -463,30 +464,18 @@ export default function Admin() {
               Review
             </Button>
 
-          // ) : request.deleteStatus === "COMMITTED" || request.status === "COMMITTED"? (
-          //   <a
-          //     href="#"
-          //     onClick={(e) => {
-          //       e.preventDefault();
-          //       router.push("/user");
-          //     }}
-          //     className="text-blue-600 hover:underline text-sm font-medium"
-          //   >
-          //     View on User Page →
-          //   </a>
-
           ) : !pending && (request.deleteStatus === "APPROVED" || request.status === "APPROVED") ? (
             <div className="flex items-center gap-x-2">
               <Button className="bg-green-600 hover:bg-green-700" onClick={onCommit} disabled={loadingButton}>
                 Commit
               </Button>
               {
-                loadingButton
-                ? <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                loadingButton 
+                ? <div className="spinner--left"/>
                 : null
               }
-              
             </div>
+            
           ) : (
             <p className="text-sm text-gray-500 italic">
               Awaiting quorum: <strong>{totalApproved} / 3</strong> approved
@@ -613,11 +602,11 @@ export default function Admin() {
                         With TideCloak, once hardened with a quorum, even the system can't unilaterally grant admin rights.
                         <br /><br /><strong>For this demo, you're a quorum of one.</strong>
                       </p>
-                      <div className="flex items-center gap-x-2">
+                      <div className="flex items-center gap-x-4">
                         <Button onClick={confirmAdmin} disabled={loadingButton}>Continue as Admin</Button>
                         {
                           loadingButton
-                          ? <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                          ? <div className="spinner"/>
                           : null
                         }
                       </div>

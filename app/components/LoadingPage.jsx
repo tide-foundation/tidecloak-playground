@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import '../styles/spinKit.css';
+import { useState, useEffect } from "react";
+import "../styles/spinKit.css";
+import "../styles/spinner.css";
 
 export default function LoadingPage({ isInitializing, setIsInitializing }) {
 
@@ -254,7 +255,7 @@ export default function LoadingPage({ isInitializing, setIsInitializing }) {
                             {i < currentStep ? (
                                 <div className="w-2 h-2 bg-gray-300 rounded-full" />
                             ) : i === currentStep ? (
-                                <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                                <div className="spinner"/>
                             ) : (
                                 <div className="w-2 h-2 bg-gray-400 rounded-full" />
                             )}

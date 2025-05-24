@@ -8,7 +8,8 @@ import { usePathname } from "next/navigation";
 import AccordionBox from "../components/accordionBox";
 import Button from "../components/button";
 import { loadingSquareFullPage } from "../components/loadingSquare";
-import '../styles/spinKit.css';
+import "../styles/spinKit.css";
+import "../styles/spinner.css";
 
 /**
  * Page containing read and write functionality of user data (on top) and the decryption component (below).
@@ -485,14 +486,12 @@ export default function User(){
                   {
                   (IAMService.hasOneRole("_tide_dob.selfencrypt") || IAMService.hasOneRole("_tide_cc.selfencrypt")) && (
                     <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-x-2">
-                        <Button type="submit" disabled={loadingButton}>Save Changes</Button>
-                        {
-                          loadingButton
-                          ? <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                          : null
-                        }
-                      </div>
+                      <Button type="submit" disabled={loadingButton}>Save Changes</Button>
+                      {
+                        loadingButton
+                        ? <div className="spinner"/>
+                        : null
+                      }
                       {userFeedback && (
                         <span className="text-sm text-green-600 font-medium">{userFeedback}</span>
                       )}
