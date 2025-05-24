@@ -15,14 +15,14 @@ Launch a preconfigured development environment directly in your browser:
 - Installs required dependencies (`libssl-dev`)
 - Auto-updates config files with your Codespace URLs
 - Installs `npm` packages
-- Starts the Tidecloak backend in Docker
-- Launches the frontend dev server (Next.js)
+- Starts the TideCloak backend in Docker
+- Launches the frontend dev server (Playground App)
 
-Feel free to grab a coffee, star this project, or read about the latest breach headlines, that won't bother you when you're TideCloaked
+Feel free to grab a coffee, star this project, or read about the latest breach headlines, that won't bother you when you're TideCloaked.
 
 You’ll see:
 
-- `https://${CODESPACE_NAME}-3000.app.github.dev` → ✅ **Next.js App**
+- `https://${CODESPACE_NAME}-3000.app.github.dev` → ✅ **Playground App**
 - `https://${CODESPACE_NAME}-8000.app.github.dev` → 🔐 **TideCloak IAM**
 
 These are auto-forwarded and opened in your browser.
@@ -32,17 +32,17 @@ These are auto-forwarded and opened in your browser.
 **a) Tiny manual adjustment needed!**
 
 > [!IMPORTANT]
-> For this to work, you must make port 8080 public to allow your app to access Tidecloak.
-> _(Currently GitHub restricts us from automating this step, so you'll have to do it manually)_
+> For this to work, you must make sure port 8080 is public to allow your app to access TideCloak.
+> _(GitHub may restricts from automating this step, so you might have to do it manually)_
 
-Go to the Ports tab in Codespaces, find port `Tidecloak Server (8080)`, and right-click → `Port visibility` → 'Public'
+Go to the Ports tab in Codespaces, find port `TideCloak Server (8080)`, and right-click → `Port visibility` → 'Public'
 
 
 ![how to make public](https://raw.githubusercontent.com/tide-foundation/tidecloakspaces/main/image/README/tidecloak_howto_makepublic.gif)
 
-**b) Your Next.js app secured by Tidecloak is now ready for you to take for a spin**
+**b) Your Playground app secured by TideCloak is now ready for you to take for a spin**
 
-The Preview opens automatically, otherwise check the **Ports tab** in Codespaces for the **Forwarded address** in the format of _https://${CODESPACE_NAME}-3000.app.github.dev_.
+The initialization screen opens automatically, otherwise check the **Ports tab** in Codespaces for the **Forwarded address** in the format of _https://${CODESPACE_NAME}-3000.app.github.dev_.
 
 ### **Accessing the TideCloak backend**
 
@@ -120,5 +120,5 @@ This project is licensed under the [MIT License]().
 ## 📚 Resources
 
 * [Tide Foundation](https://tide.org/)
-* [TideCloak Documentation]()
+* [TideCloak Documentation](https://docs.tidecloak.com)
 * [GitHub Codespaces Docs](https://docs.github.com/en/codespaces)
