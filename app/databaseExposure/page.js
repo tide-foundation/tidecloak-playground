@@ -7,6 +7,7 @@ import appService from "../../lib/appService";
 import AccordionBox from "../components/accordionBox";
 import { loadingSquareFullPage } from "../components/loadingSquare";
 import '../styles/spinKit.css';
+import "../styles/spinner.css";
 
 // Animation only
 function DecryptingText({ text, speed = 30 }) {
@@ -150,7 +151,7 @@ function DecryptedRow({ isUser, user, username, dob, cc }) {
             </Button>                 
             {
                 loadingButton
-                ? <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                ? <div className="spinner"/>
                 : null
             }
             
