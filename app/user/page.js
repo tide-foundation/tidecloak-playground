@@ -212,7 +212,7 @@ export default function User(){
             const token = await  IAMService.getToken();
             const response = await appService.updateUser(baseURL, realm, loggedUser, token);
 
-            console.log(error + " User Dob or CC was saved as raw data encrypting it and saving now.");
+            console.log(error);
 
             // Show the data at once
             setOverlayLoading(false);
