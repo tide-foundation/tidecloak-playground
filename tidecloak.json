@@ -1,1 +1,1 @@
-{}
+{"realm":"tidecloak-demo","auth-server-url":"http://localhost:8080/","ssl-required":"external","resource":"myclient","public-client":true,"confidential-port":0,"jwk":{"keys":[{"kid":"Ur-A9ahHLb6v25bltFwQqEpXKFqJstKMlcQpFRFTasU","kty":"OKP","alg":"EdDSA","use":"sig","crv":"Ed25519","x":"Ua26OxE5s334v1VkPiAAAm_N40JSaaTIatFyYXiGadM"}]},"vendorId":"5144685695406578557822463908954106689057654295689644446531327737308572309631","homeOrkUrl":"https://ork1.tideprotocol.com"}

@@ -606,7 +606,7 @@ export default function Admin() {
                         <Button onClick={confirmAdmin} disabled={loadingButton}>Continue as Admin</Button>
                         {
                           loadingButton
-                          ? <div className="spinner"/>
+                          ? <div className="spinner--left"/>
                           : null
                         }
                       </div>
