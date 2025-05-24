@@ -1,5 +1,5 @@
 {
-  "name": "Tidecloak Demo",
+  "name": "Tidecloak Playground",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:18",
 
   "features": {
@@ -13,12 +13,12 @@
 
   "portsAttributes": {
     "3000": {
-      "label": "Next.js App",
+      "label": "Playground App",
       "onAutoForward": "openBrowser"
 
     },
     "8080": {
-      "label": "Tidecloak Dev Container",
+      "label": "TideCloak Dev Container",
       "onAutoForward": "openBrowser"
     }
   },
@@ -34,6 +34,11 @@
       "settings": {
         "terminal.integrated.defaultProfile.linux": "bash"
       }
+    },
+    "codespaces": {
+      "openFiles": [
+        "DevReadMe.md"
+      ]
     }
   },
 
