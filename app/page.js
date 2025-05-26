@@ -195,6 +195,11 @@ export default function Login() {
                 </AccordionBox>
 
                 <div className="bg-blue-50 rounded shadow p-6 space-y-4">
+                  <img
+            src="/playground-logo_nav.png"
+            alt="Playground Logo"
+            className="h-10 w-auto"
+          />
                   <h2 className="text-3xl font-bold">Welcome to your demo app</h2>
                   <p>Traditional IAM is only as secure as the admins and systems managing it. TideCloak fundamentally removes this risk, by ensuring no-one holds the keys to the kingdom. Explore to learn how.</p>
                   <h3 className="text-xl font-semibold">BYOiD</h3>
@@ -205,7 +210,7 @@ export default function Login() {
                       ?
                       <div className="mt-2 flex items-center text-red-600 text-sm">
                         <FaExclamationCircle className="mr-1" />
-                        <span>Session expired.</span>
+                        <span>Your session has expired. Please login again.</span>
                       </div>
                       : null
                   }
@@ -222,7 +227,7 @@ export default function Login() {
                   {showLinkedTide && (
                     <div className="mt-2 flex items-center text-green-600 text-sm">
                       <FaCheckCircle className="mr-1" />
-                      <span>You have just linked your Tide account!</span>
+                      <span>You have successfully linked your Tide account! Please login.</span>
                     </div>
                   )}
                 </div>
