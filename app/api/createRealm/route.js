@@ -4,13 +4,12 @@ import apiService from "../apiService";
 
 
 /**
- * This endpoint is only for creating the initial realm for the admin console on initialisation for the client side.
+ * This endpoint is only for creating the initial realm for the initializer of the client side.
  * Uses the settings provided in test-realm.json as an import.
- * @param {Object} request 
  * @returns {Promise<Object>} - response status with message for client side to use
  */
-export async function GET(request){
-
+export async function GET(){
+    // Shared variable from /api/apiConfigs.js
     const baseURL = configs.baseURL;
 
     // Fetch a master token with the default admin and password (set in the command for setting up keycloak) from the default keycloak admin-cli client

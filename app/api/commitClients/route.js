@@ -1,5 +1,4 @@
 import configs from "../apiConfigs";
-import settings from "/test-realm.json";
 import apiService from "../apiService";
 
 /**
@@ -7,7 +6,7 @@ import apiService from "../apiService";
  * @returns {Promise<Object>} - status response to be handled on client side
  */
 export async function GET(){
-
+    // Share variables at /api/apiConfigs.js
     const realm = configs.realm;
     const baseURL = configs.baseURL;
 
@@ -19,6 +18,7 @@ export async function GET(){
         const clientChangeRequestsFetch = await apiService.getClientsChangeRequests(baseURL, realm, masterToken);
         const clientsChangeRequests = clientChangeRequestsFetch.body;
 
+        // Approve and commit each default client one at a time (forEach and map() shouldn't be used here)
         for (let i = 0; i < clientsChangeRequests.length; i++) {
             const changeRequest = clientsChangeRequests[i];
 

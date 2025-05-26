@@ -2,9 +2,9 @@ import configs from "../apiConfigs";
 import apiService from "../apiService";
 
 /**
- * This endpoint is only for creating the user and providing them a URL to link their admin account to Tide on initialisation.
- * 
- * @returns {Promise<Object>} - response status for client side to use in initialiser
+ * This endpoint is only for creating the dummy users, with the demo user being the one to link the Tide account, 
+ * log in and encrypt and decrypt their own date of birth and credit card.
+ * @returns {Promise<Object>} - response status for creation of the dummy users
  */
 export async function GET(){
     const realm = configs.realm;
@@ -21,6 +21,8 @@ export async function GET(){
     //     {username: "testuser4", dob: "2020-05-05", cc: "3530111333300000"},
     // ] 
 
+    // The above data, but encrypted for demo purposes. Demo user shouldn't be able to decrypt this data
+    // Demo user's data will only be encrypted when logged in for the first time to be decryptable.
     const users = [
         {username: "demouser", dob: "1980-01-01", cc: "4111111111111111"},
         {username: "testuser1", dob: "AQAAAAEAAAABRgAAACS9kjd+p9JceASgDD8ZJohTbp2q41G40hHCOPvNT0HPA5p1CJhWSDAThTALxE+sAh2BM5yA/HP+enjFpYtFiiZiFp13eEEIAAAAPO4baAAAAAAAAAAAQAAAAITlASV5Ik9pnCCTJFAv0dc4LYGNxZkbB1uyNGxSzWkQhMxwVglZy8xgS1G792wkXN1e/zfXBmBcZEC1B0zxlQs=", 
@@ -35,9 +37,9 @@ export async function GET(){
 
     try {
         // Create the users
-        users.forEach(async (user) => {
-            const createUserResult = await apiService.createUser(baseURL, realm, masterToken, user.username, user.dob, user.cc);
-        })
+        for (let i=0; i < users.length; i++){
+            const createUserResult = await apiService.createUser(baseURL, realm, masterToken, users[i].username, users[i].dob, users[i].cc);
+        }
 
         return new Response(JSON.stringify({ok: true}), {status: 201}); 
         
