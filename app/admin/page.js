@@ -116,7 +116,6 @@ export default function Admin() {
     if (authenticated){
       getLoggedUser();
     }
-    setLoading(false);
   }, [authenticated])
 
   // Then get the currently assigned realm roles of the logged in user after they've been identified 
@@ -168,6 +167,7 @@ export default function Admin() {
       const clientID = await appService.getRealmManagementId(baseURL, realm, token);
       // Check if user already has the role
       setIsTideAdmin(await appService.checkUserAdminRole(baseURL, realm, loggedUser.id, clientID, token));
+      setLoading(false);
   }
 
   // Assign this initial user the tide-realm-admin client role managed by the default client Realm Management
@@ -553,7 +553,7 @@ export default function Admin() {
     };
 
     return (
-      !loading && IAMService.isLoggedIn()
+      !loading
       ?
       <main className="flex-grow w-full pt-6">
       {loadingOverlay && loadingSquareFullPage()}
@@ -606,7 +606,7 @@ export default function Admin() {
                         <Button onClick={confirmAdmin} disabled={loadingButton}>Continue as Admin</Button>
                         {
                           loadingButton
-                          ? <div className="spinner"/>
+                          ? <div className="spinner--left"/>
                           : null
                         }
                       </div>
