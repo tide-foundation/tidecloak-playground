@@ -24,6 +24,11 @@ export default function Nav() {
   return (
     pathname !== "/" && pathname !== "/fail" && (
       <nav className="flex justify-start gap-4 px-8 py-4 border-b border-gray-200">
+        <img
+            src="/playground-logo_nav.png"
+            alt="Playground Logo"
+            className="h-10 w-auto"
+          />
         <button
           onClick={() => handleNavigate("/user")}
           className={`px-4 py-2 rounded transition ${getButtonClasses("/user")}`}
