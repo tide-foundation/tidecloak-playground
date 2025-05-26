@@ -6,8 +6,8 @@ sudo apt-get update
 sudo apt-get install -y libssl-dev
 
 echo "🌐 [1/3] Building Codespace URLs..."
-CODESPACE_URL_NEXT="https://${CODESPACE_NAME}-3000.app.github.dev"
-CODESPACE_URL_TC="https://${CODESPACE_NAME}-8080.app.github.dev"
+CODESPACE_URL_NEXT=$([ "$CODESPACES" = "true" ] && echo "https://${CODESPACE_NAME}-3000.app.github.dev" || echo "http://localhost:3000")
+CODESPACE_URL_TC=$([ "$CODESPACES" = "true" ] && echo "https://${CODESPACE_NAME}-8080.app.github.dev" || echo "http://localhost:8080")
 
 echo "🔄 [2/3] Updating with Codespace URL..."
 sed -i "s|http://localhost:3000|${CODESPACE_URL_NEXT}|g" ./test-realm.json
