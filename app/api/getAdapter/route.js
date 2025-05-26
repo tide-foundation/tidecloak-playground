@@ -28,7 +28,8 @@ export async function GET(){
         const configsString = getClientAdapterResult.body;
         
         // Write settings to the tidecloak.json file, else the file contains an empty JSON object
-        fs.writeFile("tidecloak.json", configsString, (err) => {
+        const filePath = path.join(process.cwd(), "data", "tidecloak.json");
+        fs.writeFile(filePath, configsString, (err) => {
             if (err) {
                 throw new Error("[getAdapter Endpoint] Failed to write to tidecloak.json.");
             }
