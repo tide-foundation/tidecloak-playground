@@ -246,7 +246,7 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setOver
                 />
 
                 {/* Spinner */}
-            <div className="sk-cube-grid mb-4">
+            <div className="sk-cube-grid scale-75">
                 <div className="sk-cube sk-cube1" />
                 <div className="sk-cube sk-cube2" />
                 <div className="sk-cube sk-cube3" />
