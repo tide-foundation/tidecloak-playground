@@ -6,7 +6,7 @@ sudo apt-get update
 sudo apt-get install -y libssl-dev
 
 # untrack files
-git update-index --skip-worktree DevReadMe.json
+git update-index --skip-worktree DevReadMe.md
 git update-index --skip-worktree .devcontainer/setup.sh
 git update-index --skip-worktree tidecloak.json
 git update-index --skip-worktree test-realm.json
