@@ -101,7 +101,7 @@ export default function User(){
             let arrayToDecrypt = [];
 
             // Date of Birth
-            if (loggedUser.attributes.dob && IAMService.hasOneRole("_tide_dob.selfdecrypt")){
+            if (loggedUser.attributes.dob && await IAMService.hasOneRole("_tide_dob.selfdecrypt")){
               arrayToDecrypt.push({
                 "encrypted": loggedUser.attributes.dob[0],
                 "tags": ["dob"]
@@ -109,7 +109,7 @@ export default function User(){
             }
 
             // Credit Card
-            if (loggedUser.attributes.cc && IAMService.hasOneRole("_tide_cc.selfdecrypt")){
+            if (loggedUser.attributes.cc && await IAMService.hasOneRole("_tide_cc.selfdecrypt")){
                arrayToDecrypt.push({
                 "encrypted": loggedUser.attributes.cc[0],
                 "tags": ["cc"]
@@ -193,7 +193,7 @@ export default function User(){
               // Encrypt the data for the first time
               const encryptedData = await IAMService.doEncrypt(arrayToEncrypt);
 
-              if (IAMService.hasOneRole("_tide_cc.selfdecrypt")){
+              if (await IAMService.hasOneRole("_tide_cc.selfdecrypt")){
                 setFormData(prev => ({...prev, cc: loggedUser.attributes.cc[0]}));
               }
               else {
@@ -240,7 +240,7 @@ export default function User(){
 
             let arrayToEncrypt = [];
 
-            if (formData.dob !== "" && IAMService.hasOneRole("_tide_dob.selfencrypt")){ 
+            if (formData.dob !== "" && await IAMService.hasOneRole("_tide_dob.selfencrypt")){ 
               if (loggedUser.attributes.dob){
                 if (/[a-zA-Z]/.test(formData.dob)){
                   console.log("DoB can't have letters. Don't encrypt as it may already be encrypted.");
@@ -254,7 +254,7 @@ export default function User(){
               }
             }
 
-            if (formData.cc !== "" && IAMService.hasOneRole("_tide_cc.selfencrypt")){
+            if (formData.cc !== "" && await IAMService.hasOneRole("_tide_cc.selfencrypt")){
               if (loggedUser.attributes.cc){
                 if (/[a-zA-Z]/.test(formData.cc)){
                   console.log("CC can't have letters. Don't encrypt as it may already be encrypted.");
@@ -344,10 +344,10 @@ export default function User(){
 
                 <h2 className="text-3xl font-bold mb-4">User Information</h2>
                 {
-                  !IAMService.hasOneRole("_tide_dob.selfdecrypt") && 
-                  !IAMService.hasOneRole("_tide_dob.selfencrypt") &&
-                  !IAMService.hasOneRole("_tide_cc.selfdecrypt") &&
-                  !IAMService.hasOneRole("_tide_cc.selfencrypt")
+                  !await IAMService.hasOneRole("_tide_dob.selfdecrypt") && 
+                  !await IAMService.hasOneRole("_tide_dob.selfencrypt") &&
+                  !await IAMService.hasOneRole("_tide_cc.selfdecrypt") &&
+                  !await IAMService.hasOneRole("_tide_cc.selfencrypt")
                   ? <p className="text-sm text-gray-600 mb-6">You don't have permission to do anything so we won't even show you the form!</p>
                   : <p className="text-sm text-gray-600 mb-6">This form is powered by real-time permission logic. Your ability to view or edit each field depends on your current access.</p>
                 }
@@ -355,9 +355,9 @@ export default function User(){
 
                 <form className="space-y-6" onSubmit={handleFormSubmit}>
                   {
-                    ["dob", "cc"].map((field, i) => {
-                      const readPerms = IAMService.hasOneRole(field === "dob"? "_tide_dob.selfdecrypt" : "_tide_cc.selfdecrypt");
-                      const writePerms = IAMService.hasOneRole(field === "dob"? "_tide_dob.selfencrypt" : "_tide_cc.selfencrypt");
+                    await Promise.all(["dob", "cc"].map((field, i) => {
+                      const readPerms = await IAMService.hasOneRole(field === "dob"? "_tide_dob.selfdecrypt" : "_tide_cc.selfdecrypt");
+                      const writePerms = await IAMService.hasOneRole(field === "dob"? "_tide_dob.selfencrypt" : "_tide_cc.selfencrypt");
                       const canRead = readPerms? true: false;
                       const canWrite = writePerms? true: false;
                       const label = field === "dob" ? "Date of Birth" : "Credit Card Number";
@@ -481,10 +481,10 @@ export default function User(){
                           )}
                         </div>
                       )
-                    })
+                    }))
                   }
                   {
-                  (IAMService.hasOneRole("_tide_dob.selfencrypt") || IAMService.hasOneRole("_tide_cc.selfencrypt")) && (
+                  (await IAMService.hasOneRole("_tide_dob.selfencrypt") || await IAMService.hasOneRole("_tide_cc.selfencrypt")) && (
                     <div className="flex items-center gap-3">
                       <Button type="submit" disabled={loadingButton}>Save Changes</Button>
                       {

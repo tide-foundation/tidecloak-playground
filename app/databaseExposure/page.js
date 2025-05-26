@@ -61,8 +61,8 @@ function DecryptedRow({ isUser, user, username, dob, cc }) {
     // If new user data arrives reset to potentially decrypt again
     useEffect(() => {
         setDecrypted(false);
-        setCanReadDob(IAMService.hasOneRole("_tide_dob.selfdecrypt"));
-        setCanReadCc(IAMService.hasOneRole("_tide_cc.selfdecrypt"));
+        setCanReadDob(await IAMService.hasOneRole("_tide_dob.selfdecrypt"));
+        setCanReadCc(await IAMService.hasOneRole("_tide_cc.selfdecrypt"));
     }, [user])
 
     // Calls on Decrypt button being selected to update the fields
@@ -279,22 +279,22 @@ export default function DatabaseExposure() {
                     // Let the data load first
                     users.length > 0 && !contextLoading
                     ?
-                    users.map((user, i) => (
+                    await Promise.all(users.map((user, i) => (
                         
                     <DecryptedRow key={i}
                     isUser={user.attributes?.vuid
-                        ? user.attributes.vuid[0] === IAMService.getValueFromToken("vuid") ? true : false
+                        ? user.attributes.vuid[0] === await IAMService.getValueFromToken("vuid") ? true : false
                         : false}
                     user={user}
                     username={user.username}
                     dob={user.attributes?.vuid
-                        ? user.attributes.vuid[0] === IAMService.getValueFromToken("vuid") ? user.attributes.dob[0] : user.attributes.dob
+                        ? user.attributes.vuid[0] === await IAMService.getValueFromToken("vuid") ? user.attributes.dob[0] : user.attributes.dob
                         : user.attributes?.dob}
                     cc={user.attributes?.vuid
-                        ? user.attributes.vuid[0] === IAMService.getValueFromToken("vuid") ? user.attributes.cc[0] : user.attributes.cc
+                        ? user.attributes.vuid[0] === await IAMService.getValueFromToken("vuid") ? user.attributes.cc[0] : user.attributes.cc
                         : user.attributes?.cc}
                     />
-                    ))
+                    )))
                     : null
                 }
             </div>    

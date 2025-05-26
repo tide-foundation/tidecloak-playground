@@ -54,7 +54,7 @@ export default function Nav() {
           Administration
         </button>
 
-        <Button onClick={IAMService.doLogout}>Logout</Button>
+        <Button onClick={async () => await IAMService.doLogout()}>Logout</Button>
       </nav>
     )
   );
