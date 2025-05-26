@@ -19,7 +19,7 @@
     },
     "8080": {
       "label": "TideCloak Dev Container",
-      "onAutoForward": "openBrowser"
+      "onAutoForward": "silent"
     }
   },
 
