@@ -5,6 +5,9 @@ import Button from "../components/button";
 import {useAppContext} from '../context/context'
 import appService from "../../lib/appService";
 import AccordionBox from "../components/accordionBox";
+import { loadingSquareFullPage } from "../components/loadingSquare";
+import '../styles/spinKit.css';
+import "../styles/spinner.css";
 
 // Animation only
 function DecryptingText({ text, speed = 30 }) {
@@ -34,7 +37,11 @@ function DecryptingText({ text, speed = 30 }) {
 }
 
 function DecryptedRow({ isUser, user, username, dob, cc }) {
+    // State variable for handling Decrypt Button
     const [decrypted, setDecrypted] = useState(false);
+    // State variable for handling Decrypt Button's spinner
+    const [loadingButton, setLoadingButton] = useState(false);
+
     const [decryptionStatus, setDecryptionStatus] = useState("");
     const [animating, setAnimating] = useState(false);
     const [decryptedDob, setDecryptedDob] = useState("");
@@ -51,6 +58,7 @@ function DecryptedRow({ isUser, user, username, dob, cc }) {
 
     // Calls on Decrypt button being selected to update the fields
     const handleDecrypt = async () => {
+        
         let encryptedData = [];
 
         // Can't decrypt other users
@@ -85,6 +93,7 @@ function DecryptedRow({ isUser, user, username, dob, cc }) {
         setTimeout(async () => {
 
             if (encryptedData.length > 0){
+                setLoadingButton(true);
                 const decryptedData = await IAMService.doDecrypt(encryptedData);
                 // Set data to show at roughly same time, only decrypt the attributes user has read permissions to
                 if (encryptedData.length === 2){                // Yes DoB Read permission, Yes CC Read Permission
@@ -104,13 +113,14 @@ function DecryptedRow({ isUser, user, username, dob, cc }) {
                 setAnimating(false);
                 setDecryptionStatus("Decrypted successfully!");
                 setTimeout(() => setDecryptionStatus(""), 3000);
+                setLoadingButton(false);
             }
             else {
                 setDecryptedCc(cc);                             // No DoB Read permission, No CC Read Permission
                 setDecryptedDob(dob); 
-            }
-            
-        }, 800);
+                setLoadingButton(false);
+            }    
+        }, 800); 
     };
     
     return (
@@ -135,9 +145,16 @@ function DecryptedRow({ isUser, user, username, dob, cc }) {
         </div>
 
         <div className="flex items-center gap-3">
-            <Button onClick={handleDecrypt} disabled={decrypted}>
-            {decrypted ? "✓ Decrypted" : "Decrypt"}
-            </Button>
+            
+            <Button onClick={handleDecrypt} disabled={decrypted ? decrypted : loadingButton}>
+                {decrypted ? "✓ Decrypted" : "Decrypt"}
+            </Button>                 
+            {
+                loadingButton
+                ? <div className="spinner"/>
+                : null
+            }
+            
 
             {decryptionStatus && (
             <span
@@ -164,10 +181,16 @@ export default function DatabaseExposure() {
     // Further expandable information
     const [showDeepDive, setShowDeepDive] = useState(false);
 
+    // Show a loading screen while waiting for context with this variable
+    const [overlayLoading, setOverlayLoading] = useState(false);
+
+    // Show a loading screen when loading context (such as when refreshing browser) until finish
+    // Fetch all user data when navigating
     useEffect(() => {
         if (!contextLoading){
             getAllUsers();
         }
+        setOverlayLoading(true);
         
     }, [contextLoading])
 
@@ -177,10 +200,12 @@ export default function DatabaseExposure() {
       const token = await IAMService.getToken(); 
       const users = await appService.getUsers(baseURL, realm, token);
       setUsers(users);
+
+      setOverlayLoading(false);
     };
 
     return (
-        !contextLoading 
+        !contextLoading && !overlayLoading
         ?
         <main className="flex-grow w-full pt-6 pb-16">
         <div className="w-full px-8 max-w-screen-md mx-auto flex flex-col items-start gap-8">
@@ -264,6 +289,6 @@ export default function DatabaseExposure() {
         </div>
         <div className="h-10"/>
         </main>
-        : null
+        : loadingSquareFullPage()
     );
 }

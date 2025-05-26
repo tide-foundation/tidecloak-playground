@@ -13,6 +13,7 @@ echo "🔄 [2/3] Updating with Codespace URL..."
 sed -i "s|http://localhost:3000|${CODESPACE_URL_NEXT}|g" ./test-realm.json
 sed -i "s|http://localhost:3000|${CODESPACE_URL_NEXT}|g" ./app/api/apiConfigs.js
 sed -i "s|http://localhost:8080|${CODESPACE_URL_TC}|g" ./app/api/apiConfigs.js
+sed -i "s|http://localhost:3000|${CODESPACE_URL_NEXT}|g" ./DevReadMe.md
 
 echo "🐳 [3/3] Pulling and starting Tidecloak container..."
 docker pull docker.io/tideorg/tidecloak-dev:latest
@@ -27,7 +28,7 @@ docker run -d \
 echo "📦 Installing Node.js dependencies..."
 npm install
 
-echo "🏗️ Building Next.js app..."
+echo "🏗️ Building Playground app..."
 #npm run build
 
 echo ""

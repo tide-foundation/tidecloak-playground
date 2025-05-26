@@ -8,6 +8,8 @@ import { usePathname } from "next/navigation";
 import AccordionBox from "../components/accordionBox";
 import Button from "../components/button";
 import { loadingSquareFullPage } from "../components/loadingSquare";
+import "../styles/spinKit.css";
+import "../styles/spinner.css";
 
 /**
  * Page containing read and write functionality of user data (on top) and the decryption component (below).
@@ -32,9 +34,11 @@ export default function User(){
     const [showUserInfoAccordion, setShowUserInfoAccordion] = useState(false);
     
     // Show the page only after all data loaded
-    const [pageLoading, setPageLoading] = useState(true);
+    const [dataLoading, setDataLoading] = useState(false);
+    // Show a loading screen while waiting for context with this variable
     const [overlayLoading, setOverlayLoading] = useState(false);
-
+    // State variable for managing button and its spinner
+    const [loadingButton, setLoadingButton] = useState(false);
 
     // Data values for user information component
     const [formData, setFormData] = useState({
@@ -46,6 +50,12 @@ export default function User(){
     const [encryptedDob, setEncryptedDob] = useState("");
     // Encrypted Credit Card from database to decrypted in databaseExposureTable
     const [encryptedCc, setEncryptedCc] = useState("");
+
+    useEffect(() => {
+      if (contextLoading){
+        setOverlayLoading(true);
+      }
+    }, [])
 
     // Runs first, once context verifies user is authenticated populate all users' demo data
     useEffect(() => {
@@ -70,6 +80,8 @@ export default function User(){
 
     // Populate the Database Exposure cards, and set the current logged users
     const getAllUsers = async () => {
+      setDataLoading(true);
+
       const token = await IAMService.getToken(); 
       const users = await appService.getUsers(baseURL, realm, token);
       const loggedVuid =  await IAMService.getValueFromToken("vuid");
@@ -136,8 +148,10 @@ export default function User(){
                 setEncryptedCc(loggedUser.attributes.cc[0]); 
               }
             }
-            // Show the data at once
-            setPageLoading(false);
+            // Close the over
+            setOverlayLoading(false);
+            // Show the data all at once
+            setDataLoading(false);
 
           } catch (error){
             // Mainly to handle the raw data from the initialisation. Data needs to be raw initially to be uniquely encrypted and decrypted.
@@ -178,14 +192,6 @@ export default function User(){
             if (arrayToEncrypt.length > 0){
               // Encrypt the data for the first time
               const encryptedData = await IAMService.doEncrypt(arrayToEncrypt);
-              
-              // // User Information
-              // if (IAMService.hasOneRole("_tide_dob.selfdecrypt")){
-              //   setFormData(prev => ({...prev, dob: loggedUser.attributes.dob[0]}));
-              // }
-              // else {
-              //   setFormData(prev => ({...prev, dob: encryptedData[0]}));
-              // }
 
               if (IAMService.hasOneRole("_tide_cc.selfdecrypt")){
                 setFormData(prev => ({...prev, cc: loggedUser.attributes.cc[0]}));
@@ -207,10 +213,12 @@ export default function User(){
             const token = await  IAMService.getToken();
             const response = await appService.updateUser(baseURL, realm, loggedUser, token);
 
-            console.log(error + " User Dob or CC was saved as raw data encrypting it and saving now.");
+            console.log(error);
 
             // Show the data at once
-            setPageLoading(false);
+            setOverlayLoading(false);
+            setDataLoading(false);
+           
           }
       } 
     };
@@ -224,7 +232,8 @@ export default function User(){
 
     // On Save changes button clicked, encrypt the updated data and store in TideCloak
     const handleFormSubmit = async (e) => {
-        setOverlayLoading(true);
+        setLoadingButton(true);
+
         try {
             // Don't perform regular browser operations for this form
             e.preventDefault();
@@ -259,10 +268,6 @@ export default function User(){
               }
             }
 
-            // if (arrayToEncrypt.length === 0){
-            //   console.log("No Write Permissions. Displaying only current data.");
-            // }
-
             if (arrayToEncrypt.length > 0){
               const encryptedData = await IAMService.doEncrypt(arrayToEncrypt);
               if (arrayToEncrypt.length === 2){
@@ -294,19 +299,23 @@ export default function User(){
                 setTimeout(() => setUserFeedback(""), 3000); // Clear after 3 seconds
                 getAllUsers(); 
             }
-          setOverlayLoading(false);
+            //setOverlayLoading(false);
+            setDataLoading(false);
+            setLoadingButton(false);
         }
         catch (error) {
-          setOverlayLoading(false);
+          //setOverlayLoading(false);
+          setLoadingButton(false);
           console.log(error);
         } 
     };
 
     return (
-        !contextLoading && !pageLoading
+      !contextLoading && !overlayLoading
+      ?
+        !dataLoading
         ?
         <main className="flex-grow w-full pt-6 pb-16">
-        {overlayLoading && loadingSquareFullPage()}
         <div className="w-full px-8 max-w-screen-md mx-auto flex flex-col items-start gap-8">
         <div className="w-full max-w-3xl">
         {pathname === "/user" && (
@@ -334,18 +343,69 @@ export default function User(){
 
 
                 <h2 className="text-3xl font-bold mb-4">User Information</h2>
-
-                <p className="text-sm text-gray-600 mb-6">This form is powered by real-time permission logic. Your ability to view or edit each field depends on your current access.</p>
+                {
+                  !IAMService.hasOneRole("_tide_dob.selfdecrypt") && 
+                  !IAMService.hasOneRole("_tide_dob.selfencrypt") &&
+                  !IAMService.hasOneRole("_tide_cc.selfdecrypt") &&
+                  !IAMService.hasOneRole("_tide_cc.selfencrypt")
+                  ? <p className="text-sm text-gray-600 mb-6">You don't have permission to do anything so we won't even show you the form!</p>
+                  : <p className="text-sm text-gray-600 mb-6">This form is powered by real-time permission logic. Your ability to view or edit each field depends on your current access.</p>
+                }
+                
 
                 <form className="space-y-6" onSubmit={handleFormSubmit}>
                   {
-                    ["dob", "cc"].map((field) => {
+                    ["dob", "cc"].map((field, i) => {
                       const readPerms = IAMService.hasOneRole(field === "dob"? "_tide_dob.selfdecrypt" : "_tide_cc.selfdecrypt");
                       const writePerms = IAMService.hasOneRole(field === "dob"? "_tide_dob.selfencrypt" : "_tide_cc.selfencrypt");
                       const canRead = readPerms? true: false;
                       const canWrite = writePerms? true: false;
                       const label = field === "dob" ? "Date of Birth" : "Credit Card Number";
-                      if (!canRead && !canWrite) return null;
+                      if (!canRead && !canWrite) return (
+                        <div key={i}>
+                        {showUserInfoAccordion && (
+                            <div className="text-xs text-gray-600 mt-2 space-y-2 bg-gray-50 border border-gray-200 rounded p-3">
+                              <h5 className="font-semibold text-gray-700 text-xs uppercase tracking-wide mb-1">
+                                JWT Permissions & Encrypted Value
+                              </h5>
+                              <div className="flex gap-2">
+                                <span
+                                  className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${canRead ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                                    }`}
+                                >
+                                  {canRead ? "✓" : "✕"} Read
+                                </span>
+                                <span
+                                  className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${canWrite ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                                    }`}
+                                >
+                                  {canWrite ? "✓" : "✕"} Write
+                                </span>
+                              </div>
+
+                             <div className="break-words whitespace-pre-wrap text-sm">
+                              <span className="font-medium text-gray-700">Value in Database:</span>{" "}
+                              <span
+                                onClick={() =>
+                                  setExpandedBlobs((prev) => ({ ...prev, [field]: !prev[field] }))
+                                }
+                                className="text-blue-600 underline cursor-pointer break-words"
+                              >
+                                {
+                                  field === "dob" 
+                                  ? expandedBlobs[field]
+                                    ? encryptedDob
+                                    : shortenString(encryptedDob)
+                                  : expandedBlobs[field]
+                                    ? encryptedCc
+                                    : shortenString(encryptedCc)
+                                }
+                              </span>
+                            </div>
+                            </div>
+                          )}
+                        </div>
+                      )
 
                       return (
                         <div key={field}>
@@ -426,7 +486,12 @@ export default function User(){
                   {
                   (IAMService.hasOneRole("_tide_dob.selfencrypt") || IAMService.hasOneRole("_tide_cc.selfencrypt")) && (
                     <div className="flex items-center gap-3">
-                      <Button type="submit">Save Changes</Button>
+                      <Button type="submit" disabled={loadingButton}>Save Changes</Button>
+                      {
+                        loadingButton
+                        ? <div className="spinner"/>
+                        : null
+                      }
                       {userFeedback && (
                         <span className="text-sm text-green-600 font-medium">{userFeedback}</span>
                       )}
@@ -440,6 +505,7 @@ export default function User(){
         </div>
         <div className="h-10"></div>
         </main>
-        : loadingSquareFullPage() 
+        : null
+      :loadingSquareFullPage() 
     )
 };

@@ -13,7 +13,13 @@ const realm = settings.realm;
 let baseURL = "";
 
 if (adapter && Object.keys(adapter).length > 0){
-    baseURL = adapter["auth-server-url"].replace(/\/$/, "");
+    let URL = adapter["auth-server-url"];
+    if (URL.endsWith("/")) {
+        baseURL = URL.slice(0, -1);
+    }
+    else {
+        baseURL = URL;
+    }
 }
 
 /**

@@ -1,0 +1,26 @@
+/* Custom Spinner, because tailwind's animate-spin was causing layout.js issues with Fire Fox*/ 
+/* styles/spinner.css */
+.spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #3B82F6; /* Tailwind blue-500 */
+  border-top-color: transparent;
+  border-radius: 9999px;
+  animation: spin 0.6s linear infinite;
+}
+
+.spinner--left {
+  width: 12px;
+  height: 12px;
+  margin-left: 10px;
+  border: 2px solid #3B82F6; /* Tailwind blue-500 */
+  border-top-color: transparent;
+  border-radius: 9999px;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -15,19 +15,23 @@ export default function RedirectPage() {
   
   const router = useRouter();
 
+  // Handles redirect when middle detects token expiry
+  useEffect(() => {
+    // Must be placed inside useEffect, because parameters don't exist during build for production
+    // Parse the query string with URLSearchParams instead of useSearchParams()
+    // useSearchParams() causes build issues in non-pure client components so this /auth/redirect wouldn't prerender.
+    const params = new URLSearchParams(window.location.search);
+    const auth = params.get("auth");
+
+    if (auth === "failed"){
+      sessionStorage.setItem("tokenExpired", "true");
+      IAMService.doLogout();
+    }
+  }, [])
+
+  // Handles redirect when loading context
   useEffect(() => {
     if (!contextLoading){
-      // Must be placed inside useEffect, because parameters don't exist during build for production
-      // Parse the query string with URLSearchParams instead of useSearchParams()
-      // useSearchParams() causes build issues in non-pure client components so this /auth/redirect wouldn't prerender.
-      const params = new URLSearchParams(window.location.search);
-      const auth = params.get("auth");
-
-      if (auth === "failed"){
-        sessionStorage.setItem("tokenExpired", "true");
-        IAMService.doLogout();
-      }
-
       if (authenticated){
         router.push("/user");
       }

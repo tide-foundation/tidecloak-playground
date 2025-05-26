@@ -2,38 +2,46 @@ import configs from "../apiConfigs";
 import apiService from "../apiService";
 
 /**
- * This endpoint is for updating the Tide IDP settings to contain the custom domain URL used in the Tide Enclave for IGA.
- * @returns {Promise<Object>} - response status for client side to use
+ * GET /api/update
+ * Updates the Tide IDP settings’ CustomAdminUIDomain to include
+ * whatever query-string you pass in.
  */
-export async function GET(){
+export async function GET(request) {
+  const { realm, baseURL, customURL: defaultCustomURL } = configs;
 
-    const realm = configs.realm;
-    const baseURL = configs.baseURL;
-    const customURL = configs.customURL;
+  // Pull any incoming query params off the request URL
+  const { searchParams } = new URL(request.url);
+  const qs = searchParams.toString();
+  const customURL = qs ? `${defaultCustomURL}?${qs}` : defaultCustomURL;
 
-    // Fetch a master token with the default admin and password (set in the command for setting up keycloak) from the default keycloak admin-cli client
-    const masterToken = await apiService.getMasterToken(baseURL);
+  // 2) Fetch a master token
+  const masterToken = await apiService.getMasterToken(baseURL);
 
-    
-    // Get IDP settings to update
-    const getIDPSettingsResult = await apiService.getIDPSettings(baseURL, realm, masterToken);
-    const settings = getIDPSettingsResult.body;
+  // Get current IDP settings
+  const getRes = await apiService.getIDPSettings(baseURL, realm, masterToken);
+  const settings = getRes.body;
 
-    settings.config["CustomAdminUIDomain"] = `${customURL}`;
+  // Override the CustomAdminUIDomain
+  settings.config["CustomAdminUIDomain"] = customURL;
 
     // Update the IDP settings using a new IDP settings object with the Custom Domain URL (provided in apiConfigs) for the enclave
     // Custom Domain URL should point to the base URL of the Admin Console
-    try {
-        const updateIDPSettingsResult = await apiService.updateIDPSettings(baseURL, realm, settings, masterToken);
+  try {
+    const updateRes = await apiService.updateIDPSettings(baseURL, realm, settings, masterToken);
 
-        if (updateIDPSettingsResult.status === 204) {
-            return new Response(JSON.stringify(null, {status: updateIDPSettingsResult.status})); 
-        }
-        else {
-            return new Response(JSON.stringify({ok: true}), {status: updateIDPSettingsResult.status}); 
-        }
-    } 
-    catch (error) {
-        return new Response(JSON.stringify({ok: false, error: `[updateCustomDomainURL Endpoint] ` + error.message}), {status: 500})
-    } 
+    if (updateRes.status === 204) {
+      // No content on success
+      return new Response(null, { status: 204 });
+    } else {
+      return new Response(JSON.stringify({ ok: true }), {
+        status: updateRes.status,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+  } catch (err) {
+    return new Response(
+      JSON.stringify({ ok: false, error: `[updateCustomDomainURL] ${err.message}` }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
+  }
 }
