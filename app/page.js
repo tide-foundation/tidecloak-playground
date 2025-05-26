@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import AccordionBox from "./components/accordionBox";
 import Button from "./components/button";
-import kcData from "/tidecloak.json";
 import { useAppContext } from "./context/context";
 import IAMService from "../lib/IAMService";
 import { usePathname, useRouter } from "next/navigation";
@@ -48,23 +47,42 @@ export default function Login() {
   const [isLinked, setIsLinked] = useState(true); 
 
   const [inviteLink, setInviteLink] = useState();
+  // Loaded adapter config
+  const [kcData, setKcData] = useState(null);
 
-  // Check authentication from context
+  // Fetch kcData on load and handle redirects
   useEffect(() => {
-    // Skip login screen if already logged in
+    // Skip login screen if already authenticated
     if (authenticated) {
       router.push("/auth/redirect");
-    }
-    else if (!authenticated && Object.keys(kcData).length === 0) {
-      // Show initialiser if tidecloak.json object is empty
-      setIsInitializing(true);
+      return;
     }
 
-    // Get the TideCloak address from the tidecloak.json file if its object is filled by TideCloak
-    if (kcData && Object.keys(kcData).length !== 0 && kcData["auth-server-url"]) {
-      setAdminAddress(kcData["auth-server-url"]);
-    }
-  }, [authenticated])
+    const fetchConfig = async () => {
+      try {
+        const res = await fetch("/api/tidecloakConfig");
+        const data = await res.json();
+
+        setKcData(data);
+
+        // Show initialiser if tidecloak.json object is empty
+        if (Object.keys(data).length === 0) {
+          setIsInitializing(true);
+        }
+
+        // Get the TideCloak address from the tidecloak.json file if its object is filled by TideCloak
+        if (data["auth-server-url"]) {
+          setAdminAddress(data["auth-server-url"]);
+        }
+      } catch (error) {
+        console.error("[Login] Failed to load config:", error);
+        setKcData({});
+        setIsInitializing(true);
+      }
+    };
+
+    fetchConfig();
+  }, [authenticated, router]);
 
 
   // Manage whether the token expired error should be shown using cached session data
@@ -168,8 +186,26 @@ export default function Login() {
     sessionStorage.removeItem("tokenExpired");
     // Turn off the message if TideCloak port wasn't public before
     setPortIsPublic(true);
+    // Generate invite link
+    const response = await fetch(`/api/inviteUser`, {
+      method: "GET",
+    })
 
-    IAMService.doLogin();
+    if (!response.ok) {
+      const errorResponse = await response.json();
+      throw new Error(errorResponse.error || "Failed generate Tide invite link.");
+    }
+
+    const data = await response.json();
+
+    // Redirect to invite link to link Tide account when user has no VUID
+    if (data.inviteURL) {
+      router.push(data.inviteURL);
+    }
+    else {
+      // Login if user has already linked Tide account (VUID exists)
+      IAMService.doLogin();
+    }
   };
 
   // Show the initialiser
