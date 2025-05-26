@@ -5,6 +5,14 @@ echo "🔧 [0/3] Installing required dependencies (OpenSSL)..."
 sudo apt-get update
 sudo apt-get install -y libssl-dev
 
+# untrack files
+git update-index --skip-worktree DevReadMe.md
+git update-index --skip-worktree .devcontainer/setup.sh
+git update-index --skip-worktree tidecloak.json
+git update-index --skip-worktree test-realm.json
+[ -f .env ] && git update-index --skip-worktree .env
+git update-index --skip-worktree app/api/apiConfigs.js
+
 echo "🌐 [1/3] Building Codespace URLs..."
 CODESPACE_URL_NEXT="https://${CODESPACE_NAME}-3000.app.github.dev"
 CODESPACE_URL_TC="https://${CODESPACE_NAME}-8080.app.github.dev"
