@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import "../styles/spinKit.css";
 import "../styles/spinner.css";
 
-export default function LoadingPage({ isInitializing, setIsInitializing }) {
+export default function LoadingPage({ isInitializing, setIsInitializing, setOverlayLoading }) {
 
     const [currentStep, setCurrentStep] = useState(0);
 
@@ -203,7 +203,10 @@ export default function LoadingPage({ isInitializing, setIsInitializing }) {
             await updateCustomDomainURL({linkedTide: true});
             await getAdapter();
 
+            // Load out of the initializer first then stop it to prevent Login screen appearing and giving context time to load 
+            setOverlayLoading(true);
             setIsInitializing(false);
+            
         }
         catch (error) {
             // Delete IDP then realm if an error occurs in initialisation in preparation for restarting the process

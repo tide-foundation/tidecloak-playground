@@ -13,6 +13,7 @@ import {
 } from "react-icons/fa";
 import LoadingPage from "./components/LoadingPage";
 import appService from "../lib/appService";
+import { loadingSquareFullPage } from "./components/loadingSquare";
 
 /**
  * "/" path containing the Login page, logouts including token expiration is redirected here
@@ -35,8 +36,10 @@ export default function Login() {
   // State to show initialiser when the tidecloak.json file has an empty object
   const [isInitializing, setIsInitializing] = useState(false);
 
-  const [portIsPublic, setPortIsPublic] = useState(true);
+  const [portIsPublic, setPortIsPublic] = useState(false);
   const [showLinkedTide, setShowLinkedTide] = useState(false);
+
+  const [overlayLoading, setOverlayLoading] = useState(true);
 
 
   // Check authentication from context
@@ -60,13 +63,14 @@ export default function Login() {
   // Manage whether the token expired error should be shown using cached session data
   useEffect(() => {
     const tokenExpired = sessionStorage.getItem("tokenExpired");
+
     if (tokenExpired) {
       setShowError(true);
     }
+
     checkTideCloakPort();
     checkTideLinkMsg();
-
-
+    setOverlayLoading(false);
   }, [])
 
   const checkTideLinkMsg = async () => {
@@ -92,18 +96,23 @@ export default function Login() {
     return response;
   };
 
-
-
   // Can't connect to TideCloak if the ports are not public
-  // It's public if there's a response
+  // It's public if there's an Ok response
   const checkTideCloakPort = async () => {
     const url = `${baseURL}/realms/master/.well-known/openid-configuration`;
-    const response = await appService.checkPort(url);
 
-    if (response.ok) {
-      console.log("TideCloak port is public.");
-    }
-    else {
+    try {
+      // Only ping this endpoint if initialisation has already happened
+      // Else the endpoint doesn't exist, because realm doesn't. 
+      if (Object.keys(kcData).length !== 0){
+        const response = await appService.checkPort(url);
+
+        if (response.ok) {
+          console.log("TideCloak port is public.");
+          setPortIsPublic(true);
+        }
+      }
+    } catch (error){
       setPortIsPublic(false);
       console.log("TideCloak port is private, please change to public to allow connections.");
     }
@@ -114,7 +123,7 @@ export default function Login() {
   const handleLogin = async () => {
     // If previously logged in remove this session variable.
     sessionStorage.removeItem("tokenExpired");
-    // Turn of the message if TideCloak port wasn't public before
+    // Turn off the message if TideCloak port wasn't public before
     setPortIsPublic(true);
 
     // Generate invite link
@@ -141,11 +150,11 @@ export default function Login() {
 
   // Show the initialiser
   if (isInitializing) {
-    return <LoadingPage isInitializing={isInitializing} setIsInitializing={setIsInitializing} />;
+    return <LoadingPage isInitializing={isInitializing} setIsInitializing={setIsInitializing} setOverlayLoading={setOverlayLoading}/>;
   }
 
   return (
-    true
+    !overlayLoading
       ?
       <main className="flex-grow w-full pt-6 pb-16">
 
@@ -198,7 +207,7 @@ export default function Login() {
                         <FaExclamationCircle className="mr-1" />
                         <span>TideCloak port is private, make it public to allow connections.</span>
                       </div>
-                      : null
+                    : null
                   }             
                   {/* just linked Tide */}
                   {showLinkedTide && (
@@ -229,6 +238,6 @@ export default function Login() {
         </div>
         <div className="h-10"></div>
       </main>
-      : null
+      : loadingSquareFullPage()
   );
 }
