@@ -1,6 +1,7 @@
 import configs from "../apiConfigs";
 import settings from "/test-realm.json";
 import fs from "fs";
+import path from "path";
 import apiService from "../apiService";
 
 /**
