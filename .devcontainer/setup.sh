@@ -17,6 +17,9 @@ sed -i "s|http://localhost:3000|${CODESPACE_URL_NEXT}|g" ./DevReadMe.md
 
 echo "🐳 [3/3] Pulling and starting Tidecloak container..."
 docker pull docker.io/tideorg/tidecloak-dev:latest
+if [ "$(docker ps -aq -f name=^tidecloak$)" ]; then
+  docker rm tidecloak --force
+fi
 docker run -d \
   --name tidecloak \
   -p 8080:8080 \
