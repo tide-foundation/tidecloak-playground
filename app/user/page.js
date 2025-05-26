@@ -15,7 +15,7 @@ import "../styles/spinner.css";
  * Page containing read and write functionality of user data (on top) and the decryption component (below).
  * @returns {JSX.Element} - HTML structure of the /user landing page after login, parent of databaseExposureTable
  */
-export default function User(){
+export default async function User(){
 
     // Current path displayed
     const pathname = usePathname();
@@ -355,7 +355,7 @@ export default function User(){
 
                 <form className="space-y-6" onSubmit={handleFormSubmit}>
                   {
-                    await Promise.all(["dob", "cc"].map((field, i) => {
+                    await Promise.all(["dob", "cc"].map(async (field, i) => {
                       const readPerms = await IAMService.hasOneRole(field === "dob"? "_tide_dob.selfdecrypt" : "_tide_cc.selfdecrypt");
                       const writePerms = await IAMService.hasOneRole(field === "dob"? "_tide_dob.selfencrypt" : "_tide_cc.selfencrypt");
                       const canRead = readPerms? true: false;
