@@ -99,6 +99,7 @@ export default function Login() {
   // Can't connect to TideCloak if the ports are not public
   // It's public if there's an Ok response
   const checkTideCloakPort = async () => {
+    
     const url = `${baseURL}/realms/master/.well-known/openid-configuration`;
 
     try {
@@ -108,13 +109,21 @@ export default function Login() {
         const response = await appService.checkPort(url);
 
         if (response.ok) {
-          console.log("TideCloak port is public.");
           setPortIsPublic(true);
+          console.log("TideCloak port is public.");
+          
         }
+        else {
+          throw new Error("TideCloak port is private, please change to public to allow connections.");
+        }
+      }
+      else {
+        throw new Error("Need to initialize realm first. Starting initializer.")
       }
     } catch (error){
       setPortIsPublic(false);
-      console.log("TideCloak port is private, please change to public to allow connections.");
+      console.log(error);
+      
     }
   };
 
