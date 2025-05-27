@@ -243,7 +243,17 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setOver
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-white p-8">
-            <div className="sk-cube-grid mb-4">
+            {/* Horizontal alignment for logos and spinner */}
+            <div className="flex items-center justify-center gap-6 mb-8">
+                {/* Tide Logo */}
+                <img
+                    src="/TideLogo-Wordmark-Blue.png"
+                    alt="Tide Logo"
+                    className="max-h-20 max-w-[120px] object-contain"
+                />
+
+                {/* Spinner */}
+            <div className="sk-cube-grid scale-75">
                 <div className="sk-cube sk-cube1" />
                 <div className="sk-cube sk-cube2" />
                 <div className="sk-cube sk-cube3" />
@@ -253,6 +263,14 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setOver
                 <div className="sk-cube sk-cube7" />
                 <div className="sk-cube sk-cube8" />
                 <div className="sk-cube sk-cube9" />
+            </div>
+
+                {/* Other Logo with adaptive bounding box */}
+                <img
+                    src="/playground-logo_nav.png"
+                    alt="Playground Logo"
+                    className="max-h-20 max-w-[120px] object-contain"
+                />
             </div>
 
             <h1 className="text-2xl font-bold mb-6 text-gray-800">
