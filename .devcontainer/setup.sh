@@ -14,8 +14,8 @@ git update-index --skip-worktree test-realm.json
 git update-index --skip-worktree app/api/apiConfigs.js
 
 echo "🌐 [1/3] Building Codespace URLs..."
-CODESPACE_URL_NEXT="https://${CODESPACE_NAME}-3000.app.github.dev"
-CODESPACE_URL_TC="https://${CODESPACE_NAME}-8080.app.github.dev"
+CODESPACE_URL_NEXT=$([ "$CODESPACES" = "true" ] && echo "https://${CODESPACE_NAME}-3000.app.github.dev" || echo "http://localhost:3000")
+CODESPACE_URL_TC=$([ "$CODESPACES" = "true" ] && echo "https://${CODESPACE_NAME}-8080.app.github.dev" || echo "http://localhost:8080")
 
 echo "🔄 [2/3] Updating with Codespace URL..."
 sed -i "s|http://localhost:3000|${CODESPACE_URL_NEXT}|g" ./test-realm.json
@@ -25,6 +25,9 @@ sed -i "s|http://localhost:3000|${CODESPACE_URL_NEXT}|g" ./DevReadMe.md
 
 echo "🐳 [3/3] Pulling and starting Tidecloak container..."
 docker pull docker.io/tideorg/tidecloak-dev:latest
+if [ "$(docker ps -aq -f name=^tidecloak$)" ]; then
+  docker rm tidecloak --force
+fi
 docker run -d \
   --name tidecloak \
   -p 8080:8080 \
