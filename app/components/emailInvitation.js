@@ -35,9 +35,7 @@ You've been invited to connect as the demo user for the Play app.
 
 Create or connect your Tide account by clicking "Accept" below and following the prompts.
 
-A Tide account allows you to login to any service with guaranteed privacy and ownership of your identity.
-
-Once you're done you'll be redirected to the Play app.`}
+A Tide account allows you to login to any service with guaranteed privacy and ownership of your identity.`}
           </div>
 
           <div>
@@ -47,6 +45,9 @@ Once you're done you'll be redirected to the Play app.`}
             >
               Accept
             </button>
+                        <p className="text-sm italic text-gray-600 mt-3">
+              Once you’re done you’ll be redirected to the Play app.
+            </p>
           </div>
         </div>
       </div>
