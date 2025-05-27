@@ -21,6 +21,9 @@ export default function RedirectPage() {
 
   // Handles redirect when middle detects token expiry
   useEffect(() => {
+    const doLogOut = async () => {
+      await IAMService.doLogout();
+    }
     // Must be placed inside useEffect, because parameters don't exist during build for production
     // Parse the query string with URLSearchParams instead of useSearchParams()
     // useSearchParams() causes build issues in non-pure client components so this /auth/redirect wouldn't prerender.
@@ -29,7 +32,7 @@ export default function RedirectPage() {
 
     if (auth === "failed"){
       sessionStorage.setItem("tokenExpired", "true");
-      IAMService.doLogout();
+      doLogOut();
     }
   }, [])
 

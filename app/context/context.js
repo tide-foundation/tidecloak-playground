@@ -27,8 +27,7 @@ export const Provider = ({ children }) => {
             if (adapter && Object.keys(adapter).length > 0 && adapter["auth-server-url"]) {
                 setBaseURL(adapter["auth-server-url"].replace(/\/$/, ""));
             } 
-
-            console.log("i am here")
+            
             // Initialize IAM
             IAMService.initIAM((auth) => {
                 setAuthenticated(auth);
