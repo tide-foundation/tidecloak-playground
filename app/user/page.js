@@ -10,6 +10,7 @@ import Button from "../components/button";
 import { LoadingSquareFullPage } from "../components/loadingSquare";
 import "../styles/spinKit.css";
 import "../styles/spinner.css";
+import { canReadDOB, canWriteCC, canWriteDOB , canReadCC} from "../utils/helperMethods";
 
 /**
  * Page containing read and write functionality of user data (on top) and the decryption component (below).
@@ -51,6 +52,14 @@ export default async function User(){
     // Encrypted Credit Card from database to decrypted in databaseExposureTable
     const [encryptedCc, setEncryptedCc] = useState("");
 
+    const [permissions, setPermissions] = useState({
+      canReadCC: false,
+      canWriteCC: false,
+      canReadDOB: false,
+      canWriteDOB: false,
+    });
+
+
     useEffect(() => {
       if (contextLoading){
         setOverlayLoading(true);
@@ -59,9 +68,27 @@ export default async function User(){
 
     // Runs first, once context verifies user is authenticated populate all users' demo data
     useEffect(() => {
+      const checkAccess = async () => {
+        const [ canReadCCResult, canWriteCCResult, canReadDOBResult, canWriteDOBResult ] = await Promise.all(
+          [
+            canReadCC(),
+            canWriteCC(),
+            canReadDOB(),
+            canWriteDOB()
+          ]
+        )
+        setPermissions({
+          canReadCC: canReadCCResult,
+          canWriteCC: canWriteCCResult,
+          canReadDOB: canReadDOBResult,
+          canWriteDOB: canWriteDOBResult,
+        });
+      }
+
       if (!contextLoading){
         if (authenticated){
           getAllUsers();
+          checkAccess();
         }
       }
     }, [authenticated])
@@ -344,10 +371,7 @@ export default async function User(){
 
                 <h2 className="text-3xl font-bold mb-4">User Information</h2>
                 {
-                  !await IAMService.hasOneRole("_tide_dob.selfdecrypt") && 
-                  !await IAMService.hasOneRole("_tide_dob.selfencrypt") &&
-                  !await IAMService.hasOneRole("_tide_cc.selfdecrypt") &&
-                  !await IAMService.hasOneRole("_tide_cc.selfencrypt")
+                  Object.values(permissions).every(p => !p)
                   ? <p className="text-sm text-gray-600 mb-6">You don't have permission to do anything so we won't even show you the form!</p>
                   : <p className="text-sm text-gray-600 mb-6">This form is powered by real-time permission logic. Your ability to view or edit each field depends on your current access.</p>
                 }
@@ -355,9 +379,9 @@ export default async function User(){
 
                 <form className="space-y-6" onSubmit={handleFormSubmit}>
                   {
-                    await Promise.all(["dob", "cc"].map(async (field, i) => {
-                      const readPerms = await IAMService.hasOneRole(field === "dob"? "_tide_dob.selfdecrypt" : "_tide_cc.selfdecrypt");
-                      const writePerms = await IAMService.hasOneRole(field === "dob"? "_tide_dob.selfencrypt" : "_tide_cc.selfencrypt");
+                    ["dob", "cc"].map(async (field, i) => {
+                      const readPerms = field === "dob" ? Object.values(permissions).canReadDOB :  Object.values(permissions).canReadCC;
+                      const writePerms = field === "dob" ? Object.values(permissions).canWriteDOB  : canWriteCC;
                       const canRead = readPerms? true: false;
                       const canWrite = writePerms? true: false;
                       const label = field === "dob" ? "Date of Birth" : "Credit Card Number";
@@ -481,10 +505,10 @@ export default async function User(){
                           )}
                         </div>
                       )
-                    }))
+                    })
                   }
                   {
-                  (await IAMService.hasOneRole("_tide_dob.selfencrypt") || await IAMService.hasOneRole("_tide_cc.selfencrypt")) && (
+                  (  Object.values(permissions).canReadDOB|| Object.values(permissions).canReadCC ) && (
                     <div className="flex items-center gap-3">
                       <Button type="submit" disabled={loadingButton}>Save Changes</Button>
                       {
