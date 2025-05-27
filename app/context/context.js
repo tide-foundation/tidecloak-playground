@@ -16,35 +16,40 @@ const Context = createContext();
 export const Provider = ({ children }) => {
     const [authenticated, setAuthenticated] = useState(false);
     const [contextLoading, setContextLoading] = useState(true);
+    const [isInitialized, setIsInitialized] = useState(null);
     const [baseURL, setBaseURL] = useState("");
     const realm = settings.realm;
+    const initContext = async () => {
+        console.log("Hello mate")
 
+        try {
+            const adapterRes = await fetch("/api/tidecloakConfig");
+            const adapter = await adapterRes.json();
+
+            if (adapter && Object.keys(adapter).length > 0 && adapter["auth-server-url"]) {
+                setBaseURL(adapter["auth-server-url"].replace(/\/$/, ""));
+            } 
+
+            console.log("i am here")
+            // Initialize IAM
+            IAMService.initIAM((auth) => {
+                setAuthenticated(auth);
+                setContextLoading(false);
+            });
+        } catch (err) {
+            console.error("Failed to initialize app context:", err);
+            setContextLoading(false);
+            console.log("setting contextloading to false")
+
+        }
+    };
 
     useEffect(() => {
-        const initContext = async () => {
-            try {
-                const adapterRes = await fetch("/api/tidecloakConfig");
-                const adapter = await adapterRes.json();
-
-                if (adapter && Object.keys(adapter).length > 0 && adapter["auth-server-url"]) {
-                    setBaseURL(adapter["auth-server-url"].replace(/\/$/, ""));
-                }
-
-                // Initialize IAM
-                await IAMService.initIAM((auth) => {
-                    setAuthenticated(auth);
-                    setContextLoading(false);
-                });
-            } catch (err) {
-                console.error("Failed to initialize app context:", err);
-                setContextLoading(false);
-            }
-        };
-
+        console.log("triggered!")
         initContext();
-    }, []);
+    }, [isInitialized]);
     return (
-        <Context.Provider value={{realm, baseURL, authenticated, contextLoading}}>
+        <Context.Provider value={{realm, baseURL, authenticated, contextLoading, setIsInitialized}}>
             {children}
         </Context.Provider>
     )

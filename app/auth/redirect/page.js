@@ -7,7 +7,7 @@ import { useAppContext } from "../../context/context";
 import { useRouter } from "next/navigation";
 
 import IAMService from "../../../lib/IAMService";
-import { loadingSquareFullPage } from "../../components/loadingSquare";
+import { LoadingSquareFullPage } from "../../components/loadingSquare";
 
 /**
  * Manages which path the demo should go down depending on token validity
@@ -46,7 +46,7 @@ export default function RedirectPage() {
   }, [contextLoading]);
 
   if (contextLoading){
-    return loadingSquareFullPage();
+    return <LoadingSquareFullPage/>
   }
 
   return;

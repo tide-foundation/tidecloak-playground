@@ -10,7 +10,7 @@ import "../styles/spinner.css";
  * @param {function} setIsLinked - show the email invitation page after initialization 
  * @returns {JSX.Element} - HTML component for the initializer screen 
  */
-export default function LoadingPage({ isInitializing, setIsInitializing, setOverlayLoading}) {
+export default function LoadingPage({ isInitializing, setIsInitializing, setOverlayLoading, setKcData }) {
 
     const [currentStep, setCurrentStep] = useState(0);
 
@@ -193,6 +193,9 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setOver
             const errorResponse = await response.json();
             throw new Error(errorResponse.error || "Failed to get adapter for the client.");
         }
+
+        const data = await response.json();
+        return data.kcData;
     }
 
     let restartCounter = 0;
@@ -209,7 +212,8 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setOver
             await uploadImages();
             await signSettings();
             await updateCustomDomainURL({linkedTide: true});
-            await getAdapter();
+            const data = await getAdapter();
+            setKcData(data);
 
             // Load out of the initializer first then stop it to prevent Login screen appearing and giving context time to load 
             setOverlayLoading(true);

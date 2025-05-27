@@ -13,8 +13,8 @@ import {
 } from "react-icons/fa";
 import LoadingPage from "./components/LoadingPage";
 import appService from "../lib/appService";
-import { loadingSquareFullPage } from "./components/loadingSquare";
 import EmailInvitation from "./components/emailInvitation";
+import { LoadingSquareFullPage } from "./components/loadingSquare";
 
 /**
  * "/" path containing the Login page, logouts including token expiration is redirected here
@@ -22,7 +22,7 @@ import EmailInvitation from "./components/emailInvitation";
  */
 export default function Login() {
   // Shared context data to check if already authenticated skip this login screen
-  const { authenticated, baseURL } = useAppContext();
+  const { authenticated, baseURL, setIsInitialized, contextLoading } = useAppContext();
 
   // Current path "/"
   const pathname = usePathname();
@@ -50,6 +50,33 @@ export default function Login() {
   // Loaded adapter config
   const [kcData, setKcData] = useState(null);
 
+  const fetchConfig = async () => {
+  try {
+    const res = await fetch("/api/tidecloakConfig");
+    const data = await res.json();
+
+
+    // Show initialiser if tidecloak.json object is empty
+    if (Object.keys(data).length === 0) {
+      setIsInitializing(true);
+    }
+
+    // Get the TideCloak address from the tidecloak.json file if its object is filled by TideCloak
+    if (data["auth-server-url"]) {
+      setAdminAddress(data["auth-server-url"]);
+    }
+    setIsInitialized(true);
+    setKcData(data);
+    console.log(data)
+    return data;
+
+  } catch (error) {
+    console.error("[Login] Failed to load config:", error);
+    setKcData({});
+    setIsInitializing(true);
+  }
+};
+
   // Fetch kcData on load and handle redirects
   useEffect(() => {
     // Skip login screen if already authenticated
@@ -57,46 +84,38 @@ export default function Login() {
       router.push("/auth/redirect");
       return;
     }
-
-    const fetchConfig = async () => {
-      try {
-        const res = await fetch("/api/tidecloakConfig");
-        const data = await res.json();
-
-        setKcData(data);
-
-        // Show initialiser if tidecloak.json object is empty
-        if (Object.keys(data).length === 0) {
-          setIsInitializing(true);
-        }
-
-        // Get the TideCloak address from the tidecloak.json file if its object is filled by TideCloak
-        if (data["auth-server-url"]) {
-          setAdminAddress(data["auth-server-url"]);
-        }
-      } catch (error) {
-        console.error("[Login] Failed to load config:", error);
-        setKcData({});
-        setIsInitializing(true);
-      }
-    };
-
     fetchConfig();
   }, [authenticated, router]);
 
 
   // Manage whether the token expired error should be shown using cached session data
   useEffect(() => {
-    // Check the storage if a variable states that the token expired
+    const checkPort = async () => {
+      const data = await fetchConfig();
+      if ( baseURL){
+        checkTideCloakPort(data);
+      }
+    }
     const tokenExpired = sessionStorage.getItem("tokenExpired");
     if (tokenExpired) {
       setShowError(true);
     }
 
-    checkTideCloakPort();
     checkTideLinkMsg();
-    checkTideLink();
-  }, [])
+    checkPort();
+    setOverlayLoading(false);
+  }, [baseURL])
+
+  useEffect(() => {
+    console.log(contextLoading)
+    if(kcData && !contextLoading){
+      checkTideCloakPort(kcData);
+    }
+    if(!isInitializing){
+      setIsInitialized(true)
+    }
+    setOverlayLoading(false);
+  }, [kcData, contextLoading, baseURL, isInitializing])
 
   const checkTideLinkMsg = async () => {
     const params = new URLSearchParams(window.location.search);
@@ -150,14 +169,13 @@ export default function Login() {
 
   // Can't connect to TideCloak if the ports are not public
   // It's public if there's an Ok response
-  const checkTideCloakPort = async () => {
-    
+  const checkTideCloakPort = async (data) => {    
     const url = `${baseURL}/realms/master/.well-known/openid-configuration`;
 
     try {
       // Only ping this endpoint if initialisation has already happened
       // Else the endpoint doesn't exist, because realm doesn't. 
-      if (Object.keys(kcData).length !== 0){
+      if (data && Object.keys(data).length !== 0){
         const response = await appService.checkPort(url);
 
         if (response.ok) {
@@ -175,7 +193,6 @@ export default function Login() {
     } catch (error){
       setPortIsPublic(false);
       console.log(error);
-      
     }
   };
 
@@ -210,7 +227,7 @@ export default function Login() {
 
   // Show the initialiser
   if (isInitializing) {
-    return <LoadingPage isInitializing={isInitializing} setIsInitializing={setIsInitializing} setOverlayLoading={setOverlayLoading} setIsLinked={setIsLinked}/>;
+    return <LoadingPage isInitializing={isInitializing} setIsInitializing={setIsInitializing} setOverlayLoading={setOverlayLoading} setIsInitialized={setIsInitialized} setKcData={setKcData}/>;
   }
 
   // Show Email Invitation Page if demo user not linked to a Tide account after Initialization
@@ -321,6 +338,6 @@ export default function Login() {
         </div>
         <div className="h-10"></div>
       </main>
-      : loadingSquareFullPage()
+      : <LoadingSquareFullPage/>
   );
 }

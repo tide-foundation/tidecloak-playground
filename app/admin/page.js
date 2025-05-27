@@ -767,6 +767,6 @@ export default function Admin() {
         </div>
         <div className="h-10"></div>
         </main>
-        : loadingSquareFullPage()
+        : <LoadingSquareFullPage/>
     )
 }

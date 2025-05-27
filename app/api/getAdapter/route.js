@@ -35,7 +35,7 @@ export async function GET(){
                 throw new Error("[getAdapter Endpoint] Failed to write to tidecloak.json.");
             }
         });
-        return new Response(JSON.stringify({ok: true}), {status: getClientAdapterResult.status}); 
+        return new Response(JSON.stringify({ok: true, kcData: configsString}), {status: getClientAdapterResult.status}); 
     } 
     catch (error) {
         return new Response(JSON.stringify({ok: false, error: "[getAdapter Endpoint] " + error.message}), {status: 500})
