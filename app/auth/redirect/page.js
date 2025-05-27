@@ -22,7 +22,7 @@ export default function RedirectPage() {
   // Handles redirect when middle detects token expiry
   useEffect(() => {
     const doLogOut = async () => {
-      await IAMService.doLogout();
+      IAMService.doLogout();
     }
     // Must be placed inside useEffect, because parameters don't exist during build for production
     // Parse the query string with URLSearchParams instead of useSearchParams()

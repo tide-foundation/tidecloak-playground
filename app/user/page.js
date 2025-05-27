@@ -10,13 +10,12 @@ import Button from "../components/button";
 import { LoadingSquareFullPage } from "../components/loadingSquare";
 import "../styles/spinKit.css";
 import "../styles/spinner.css";
-import { canReadDOB, canWriteCC, canWriteDOB , canReadCC} from "../utils/helperMethods";
 
 /**
  * Page containing read and write functionality of user data (on top) and the decryption component (below).
  * @returns {JSX.Element} - HTML structure of the /user landing page after login, parent of databaseExposureTable
  */
-export default async function User(){
+export default function User(){
 
     // Current path displayed
     const pathname = usePathname();
@@ -52,14 +51,6 @@ export default async function User(){
     // Encrypted Credit Card from database to decrypted in databaseExposureTable
     const [encryptedCc, setEncryptedCc] = useState("");
 
-    const [permissions, setPermissions] = useState({
-      canReadCC: false,
-      canWriteCC: false,
-      canReadDOB: false,
-      canWriteDOB: false,
-    });
-
-
     useEffect(() => {
       if (contextLoading){
         setOverlayLoading(true);
@@ -68,27 +59,9 @@ export default async function User(){
 
     // Runs first, once context verifies user is authenticated populate all users' demo data
     useEffect(() => {
-      const checkAccess = async () => {
-        const [ canReadCCResult, canWriteCCResult, canReadDOBResult, canWriteDOBResult ] = await Promise.all(
-          [
-            canReadCC(),
-            canWriteCC(),
-            canReadDOB(),
-            canWriteDOB()
-          ]
-        )
-        setPermissions({
-          canReadCC: canReadCCResult,
-          canWriteCC: canWriteCCResult,
-          canReadDOB: canReadDOBResult,
-          canWriteDOB: canWriteDOBResult,
-        });
-      }
-
       if (!contextLoading){
         if (authenticated){
           getAllUsers();
-          checkAccess();
         }
       }
     }, [authenticated])
@@ -111,7 +84,7 @@ export default async function User(){
 
       const token = await IAMService.getToken(); 
       const users = await appService.getUsers(baseURL, realm, token);
-      const loggedVuid =  await IAMService.getValueFromToken("vuid");
+      const loggedVuid =  IAMService.getValueFromToken("vuid");
       const loggedInUser = users.find(user => {
         if (user.attributes?.vuid[0] === loggedVuid){
             return user;
@@ -128,7 +101,7 @@ export default async function User(){
             let arrayToDecrypt = [];
 
             // Date of Birth
-            if (loggedUser.attributes.dob && await IAMService.hasOneRole("_tide_dob.selfdecrypt")){
+            if (loggedUser.attributes.dob && IAMService.hasOneRole("_tide_dob.selfdecrypt")){
               arrayToDecrypt.push({
                 "encrypted": loggedUser.attributes.dob[0],
                 "tags": ["dob"]
@@ -136,7 +109,7 @@ export default async function User(){
             }
 
             // Credit Card
-            if (loggedUser.attributes.cc && await IAMService.hasOneRole("_tide_cc.selfdecrypt")){
+            if (loggedUser.attributes.cc && IAMService.hasOneRole("_tide_cc.selfdecrypt")){
                arrayToDecrypt.push({
                 "encrypted": loggedUser.attributes.cc[0],
                 "tags": ["cc"]
@@ -220,7 +193,7 @@ export default async function User(){
               // Encrypt the data for the first time
               const encryptedData = await IAMService.doEncrypt(arrayToEncrypt);
 
-              if (await IAMService.hasOneRole("_tide_cc.selfdecrypt")){
+              if (IAMService.hasOneRole("_tide_cc.selfdecrypt")){
                 setFormData(prev => ({...prev, cc: loggedUser.attributes.cc[0]}));
               }
               else {
@@ -267,7 +240,7 @@ export default async function User(){
 
             let arrayToEncrypt = [];
 
-            if (formData.dob !== "" && await IAMService.hasOneRole("_tide_dob.selfencrypt")){ 
+            if (formData.dob !== "" && IAMService.hasOneRole("_tide_dob.selfencrypt")){ 
               if (loggedUser.attributes.dob){
                 if (/[a-zA-Z]/.test(formData.dob)){
                   console.log("DoB can't have letters. Don't encrypt as it may already be encrypted.");
@@ -281,7 +254,7 @@ export default async function User(){
               }
             }
 
-            if (formData.cc !== "" && await IAMService.hasOneRole("_tide_cc.selfencrypt")){
+            if (formData.cc !== "" && IAMService.hasOneRole("_tide_cc.selfencrypt")){
               if (loggedUser.attributes.cc){
                 if (/[a-zA-Z]/.test(formData.cc)){
                   console.log("CC can't have letters. Don't encrypt as it may already be encrypted.");
@@ -371,7 +344,10 @@ export default async function User(){
 
                 <h2 className="text-3xl font-bold mb-4">User Information</h2>
                 {
-                  Object.values(permissions).every(p => !p)
+                  !IAMService.hasOneRole("_tide_dob.selfdecrypt") && 
+                  !IAMService.hasOneRole("_tide_dob.selfencrypt") &&
+                  !IAMService.hasOneRole("_tide_cc.selfdecrypt") &&
+                  !IAMService.hasOneRole("_tide_cc.selfencrypt")
                   ? <p className="text-sm text-gray-600 mb-6">You don't have permission to do anything so we won't even show you the form!</p>
                   : <p className="text-sm text-gray-600 mb-6">This form is powered by real-time permission logic. Your ability to view or edit each field depends on your current access.</p>
                 }
@@ -379,9 +355,9 @@ export default async function User(){
 
                 <form className="space-y-6" onSubmit={handleFormSubmit}>
                   {
-                    ["dob", "cc"].map(async (field, i) => {
-                      const readPerms = field === "dob" ? Object.values(permissions).canReadDOB :  Object.values(permissions).canReadCC;
-                      const writePerms = field === "dob" ? Object.values(permissions).canWriteDOB  : canWriteCC;
+                    ["dob", "cc"].map((field, i) => {
+                      const readPerms = IAMService.hasOneRole(field === "dob"? "_tide_dob.selfdecrypt" : "_tide_cc.selfdecrypt");
+                      const writePerms = IAMService.hasOneRole(field === "dob"? "_tide_dob.selfencrypt" : "_tide_cc.selfencrypt");
                       const canRead = readPerms? true: false;
                       const canWrite = writePerms? true: false;
                       const label = field === "dob" ? "Date of Birth" : "Credit Card Number";
@@ -508,7 +484,7 @@ export default async function User(){
                     })
                   }
                   {
-                  (  Object.values(permissions).canReadDOB|| Object.values(permissions).canReadCC ) && (
+                  (IAMService.hasOneRole("_tide_dob.selfencrypt") || IAMService.hasOneRole("_tide_cc.selfencrypt")) && (
                     <div className="flex items-center gap-3">
                       <Button type="submit" disabled={loadingButton}>Save Changes</Button>
                       {

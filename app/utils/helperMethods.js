@@ -9,20 +9,20 @@ const AccessLevel = {
 
 // Check if current authenticated user can decrypt DOB
 export const canReadDOB = async () => {
-    return await IAMService.hasOneRole(AccessLevel.DOB_DECRYPT);
+    return IAMService.hasOneRole(AccessLevel.DOB_DECRYPT);
 }
 
 // Check if current authenticated user can encrypt DOB
 export const canWriteDOB = async () => {
-    return await IAMService.hasOneRole(AccessLevel.DOB_ENCRYPT);
+    return IAMService.hasOneRole(AccessLevel.DOB_ENCRYPT);
 }
 
 // Check if current authenticated user can decrypt CC
 export const canReadCC = async () => {
-    return await IAMService.hasOneRole(AccessLevel.CC_DECRYPT);
+    return IAMService.hasOneRole(AccessLevel.CC_DECRYPT);
 }
 
 // Check if current authenticated user can encrypt CC
 export const canWriteCC = async () => {
-    return await IAMService.hasOneRole(AccessLevel.CC_ENCRYPT);
+    return IAMService.hasOneRole(AccessLevel.CC_ENCRYPT);
 }
