@@ -7,9 +7,10 @@ import "../styles/spinner.css";
  * @param {boolean} isInitializing - display initializer if true
  * @param {function} setIsInitializing - turn off the initializer once completed
  * @param {function} setOverlayLoading - turn on loading screen when completed to load back to login screen
+ * @param {function} setIsLinked - show the email invitation page after initialization 
  * @returns {JSX.Element} - HTML component for the initializer screen 
  */
-export default function LoadingPage({ isInitializing, setIsInitializing, setOverlayLoading }) {
+export default function LoadingPage({ isInitializing, setIsInitializing, setOverlayLoading}) {
 
     const [currentStep, setCurrentStep] = useState(0);
 
@@ -213,7 +214,6 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setOver
             // Load out of the initializer first then stop it to prevent Login screen appearing and giving context time to load 
             setOverlayLoading(true);
             setIsInitializing(false);
-            
         }
         catch (error) {
             // Delete IDP then realm if an error occurs in initialisation in preparation for restarting the process

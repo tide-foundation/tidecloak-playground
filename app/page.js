@@ -14,6 +14,7 @@ import {
 import LoadingPage from "./components/LoadingPage";
 import appService from "../lib/appService";
 import { loadingSquareFullPage } from "./components/loadingSquare";
+import EmailInvitation from "./components/emailInvitation";
 
 /**
  * "/" path containing the Login page, logouts including token expiration is redirected here
@@ -35,12 +36,16 @@ export default function Login() {
   const [adminAddress, setAdminAddress] = useState("Need to setup backend first.");
   // State to show initialiser when the tidecloak.json file has an empty object
   const [isInitializing, setIsInitializing] = useState(false);
-
+  // State to show port status
   const [portIsPublic, setPortIsPublic] = useState(false);
+  // State to show Tide account link status
   const [showLinkedTide, setShowLinkedTide] = useState(false);
-
+  // State to show the loading overlay
   const [overlayLoading, setOverlayLoading] = useState(true);
+  // State to show the Tide email invitation component
+  const [isLinked, setIsLinked] = useState(true); 
 
+  const [inviteLink, setInviteLink] = useState();
 
   // Check authentication from context
   useEffect(() => {
@@ -62,15 +67,15 @@ export default function Login() {
 
   // Manage whether the token expired error should be shown using cached session data
   useEffect(() => {
+    // Check the storage if a variable states that the token expired
     const tokenExpired = sessionStorage.getItem("tokenExpired");
-
     if (tokenExpired) {
       setShowError(true);
     }
 
     checkTideCloakPort();
     checkTideLinkMsg();
-    setOverlayLoading(false);
+    checkTideLink();
   }, [])
 
   const checkTideLinkMsg = async () => {
@@ -83,7 +88,34 @@ export default function Login() {
       const newUrl = window.location.pathname + (newQs ? `?${newQs}` : '');
       window.history.replaceState({}, '', newUrl);
     }
+  }
 
+  // Every time Login page is visited, check if the demo account has been linked
+  // for this demo's purpose
+  const checkTideLink = async () => {
+    // Generate invite link
+    const response = await fetch(`/api/inviteUser`, {
+      method: "GET",
+    })
+
+    if (!response.ok) {
+      const errorResponse = await response.json();
+      throw new Error(errorResponse.error || "Failed generate Tide invite link.");
+    }
+
+    const data = await response.json();
+
+    // Redirect to invite link to link Tide account when user has no VUID
+    if (data.inviteURL) {
+      setInviteLink(data.inviteURL);
+      setIsLinked(false);
+      setOverlayLoading(false);
+    }
+    else {
+      // Login if user has already linked Tide account (VUID exists)
+      setIsLinked(true);
+      setOverlayLoading(false);
+    }
   }
 
   // Update the Custom Domain URL for the Tide Enclave to work
@@ -135,35 +167,21 @@ export default function Login() {
     // Turn off the message if TideCloak port wasn't public before
     setPortIsPublic(true);
 
-    // Generate invite link
-    const response = await fetch(`/api/inviteUser`, {
-      method: "GET",
-    })
-
-    if (!response.ok) {
-      const errorResponse = await response.json();
-      throw new Error(errorResponse.error || "Failed generate Tide invite link.");
-    }
-
-    const data = await response.json();
-
-    // Redirect to invite link to link Tide account when user has no VUID
-    if (data.inviteURL) {
-      router.push(data.inviteURL);
-    }
-    else {
-      // Login if user has already linked Tide account (VUID exists)
-      IAMService.doLogin();
-    }
+    IAMService.doLogin();
   };
 
   // Show the initialiser
   if (isInitializing) {
-    return <LoadingPage isInitializing={isInitializing} setIsInitializing={setIsInitializing} setOverlayLoading={setOverlayLoading}/>;
+    return <LoadingPage isInitializing={isInitializing} setIsInitializing={setIsInitializing} setOverlayLoading={setOverlayLoading} setIsLinked={setIsLinked}/>;
+  }
+
+  // Show Email Invitation Page if demo user not linked to a Tide account after Initialization
+  if (!isLinked && !overlayLoading) {
+    return <EmailInvitation inviteLink={inviteLink}/>;
   }
 
   return (
-    !overlayLoading
+    !overlayLoading && isLinked
       ?
       <main className="flex-grow w-full pt-6 pb-16">
 
