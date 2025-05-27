@@ -22,7 +22,7 @@ import { LoadingSquareFullPage } from "./components/loadingSquare";
  */
 export default function Login() {
   // Shared context data to check if already authenticated skip this login screen
-  const { authenticated, baseURL, setIsInitialized, contextLoading } = useAppContext();
+  const { authenticated, baseURL, setIsInitialized } = useAppContext();
 
   // Current path "/"
   const pathname = usePathname();
@@ -38,7 +38,7 @@ export default function Login() {
   // State to show initialiser when the tidecloak.json file has an empty object
   const [isInitializing, setIsInitializing] = useState(false);
   // State to show port status
-  const [portIsPublic, setPortIsPublic] = useState(false);
+  const [portIsPublic, setPortIsPublic] = useState(null);
   // State to show Tide account link status
   const [showLinkedTide, setShowLinkedTide] = useState(false);
   // State to show the loading overlay
@@ -59,6 +59,7 @@ export default function Login() {
     // Show initialiser if tidecloak.json object is empty
     if (Object.keys(data).length === 0) {
       setIsInitializing(true);
+      return;
     }
 
     // Get the TideCloak address from the tidecloak.json file if its object is filled by TideCloak
@@ -66,7 +67,7 @@ export default function Login() {
       setAdminAddress(data["auth-server-url"]);
     }
     setKcData(data);
-    console.log(data)
+    setOverlayLoading(false);
     return data;
 
   } catch (error) {
@@ -102,23 +103,18 @@ export default function Login() {
 
     checkTideLinkMsg();
     checkPort();
-    setOverlayLoading(false);
   }, [baseURL])
 
   useEffect(() => {
-    if(!isInitializing){
-      console.log("HERE!!")
-      setIsInitialized(true)
-    }
     if(kcData && baseURL){
       checkTideCloakPort(kcData);
       // Get the TideCloak address from the tidecloak.json file if its object is filled by TideCloak
-      if (data["auth-server-url"]) {
+      if (kcData["auth-server-url"]) {
         setAdminAddress(kcData["auth-server-url"]);
       }
+      setOverlayLoading(false);
     }
-    setOverlayLoading(false);
-  }, [kcData, baseURL, isInitializing])
+  }, [kcData, baseURL])
 
   const checkTideLinkMsg = async () => {
     const params = new URLSearchParams(window.location.search);
@@ -187,6 +183,7 @@ export default function Login() {
           
         }
         else {
+          setPortIsPublic(false);
           throw new Error("TideCloak port is private, please change to public to allow connections.");
         }
       }
@@ -212,6 +209,7 @@ export default function Login() {
     })
 
     if (!response.ok) {
+      checkTideCloakPort(kcData);
       const errorResponse = await response.json();
       throw new Error(errorResponse.error || "Failed generate Tide invite link.");
     }
@@ -230,7 +228,7 @@ export default function Login() {
 
   // Show the initialiser
   if (isInitializing) {
-    return <LoadingPage isInitializing={isInitializing} setIsInitializing={setIsInitializing} setOverlayLoading={setOverlayLoading} setKcData={setKcData}/>;
+    return <LoadingPage isInitializing={isInitializing} setIsInitializing={setIsInitializing} setOverlayLoading={setOverlayLoading} setKcData={setKcData} setIsInitialized={setIsInitialized}/>;
   }
 
   // Show Email Invitation Page if demo user not linked to a Tide account after Initialization
@@ -291,7 +289,7 @@ export default function Login() {
                       : null
                   }
                   {
-                    !portIsPublic
+                    portIsPublic !== null && !portIsPublic
                       ?
                       <div className="mt-2 flex items-center text-red-600 text-sm">
                         <FaExclamationCircle className="mr-1" />

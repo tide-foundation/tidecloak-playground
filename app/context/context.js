@@ -16,12 +16,10 @@ const Context = createContext();
 export const Provider = ({ children }) => {
     const [authenticated, setAuthenticated] = useState(false);
     const [contextLoading, setContextLoading] = useState(true);
-    const [isInitialized, setIsInitialized] = useState(null);
+    const [isInitialized, setIsInitialized] = useState(false);
     const [baseURL, setBaseURL] = useState("");
     const realm = settings.realm;
     const initContext = async () => {
-        console.log("Hello mate")
-
         try {
             const adapterRes = await fetch("/api/tidecloakConfig");
             const adapter = await adapterRes.json();
@@ -45,7 +43,6 @@ export const Provider = ({ children }) => {
     };
 
     useEffect(() => {
-        console.log("triggered!")
         initContext();
     }, [isInitialized]);
     return (

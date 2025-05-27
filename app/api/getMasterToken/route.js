@@ -9,7 +9,6 @@ import apiService from "../apiService";
 export async function GET(){
     // Shared variable from /api/apiConfigs.js
     const baseURL = configs.baseURL;
-
     try {
         // Fetch a master token with the default admin and password (set in the command for setting up keycloak) from the default keycloak admin-cli client
         const masterToken = await apiService.getMasterToken(baseURL);
