@@ -212,8 +212,6 @@ export default function Admin() {
       (request.deleteStatus !== "DENIED" && request.status !== "DENIED")
     )
     setRequests(withoutDeniedReqs);
-   
-    
   }
 
   // Fetch all realm role objects to assign to user based on check box states
@@ -275,7 +273,6 @@ export default function Admin() {
    * @returns {JSX.Element} - HTML of the card representation 
    */
   function QuorumDashboard({ request, onCommit }) {
-      
       // Current request's status to be displayed
       let requestStatus;
 
@@ -663,8 +660,6 @@ export default function Admin() {
                     <Button type="submit" disabled={!hasChanges}>Submit Changes</Button>
                   </form>
 
-
-
                   {requests[0] && (
                     <>
                       {/* Sub-heading + info toggle */}
@@ -761,14 +756,9 @@ export default function Admin() {
                             </div>
                           );
                         })}
-
-
                       </div>
                     </>
                   )}
-
-                  
-
                 </div>
               )}
             </div>

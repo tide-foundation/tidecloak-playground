@@ -4,6 +4,10 @@ import IAMService from "../../lib/IAMService";
 import { usePathname, useRouter } from "next/navigation";
 import Button from "../components/button";
 
+/**
+ * This navigation tool bar is displayed at the top of each page after Login screen.
+ * @returns {JSX.Element} - HTML for button component
+ */
 export default function Nav() {
   const pathname = usePathname();
   const router = useRouter();

@@ -7,6 +7,9 @@ import {
 
 import { SiX } from "react-icons/si";
 
+/**
+ * Displayed at the bottom of every page with links Tide socials
+ */
 export default function Footer(){
     return (
         <footer className="mt-auto p-4 bg-gray-100 flex flex-col md:flex-row justify-between items-center text-sm gap-2 md:gap-0">

@@ -9,6 +9,10 @@ import { useRouter } from "next/navigation";
 import IAMService from "../../../lib/IAMService";
 import { loadingSquareFullPage } from "../../components/loadingSquare";
 
+/**
+ * Manages which path the demo should go down depending on token validity
+ * @returns - this redirect path instead of return something it pushes to a different path
+ */
 export default function RedirectPage() {
 
   const {authenticated, contextLoading} = useAppContext();

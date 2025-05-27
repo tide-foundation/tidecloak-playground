@@ -1,3 +1,6 @@
+/**
+ * Loading squares for the loadin screen
+ */
 export function loadingSquareFullPage(){
     return (
         <div className="overlay">

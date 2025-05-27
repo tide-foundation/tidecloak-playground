@@ -36,6 +36,15 @@ function DecryptingText({ text, speed = 30 }) {
     return <span className="font-mono text-green-600">{displayed}</span>;
 }
 
+/**
+ * Representation of each card and the decryption functionality for them
+ * @param {boolean} isUser - true if it's the logged in user to decrypt or not
+ * @param {Object} user - user object representation of demo user and dummy users
+ * @param {string} username - to be displayed on each card
+ * @param {string} dob - encrypted string to be decrypted and displayed on each card 
+ * @param {string} cc - encrypted string to be decrypted and displayed on each card 
+ * @returns {JSX.Element} - HTML for each card to be decrypted
+ */
 function DecryptedRow({ isUser, user, username, dob, cc }) {
     // State variable for handling Decrypt Button
     const [decrypted, setDecrypted] = useState(false);
@@ -169,7 +178,10 @@ function DecryptedRow({ isUser, user, username, dob, cc }) {
     );
 }
 
-// The Decryptable Cards
+/**
+ * Database Exposure Table to demonstration decryption 
+ * @returns {JSX.Element} - HTML parent containing decryptable cards for each user
+ */
 export default function DatabaseExposure() {
     
     const {baseURL, realm, contextLoading} = useAppContext();

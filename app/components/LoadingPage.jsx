@@ -2,6 +2,13 @@ import { useState, useEffect } from "react";
 import "../styles/spinKit.css";
 import "../styles/spinner.css";
 
+/**
+ * Initilizer to set up the realm with default settings
+ * @param {boolean} isInitializing - display initializer if true
+ * @param {function} setIsInitializing - turn off the initializer once completed
+ * @param {function} setOverlayLoading - turn on loading screen when completed to load back to login screen
+ * @returns {JSX.Element} - HTML component for the initializer screen 
+ */
 export default function LoadingPage({ isInitializing, setIsInitializing, setOverlayLoading }) {
 
     const [currentStep, setCurrentStep] = useState(0);
