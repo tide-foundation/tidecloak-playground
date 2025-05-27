@@ -65,14 +65,13 @@ export default function Login() {
     if (data["auth-server-url"]) {
       setAdminAddress(data["auth-server-url"]);
     }
-    setIsInitialized(true);
     setKcData(data);
     console.log(data)
     return data;
 
   } catch (error) {
     console.error("[Login] Failed to load config:", error);
-    setKcData({});
+    setKcData(null);
     setIsInitializing(true);
   }
 };
@@ -107,15 +106,19 @@ export default function Login() {
   }, [baseURL])
 
   useEffect(() => {
-    console.log(contextLoading)
-    if(kcData && !contextLoading){
-      checkTideCloakPort(kcData);
-    }
     if(!isInitializing){
+      console.log("HERE!!")
       setIsInitialized(true)
     }
+    if(kcData && baseURL){
+      checkTideCloakPort(kcData);
+      // Get the TideCloak address from the tidecloak.json file if its object is filled by TideCloak
+      if (data["auth-server-url"]) {
+        setAdminAddress(kcData["auth-server-url"]);
+      }
+    }
     setOverlayLoading(false);
-  }, [kcData, contextLoading, baseURL, isInitializing])
+  }, [kcData, baseURL, isInitializing])
 
   const checkTideLinkMsg = async () => {
     const params = new URLSearchParams(window.location.search);
@@ -227,7 +230,7 @@ export default function Login() {
 
   // Show the initialiser
   if (isInitializing) {
-    return <LoadingPage isInitializing={isInitializing} setIsInitializing={setIsInitializing} setOverlayLoading={setOverlayLoading} setIsInitialized={setIsInitialized} setKcData={setKcData}/>;
+    return <LoadingPage isInitializing={isInitializing} setIsInitializing={setIsInitializing} setOverlayLoading={setOverlayLoading} setKcData={setKcData}/>;
   }
 
   // Show Email Invitation Page if demo user not linked to a Tide account after Initialization
