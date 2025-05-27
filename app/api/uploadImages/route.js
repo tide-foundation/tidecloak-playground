@@ -6,6 +6,11 @@ import configs from '../apiConfigs'
 
 export const runtime = 'nodejs'
 
+/**
+ * This endpoint provides TideCloak with the custom images to be displayed in the Tide Enclave.
+ * The uploading process occurs during initialization.
+ * @returns {Promise<Object>} - response object with statuses of logo and background image upload 
+ */
 export async function POST() {
   const { realm, baseURL } = configs
 

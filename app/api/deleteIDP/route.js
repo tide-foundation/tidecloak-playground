@@ -2,12 +2,13 @@ import configs from "../apiConfigs";
 import apiService from "../apiService";
 
 /**
- * This endpoint is only for deleting the realm on error within initialisation.
+ * This endpoint is only for deleting the realm on error within initialization.
  * Deletion of IDP is required before deletion of the realm.
- * @return {Promse<Object>} - status responses for client side to use
+ * @return {Promse<Object>} - status response object for client side to use
  */
 export async function GET(){
 
+    // Shared backend variables from /api/apiConfigs.js
     const realm = configs.realm;
     const baseURL = configs.baseURL;
 

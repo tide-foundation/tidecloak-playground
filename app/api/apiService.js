@@ -1,11 +1,12 @@
 /**
  * POST - /realms/master/protocol/openid-connect/token
- * Get the master token from the default keycloak client, admin-cli
+ * Get the master token from the default TideCloak client, admin-cli
  * @param {String} baseURL - url body provided in the apiConfigs.js
- * @returns {Promise<Object>} - response status with Master Token
+ * @returns {String} - master token
  */
 async function getMasterToken(baseURL) {
 
+    // If the credentials aren't provided in .env use defaults values for local hosting TideCloak.
     const envConfig = {
         USERNAME: process.env.KC_USERNAME ?? (() => {
             console.log("KC_USERNAME not set in .env, using default set in apiService getMasterToken().");
@@ -50,11 +51,11 @@ async function getMasterToken(baseURL) {
 
 /**
  * POST - /admin/realms
- * Create the realm for the admin console
+ * Create the realm for the demo
  * @param {string} baseURL - url body provided in the apiConfigs.js
  * @param {string} token - master token
  * @param {JSON} settings - imported settings from the test-realm.json
- * @returns {Promise<Object>} - response status 
+ * @returns {Promise<Object>} - response status object based on the result of creating the realm
  */
 async function createDefaultRealm(baseURL, settings, token) {
     const response = await fetch(`${baseURL}/admin/realms`, {
@@ -82,11 +83,12 @@ async function createDefaultRealm(baseURL, settings, token) {
 
 /**
  * DELETE - /admin/realms/{realm}/identity-provider/instances/{alias}
- * Delete the IDP for the initialiser if an error occurs along the flow
+ * Delete the IDP for the initialiser if an error occurs along the initializer steps
+ * Needs to run before deleting the realm
  * @param {string} baseURL - url body provided in the apiConfigs.js
  * @param {string} realm - the realm name provided in the apiConfigs.js 
  * @param {string} token - master token
- * @returns {Promise<Object>} - response status  
+ * @returns {Promise<Object>} - response status based on whether deletion of IDP was successful. 
  */
 async function deleteIDP(baseURL, realm, token) {
     const response = await fetch(`${baseURL}/admin/realms/${realm}/identity-provider/instances/tide`, {
@@ -116,11 +118,11 @@ async function deleteIDP(baseURL, realm, token) {
 
 /**
  * DELETE - /admin/realms/{realm}
- * Delete the realm for initialiser upon an error occuring along the flow
+ * Delete the realm for initialiser upon an error occuring along the initializer steps
  * @param {string} baseURL - url body provided in the apiConfigs.js
  * @param {string} realm - the realm name provided in the apiConfigs.js 
  * @param {string} token - master token
- * @returns {Promise<Object>} - status responses
+ * @returns {Promise<Object>} - status response object for whether deletion of realm succeeded
  */
 async function deleteRealm(baseURL, realm, token) {
     const response = await fetch(`${baseURL}/admin/realms/${realm}`, {
@@ -145,11 +147,14 @@ async function deleteRealm(baseURL, realm, token) {
 
 /**
  * POST - /admin/realms/{realm}/users
- * Create the default user used in initialisation
+ * Create the demo user and dummy users during initialization
  * @param {string} baseURL - url body provided in the apiConfigs.js
  * @param {string} realm - the realm name provided in the apiConfigs.js 
  * @param {string} token - master token
- * @returns {Promise<Object>} - response status 
+ * @param {string} username - user's username in the dummy data of the createUsers endpoint
+ * @param {string} dob - user's dob in the dummy data of the createUsers endpoint
+ * @param {string} cc - user's cc in the dummy data of the createUsers endpoint
+ * @returns {Promise<Object>} - response status object for creating each user
  */
 async function createUser(baseURL, realm, token, username, dob, cc) {
     const response = await fetch(`${baseURL}/admin/realms/${realm}/users`, {
@@ -171,8 +176,6 @@ async function createUser(baseURL, realm, token, username, dob, cc) {
             "enabled": true
         })
     });
-
-    console.log(response);
 
     // Conflict case, but there should only be one user on initialisation.
     if (response.status === 409) {
@@ -222,7 +225,7 @@ async function getDemoUser(baseURL, realm, token) {
  * @param {string} baseURL - url body provided in the apiConfigs.js
  * @param {string} realm - the realm name provided in the apiConfigs.js
  * @param {string} token - master token
- * @returns {Promise<Object>} - A promise object with and array of clients
+ * @returns {Promise<Object>} - A response object with the realm management client object
  */
 async function getRealmManagement(baseURL, realm, token) {
     const response = await fetch(`${baseURL}/admin/realms/${realm}/clients`, {
@@ -245,69 +248,12 @@ async function getRealmManagement(baseURL, realm, token) {
 }
 
 /**
- * 
- * @param {*} baseURL 
- * @param {*} realm 
- * @param {*} userId 
- * @param {*} clientId 
- * @param {*} token 
- * @returns 
- */
-async function getAvailableClientRoles(baseURL, realm, userId, clientId, token) {
-    const response = await fetch(`${baseURL}/admin/realms/${realm}/users/${userId}/role-mappings/clients/${clientId}/available`, {
-        method: 'GET',
-        headers: {
-            "Content-Type": "application/json",
-            "authorization": `Bearer ${token}`,
-        },
-    });
-
-    if (!response.ok) {
-        throw new Error("Failed to get available client roles.");
-    }
-
-    const availableRoles = await response.json();
-
-    return { ok: true, status: response.status, body: availableRoles };
-}
-
-/**
- * 
- * @param {*} baseURL 
- * @param {*} realm 
- * @param {*} userId 
- * @param {*} clientId 
- * @param {*} role 
- * @param {*} token 
- * @returns 
- */
-async function assignClientRole(baseURL, realm, userId, clientId, role, token) {
-    const response = await fetch(`${baseURL}/admin/realms/${realm}/users/${userId}/role-mappings/clients/${clientId}`, {
-        method: 'POST',
-        headers: {
-            "Content-Type": "application/json",
-            "authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify([{
-            "id": role.id,
-            "name": role.name
-        }])
-    });
-
-    if (!response.ok) {
-        throw new Error("Unable to assign client role to user.");
-    }
-
-    return { ok: true, status: response.status };
-}
-
-/**
- * 
- * @param {*} baseURL 
- * @param {*} realm 
- * @param {*} userId 
- * @param {*} token 
- * @returns 
+ * Get all realm roles that can be assigned to the demo user
+ * @param {string} baseURL - url body provided in the apiConfigs.js
+ * @param {string} realm - the realm name provided in the apiConfigs.js
+ * @param {string} userId - demo user's ID
+ * @param {string} token - master token
+ * @returns {Promise<Object>} - response object with an array of available realm roles
  */
 async function getAvailableRealmRoles(baseURL, realm, userId, token) {
     const response = await fetch(`${baseURL}/admin/realms/${realm}/users/${userId}/role-mappings/realm/available`, {
@@ -328,13 +274,13 @@ async function getAvailableRealmRoles(baseURL, realm, userId, token) {
 }
 
 /**
- * 
- * @param {*} baseURL 
- * @param {*} realm 
- * @param {*} userId 
- * @param {*} role 
- * @param {*} token 
- * @returns 
+ * Assign the realm role to the demo user
+ * @param {string} baseURL - url body provided in the apiConfigs.js
+ * @param {string} realm - the realm name provided in the apiConfigs.js
+ * @param {string} userId - demo user's ID
+ * @param {object} role - represenation of the role to be assigned
+ * @param {string} token - master token
+ * @returns {Promise<Object>} - response object of whether role assigned successfully
  */
 async function assignRealmRole(baseURL, realm, userId, role, token) {
     const response = await fetch(`${baseURL}/admin/realms/${realm}/users/${userId}/role-mappings/realm`, {
@@ -358,10 +304,10 @@ async function assignRealmRole(baseURL, realm, userId, role, token) {
 
 /**
  * GET - /admin/realms/{realm}/clients
- * Get the client ID using the provided client name in test-realm.json
+ * Get the client ID of the demo using the provided client name in test-realm.json
  * @param {string} baseURL - url body provided in the apiConfigs.js
  * @param {string} realm - the realm name provided in the apiConfigs.js 
- * @param {*} clientName - client name (ID) from the test-realm.json 
+ * @param {string} clientName - client name (ID) from the test-realm.json 
  * @param {string} token - master token
  * @returns {Promise<Object>} - response status with client ID
  */
@@ -408,44 +354,13 @@ async function getClientAdapter(baseURL, realm, clientID, token) {
     return { ok: true, status: response.status, body: configsString };
 };
 
-async function updateSelfRegister(baseURL, realm, token) {
-
-    // Get the realm config first
-    const getResponse = await fetch(`${baseURL}/admin/realms/${realm}`, {
-        method: 'GET',
-        headers: {
-            "authorization": `Bearer ${token}`,
-            "Content-Type": "application/json"
-        }
-    });
-
-    if (!getResponse.ok) {
-        throw new Error("Failed to fetch realm configuration.");
-    }
-    const realmConfig = await getResponse.json();
-
-    // Turn is off
-    realmConfig.registrationAllowed = false;
-
-    const putResponse = await fetch(`${baseURL}/admin/realms/${realm}`, {
-        method: 'PUT',
-        headers: {
-            "authorization": `Bearer ${token}`,
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(
-            realmConfig
-        )
-    });
-
-    if (!putResponse.ok) {
-        throw new Error("Failed to turn Self Register off.");
-    }
-
-    return { ok: true, status: putResponse.status };
-}
-
-
+/**
+ * Get all users of the realm
+ * @param {string} baseURL - url body provided in the apiConfigs.js
+ * @param {string} realm - the realm name provided in the apiConfigs.js 
+ * @param {string} token - master token
+ * @returns {array} - all users existing in the realm
+ */
 async function getUsers(baseURL, realm, token) {
 
     const response = await fetch(`${baseURL}/admin/realms/${realm}/users`, {
@@ -462,17 +377,16 @@ async function getUsers(baseURL, realm, token) {
 
     const data = await response.json();
     return data;
-
 }
 
 /* TIDE CUSTOM ENDPOINTS */
 
 /**
- * 
- * @param {*} baseURL 
- * @param {*} realm 
- * @param {*} token 
- * @returns 
+ * Get all USER change requests for realm roles
+ * @param {string} baseURL - url body provided in the apiConfigs.js
+ * @param {string} realm - the realm name provided in the apiConfigs.js 
+ * @param {string} token - master token
+ * @returns {Promise<Object>} - status response based on whether fetching the change requests succeeded
  */
 async function getUsersChangeRequests(baseURL, realm, token) {
     const response = await fetch(`${baseURL}/admin/realms/${realm}/tide-admin/change-set/users/requests`, {
@@ -492,12 +406,12 @@ async function getUsersChangeRequests(baseURL, realm, token) {
 };
 
 /**
- * 
- * @param {*} baseURL 
- * @param {*} realm 
- * @param {*} usersChangeReq 
- * @param {*} token 
- * @returns 
+ * Approve the USER change request for realm roles
+ * @param {string} baseURL - url body provided in the apiConfigs.js
+ * @param {string} realm - the realm name provided in the apiConfigs.js 
+ * @param {object} usersChangeReq - representation of the user change request 
+ * @param {string} token - master token
+ * @returns {Promise<Object>} - status response of the approve on that change request
  */
 async function signChangeRequest(baseURL, realm, usersChangeReq, token) {
     const response = await fetch(`${baseURL}/admin/realms/${realm}/tide-admin/change-set/sign`, {
@@ -522,12 +436,12 @@ async function signChangeRequest(baseURL, realm, usersChangeReq, token) {
 };
 
 /**
- * 
- * @param {*} baseURL 
- * @param {*} realm 
- * @param {*} usersChangeReq 
- * @param {*} token 
- * @returns 
+ * Commit a USER change request for realm roles
+ * @param {string} baseURL - url body provided in the apiConfigs.js
+ * @param {string} realm - the realm name provided in the apiConfigs.js 
+ * @param {object} usersChangeReq - representation of the user change request 
+ * @param {string} token - master token
+ * @returns {Promise<Object>} - status response of the Commit on that change request
  */
 async function commitChangeRequest(baseURL, realm, usersChangeReq, token) {
     const response = await fetch(`${baseURL}/admin/realms/${realm}/tide-admin/change-set/commit`, {
@@ -735,6 +649,14 @@ async function signSettings(baseURL, realm, token) {
     return { ok: true, status: response.status };
 }
 
+/**
+ * Upload images during initialization for enclave to use
+ * @param {string} baseURL - url body provided in the apiConfigs.js
+ * @param {string} realm - the realm name provided in the apiConfigs.js 
+ * @param {string} token - master token
+ * @param {*} formData - image body
+ * @returns {Promise<Object>} - status response
+ */
 async function uploadImage(baseURL, realm, token, formData) {
     const url = `${baseURL}/admin/realms/${realm}/tide-idp-admin-resources/images/upload`;
     const res = await fetch(url, {
@@ -759,7 +681,14 @@ async function uploadImage(baseURL, realm, token, formData) {
     return { ok: true, status: res.status };
 }
 
-
+/**
+ * Delete existing images on TideCloak to be replaced
+ * @param {string} baseURL - url body provided in the apiConfigs.js
+ * @param {string} realm - the realm name provided in the apiConfigs.js 
+ * @param {string} token - master token
+ * @param {*} type - image type, URL path
+ * @returns {Promise<Object>} - status response 
+ */
 async function deleteImage(baseURL, realm, token, type) {
     const url = `${baseURL}/admin/realms/${realm}/tide-idp-admin-resources/images/${type}/delete`;
     const res = await fetch(url, {
@@ -789,8 +718,6 @@ const apiService = {
     getDemoUser,
     createTideInvite,
     getRealmManagement,
-    getAvailableClientRoles,
-    assignClientRole,
     getAvailableRealmRoles,
     assignRealmRole,
     getClientsChangeRequests,
@@ -799,7 +726,6 @@ const apiService = {
     signSettings,
     getClientID,
     getClientAdapter,
-    updateSelfRegister,
     getUsers,
     uploadImage,
     deleteImage

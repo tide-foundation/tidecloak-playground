@@ -4,17 +4,16 @@ import settings from "/test-realm.json";
 import apiService from "../apiService";
 
 /**
- * This custom Tide endpoint is only for signing the new IDP Settings
- * Should be called for changes to the IDP settings, else IGA processes like Review/Approve and Commit will error (string s empty error)
- * @param {Object} request - master token in the authorization header 
- * @returns {Promise<Object>} - status response for client side to use
+ * This custom Tide endpoint is only for signing the new IDP Settings each time there are major changes, or error will be thrown in the Tide Enclave.
+ * Should be called for changes to the IDP settings, else IGA processes like Review/Approve and Commit will error.
+ * @returns {Promise<Object>} - status response object based on signing was successful
  */
 export async function GET(){
-
+    // Shared variables from /api/apiConfigs.js
     const baseURL = configs.baseURL;
     const realm = settings.realm;
     
-    // Get its own master token as client side also needs this endpoint
+    // Get a new master token to avoid expiry
     const masterToken = await apiService.getMasterToken(baseURL);
 
     try {

@@ -3,10 +3,11 @@ import apiService from "../apiService";
 
 /**
  * GET /api/update
- * Updates the Tide IDP settings’ CustomAdminUIDomain to include
- * whatever query-string you pass in.
+ * Updates the Tide IDP setting's CustomAdminUIDomain to include whatever query-string you pass in.
+ * @returns {Promise<Object>} - response status object based on whether updating the domain was successful.
  */
 export async function GET(request) {
+  // Shared variables from /api/apiConfigs.js
   const { realm, baseURL, customURL: defaultCustomURL } = configs;
 
   // Pull any incoming query params off the request URL

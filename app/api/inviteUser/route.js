@@ -2,24 +2,24 @@ import configs from "../apiConfigs";
 import apiService from "../apiService";
 
 /**
- * This endpoint is only for creating the user and providing them a URL to link their admin account to Tide on initialisation.
- * 
- * @param {Object} request - contains master token within the authorization header
+ * This endpoint is only for getting the demo user and generating them a Tide invite URL, when Login button
+ * is clicked on the login screen of the client side.
  * @returns {Promise<Object>} - response status for client side to use in initialiser
  */
-export async function GET(request){
-
+export async function GET(){
+    // Shared varible from /api/apiConfigs.js
     const realm = configs.realm;
     const baseURL = configs.baseURL;
 
-    // To get the token without the leading "Bearer "
+    // Fetch token here, because Login screen on client side gets this endpoint
     const masterToken = await apiService.getMasterToken(baseURL);
 
     try {
-        // Get the user object to get the ID
+        // Get the user object to check if the demo user is already linked to a Tide account
         const demoUserResult = await apiService.getDemoUser(baseURL, realm, masterToken);
         const demoUser = demoUserResult.body;
 
+        // Check if demo user is already linked, if so don't generate a URL and proceed with login
         if (demoUser.attributes.vuid){
             return new Response(JSON.stringify({ok: true}), {status: 200}); 
         }

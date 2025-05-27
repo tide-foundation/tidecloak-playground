@@ -4,14 +4,15 @@ import fs from "fs";
 import apiService from "../apiService";
 
 /**
- * This endpoint is only for fetching adapter configurations and writing to the empty tidecloak.json object to access the administration console.
- * This is the final step in initialisation, and if tidecloak.json is empty, triggers the client side UI to display the fresh start process again.
- * @returns {Promise<Object>} - status reponse for client side to use
+ * This endpoint is only for fetching adapter configurations and writing to the empty tidecloak.json object for initialization.
+ * This is the final step in initialization. If tidecloak.json is manually set back to an empty object, initialization should trigger again when on the Login screen.
+ * @returns {Promise<Object>} - status reponse object based on whether the configurations were written.
  */
 export async function GET(){
-
+    // Shared variables from /api/apiConfigs.js
     const realm = configs.realm;
     const baseURL = configs.baseURL;
+    // From /test-realm.json
     const clientName = settings.clients[0].clientId; 
 
     // Fetch a master token with the default admin and password (set in the command for setting up keycloak) from the default keycloak admin-cli client

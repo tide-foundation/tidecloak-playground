@@ -1,4 +1,5 @@
 // This file shares the common API parameters across the endpoints to conveniently change values such as the base URL.
+// Default values are used for local hosting TideCloak when .env isn't provided.
 import settings from "/test-realm.json";
 
 const envConfig = {
@@ -12,7 +13,7 @@ const envConfig = {
   })()
 };
 
-// Realm name containing the Admin Console
+// Realm name containing the demo client
 const realm = settings.realm;
 // Used in every API fetch call
 const baseURL = envConfig.BASEURL;
