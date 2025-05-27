@@ -274,7 +274,7 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setOver
             </div>
 
             <h1 className="text-2xl font-bold mb-6 text-gray-800">
-                Initializing your demo app
+                Setting up your sandbox
             </h1>
             <ul className="list-inside space-y-2 text-gray-700">
                 {steps.map((msg, i) => (
