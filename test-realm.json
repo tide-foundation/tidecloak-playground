@@ -108,6 +108,7 @@
             "jsonType.label": "String"
           }
         },
+        {
           "name": "Tide DoB",
           "protocol": "openid-connect",
           "protocolMapper": "oidc-usermodel-attribute-mapper",
