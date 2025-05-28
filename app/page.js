@@ -23,7 +23,7 @@ import EmailInvitation from "./components/emailInvitation";
  */
 export default function Login() {
   // Shared context data to check if already authenticated skip this login screen
-  const { authenticated, baseURL, overlayLoading, setOverlayLoading } = useAppContext();
+  const { authenticated, baseURL, overlayLoading, setOverlayLoading} = useAppContext();
 
   // Current path "/"
   const pathname = usePathname();
@@ -42,9 +42,8 @@ export default function Login() {
   const [portIsPublic, setPortIsPublic] = useState(false);
   // State to show Tide account link status
   const [showLinkedTide, setShowLinkedTide] = useState(false);
-  // State to show the loading overlay
-  //const [overlayLoading, setOverlayLoading] = useState(true);
-  // State to show the Tide email invitation component
+
+  // State to show the Tide email invitation componenty
   const [isLinked, setIsLinked] = useState(true); 
 
   const [inviteLink, setInviteLink] = useState();
@@ -59,17 +58,17 @@ export default function Login() {
       // Show initialiser if tidecloak.json object is empty
       setIsInitializing(true);
     }
-
+    
     // Get the TideCloak address from the tidecloak.json file if its object is filled by TideCloak
     if (kcData && Object.keys(kcData).length !== 0 && kcData["auth-server-url"]) {
       setAdminAddress(kcData["auth-server-url"]);
     }
-  }, [authenticated])
+
+  }, [authenticated]);
 
 
   // Manage whether the token expired error should be shown using cached session data
   useEffect(() => {
-
     // Check the storage if a variable states that the token expired
     const tokenExpired = sessionStorage.getItem("tokenExpired");
     if (tokenExpired) {
@@ -112,12 +111,10 @@ export default function Login() {
     if (data.inviteURL) {
       setInviteLink(data.inviteURL);
       setIsLinked(false);
-      setOverlayLoading(false);
     }
     else {
       // Login if user has already linked Tide account (VUID exists)
       setIsLinked(true);
-      setOverlayLoading(false);
     }
   }
 

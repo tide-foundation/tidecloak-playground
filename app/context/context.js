@@ -33,10 +33,12 @@ export const Provider = ({ children }) => {
     const [overlayLoading, setOverlayLoading] = useState(true);
 
     useEffect(() => {
+        
         IAMService.initIAM((auth) => {
             setAuthenticated(auth)
             setContextLoading(false);
-          });
+            setOverlayLoading(false);
+        });
     }, [])
 
     return (
