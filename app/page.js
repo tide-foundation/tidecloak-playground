@@ -103,6 +103,8 @@ export default function Login() {
 
     checkTideLinkMsg();
     checkPort();
+    checkTideLink();
+
   }, [baseURL])
 
   useEffect(() => {
