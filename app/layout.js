@@ -5,8 +5,6 @@ import "./styles/loading.css"
 import { Provider } from "./context/context";
 import Nav from "./components/nav";
 import Footer from "./components/footer";
-import { Suspense } from "react";
-import { LoadingSquareFullPage } from "./components/loadingSquare";
 
 export const metadata = {
   title: 'TideCloak Demo',
@@ -26,7 +24,7 @@ export default function RootLayout({ children }) {
       <body className="min-h-screen flex flex-col bg-white">
         <Provider>
           <Nav />
-          <Suspense fallback={<LoadingSquareFullPage/>} className="flex-grow">{children}</Suspense>
+          <main className="flex-grow">{children}</main>
           <Footer />
         </Provider>
       </body>

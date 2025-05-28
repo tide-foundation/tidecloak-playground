@@ -23,7 +23,9 @@ export const Provider = ({ children }) => {
   const initContext = async () => {
     try {
       // 1) Load config & init TideCloak
-      const adapter = await IAMService.loadConfig();
+      const adapter = await IAMService.loadConfig();      
+      if(!adapter) return;
+
       if (adapter?.["auth-server-url"]) {
         setBaseURL(adapter["auth-server-url"].replace(/\/$/, ""));
       }
@@ -42,7 +44,7 @@ export const Provider = ({ children }) => {
   };
 
   useEffect(() => {
-        initContext();   
+    initContext();   
   }, [isInitialized]);
   return (
     <Context.Provider

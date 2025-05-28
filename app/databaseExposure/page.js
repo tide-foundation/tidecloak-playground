@@ -60,15 +60,9 @@ function DecryptedRow({ isUser, user, username, dob, cc }) {
 
     // If new user data arrives reset to potentially decrypt again
     useEffect(() => {
-        const checkRoles = async () => {
-            const canReadDob = IAMService.hasOneRole("_tide_dob.selfdecrypt");
-            const canReadCc = IAMService.hasOneRole("_tide_cc.selfdecrypt");
-            setCanReadDob(canReadDob);
-            setCanReadCc(canReadCc);
-        }
-
         setDecrypted(false);
-        checkRoles();
+        setCanReadDob(IAMService.hasOneRole("_tide_dob.selfdecrypt"));
+        setCanReadCc(IAMService.hasOneRole("_tide_cc.selfdecrypt"));
     }, [user])
 
     // Calls on Decrypt button being selected to update the fields
@@ -285,7 +279,7 @@ export default function DatabaseExposure() {
                     // Let the data load first
                     users.length > 0 && !contextLoading
                     ?
-                    users.map(async (user, i) => (
+                    users.map((user, i) => (
                         
                     <DecryptedRow key={i}
                     isUser={user.attributes?.vuid
