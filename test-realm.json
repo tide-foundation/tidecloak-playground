@@ -138,6 +138,7 @@
             "access.token.claim": "false",
             "claim.name": "cc",
             "jsonType.label": "String"
+          }
         }
       ]
     }
