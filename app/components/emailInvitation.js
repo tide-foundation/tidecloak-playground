@@ -29,15 +29,10 @@ export default function EmailInvitation({ inviteLink }) {
           <div className="font-bold text-lg">Invitation to Play App</div>
 
           <div className="text-gray-800 leading-relaxed whitespace-pre-wrap">
-{`Dear Human,
-
-You've been invited to connect as the demo user for the Play app.
-
-Create or connect your Tide account by clicking "Accept" below and following the prompts.
-
-A Tide account allows you to login to any service with guaranteed privacy and ownership of your identity.
-
-Once you're done you'll be redirected to the Play app.`}
+            <p>Dear Human,<br />&nbsp;</p>
+            <p>You’ve been invited to connect as the <strong><i>demo user</i></strong> for the Play app.<br />&nbsp;</p>
+            <p>Create or connect your Tide account by clicking <strong><i>Accept</i></strong> below and following the prompts.<br />&nbsp;</p>
+            <p>A Tide account allows you to login to any service with guaranteed privacy and ownership of your identity.</p>
           </div>
 
           <div>
@@ -47,6 +42,9 @@ Once you're done you'll be redirected to the Play app.`}
             >
               Accept
             </button>
+                        <p className="text-sm italic text-gray-600 mt-3">
+              Once you’re done you’ll be redirected to the Play app.
+            </p>
           </div>
         </div>
       </div>

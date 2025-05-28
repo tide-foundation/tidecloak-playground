@@ -9,6 +9,7 @@ import IAMService from "../lib/IAMService";
 import { usePathname, useRouter } from "next/navigation";
 import {
   FaExclamationCircle,
+  FaChevronDown,
   FaCheckCircle
 } from "react-icons/fa";
 import LoadingPage from "./components/LoadingPage";
@@ -22,7 +23,7 @@ import EmailInvitation from "./components/emailInvitation";
  */
 export default function Login() {
   // Shared context data to check if already authenticated skip this login screen
-  const { authenticated, baseURL } = useAppContext();
+  const { authenticated, baseURL, overlayLoading, setOverlayLoading } = useAppContext();
 
   // Current path "/"
   const pathname = usePathname();
@@ -30,6 +31,7 @@ export default function Login() {
   const router = useRouter();
   // Expandable extra information
   const [showLoginAccordion, setShowLoginAccordion] = useState(false);
+  const [showBackendDetails, setShowBackendDetails] = useState(false);
   // State for error message when token expires
   const [showError, setShowError] = useState(false);
   // TideCloak address
@@ -41,7 +43,7 @@ export default function Login() {
   // State to show Tide account link status
   const [showLinkedTide, setShowLinkedTide] = useState(false);
   // State to show the loading overlay
-  const [overlayLoading, setOverlayLoading] = useState(true);
+  //const [overlayLoading, setOverlayLoading] = useState(true);
   // State to show the Tide email invitation component
   const [isLinked, setIsLinked] = useState(true); 
 
@@ -67,6 +69,7 @@ export default function Login() {
 
   // Manage whether the token expired error should be shown using cached session data
   useEffect(() => {
+
     // Check the storage if a variable states that the token expired
     const tokenExpired = sessionStorage.getItem("tokenExpired");
     if (tokenExpired) {
@@ -250,16 +253,29 @@ export default function Login() {
                   )}
                 </div>
 
-                <div className="border-t border-gray-200 pt-6">
-                  <h3 className="text-xl font-semibold mb-2">TideCloak Administration</h3>
-                  <p className="mb-4">Check out the backend of TideCloak, your fully fledged IAM system.</p>
-                  <div className="border border-dashed border-gray-500 p-4">
-                    <ul className="list-disc list-inside">
-                      <li>
+                <div className="pl-6 mt-2">
+                  <button
+                    onClick={() => setShowBackendDetails(prev => !prev)}
+                    className="flex items-center gap-2 text-gray-400 hover:text-gray-500 text-sm transition"
+                  >
+                    <span>View TideCloak Backend</span>
+                    <FaChevronDown
+                      className={`transform transition-transform duration-300 ${showBackendDetails ? "rotate-180" : ""}`}
+                    />
+                  </button>
+
+                  <div className="mt-2">
+                    <AccordionBox title="TideCloak Administration" isOpen={showBackendDetails}>
+                      <p className="mb-4">Check out the backend of TideCloak, your fully fledged IAM system.</p>
+                      <div className="border border-dashed border-gray-500 p-4">
+                        <ul className="list-disc list-inside">
+                          <li>
                         Visit: <a href={adminAddress} className="text-blue-600">{adminAddress}</a>
                       </li>
                       <li>Use Credentials: admin / password</li>
                     </ul>
+                  </div>
+                  </AccordionBox>
                   </div>
                 </div>
               </div>

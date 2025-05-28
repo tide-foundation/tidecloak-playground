@@ -1,7 +1,9 @@
 /**
  * Loading squares for the loadin screen
  */
+
 export function loadingSquareFullPage(){
+    
     return (
         <div className="overlay">
             <div className="sk-cube-grid mb-4">

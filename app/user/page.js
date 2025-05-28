@@ -21,7 +21,7 @@ export default function User(){
     const pathname = usePathname();
 
     // Shared data across the application
-    const {baseURL, realm, authenticated, contextLoading} = useAppContext();
+    const {baseURL, realm, authenticated, contextLoading, overlayLoading, setOverlayLoading} = useAppContext();
 
     // Logged in user object
     const [loggedUser, setLoggedUser] = useState(null);
@@ -36,10 +36,6 @@ export default function User(){
     // Expandable extra user information
     const [showUserInfoAccordion, setShowUserInfoAccordion] = useState(false);
     
-    // Show the page only after all data loaded
-    const [dataLoading, setDataLoading] = useState(false);
-    // Show a loading screen while waiting for context with this variable
-    const [overlayLoading, setOverlayLoading] = useState(false);
     // State variable for managing button and its spinner
     const [loadingButton, setLoadingButton] = useState(false);
 
@@ -85,7 +81,7 @@ export default function User(){
 
     // Populate the Database Exposure cards, and set the current logged users
     const getAllUsers = async () => {
-      setDataLoading(true);
+      setOverlayLoading(true);
 
       // This is for the Accordion - it shows data directly from the database as is, not from id token.
       const token = await IAMService.getToken(); 
@@ -158,10 +154,8 @@ export default function User(){
                 setEncryptedCc(loggedUser.attributes.cc[0]); 
               }
             }
-            // Close the over
+            // Close the overlay
             setOverlayLoading(false);
-            // Show the data all at once
-            setDataLoading(false);
 
           } catch (error){
             // This catch is currently implemented for this demo's purposes
@@ -228,7 +222,6 @@ export default function User(){
 
             // Show the data at once
             setOverlayLoading(false);
-            setDataLoading(false);
            
           }
       } 
@@ -312,8 +305,7 @@ export default function User(){
                 setTimeout(() => setUserFeedback(""), 3000); // Clear after 3 seconds
                 getAllUsers(); 
             }
-            //setOverlayLoading(false);
-            setDataLoading(false);
+            setOverlayLoading(false);
             setLoadingButton(false);
         }
         catch (error) {
@@ -326,8 +318,6 @@ export default function User(){
     return (
       !contextLoading && !overlayLoading
       ?
-        !dataLoading
-        ?
         <main className="flex-grow w-full pt-6 pb-16">
         <div className="w-full px-8 max-w-screen-md mx-auto flex flex-col items-start gap-8">
         <div className="w-full max-w-3xl">
@@ -518,7 +508,6 @@ export default function User(){
         </div>
         <div className="h-10"></div>
         </main>
-        : null
       :loadingSquareFullPage() 
     )
 };

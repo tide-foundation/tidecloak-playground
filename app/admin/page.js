@@ -22,7 +22,7 @@ export default function Admin() {
   // Navigator
   const router = useRouter();
   // Shared context data
-  const { baseURL, realm, authenticated, contextLoading } = useAppContext();
+  const { baseURL, realm, authenticated, contextLoading, overlayLoading, setOverlayLoading } = useAppContext();
   // Admin state of the logged in demo user
   const [isTideAdmin, setIsTideAdmin] = useState(false);
   // Object representation of the logged in user
@@ -39,8 +39,7 @@ export default function Admin() {
 
   // Show page only if loaded
   const [loading, setLoading] = useState(true);
-  // Loading overlay for the context
-  const [loadingOverlay, setLoadingOverlay] = useState(false);
+  
   // Spinning loader and button manager
   const [loadingButton, setLoadingButton] = useState(false);
 
@@ -86,6 +85,7 @@ export default function Admin() {
   useEffect(() => {
     if (!contextLoading){
       getRealmRoles();
+      setOverlayLoading(false);
     }
   }, [contextLoading])
 
@@ -263,7 +263,7 @@ export default function Admin() {
     setExpandedIndex(0);
     // Reset form state
     setHasChanges(false);
-    setLoadingOverlay(false);
+    setOverlayLoading(false);
   }
 
   /**
@@ -486,7 +486,7 @@ export default function Admin() {
 
   const addCommit = async (request) => {
       setLoadingButton(true);
-      //setLoadingOverlay(true);
+      
       try{
 
         const token = await IAMService.getToken();
@@ -523,10 +523,10 @@ export default function Admin() {
             setExpandedIndex(prev => prev + 1);
           }
         }
-        //setLoadingOverlay(false);
+        
         setLoadingButton(false);
       }catch(e){
-        //setLoadingOverlay(false);
+    
         setLoadingButton(false);
         throw e;
       }
@@ -553,7 +553,7 @@ export default function Admin() {
       !loading
       ?
       <main className="flex-grow w-full pt-6">
-      {loadingOverlay && loadingSquareFullPage()}
+      {overlayLoading && loadingSquareFullPage()}
       <div className="w-full px-8 max-w-screen-md mx-auto flex flex-col items-start gap-8">
       <div className="w-full max-w-3xl">
         {pathname === "/admin" && (

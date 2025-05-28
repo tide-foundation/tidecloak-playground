@@ -30,6 +30,7 @@ if (adapter && Object.keys(adapter).length > 0){
 export const Provider = ({ children }) => {
     const [authenticated, setAuthenticated] = useState(false);
     const [contextLoading, setContextLoading] = useState(true);
+    const [overlayLoading, setOverlayLoading] = useState(true);
 
     useEffect(() => {
         IAMService.initIAM((auth) => {
@@ -39,7 +40,7 @@ export const Provider = ({ children }) => {
     }, [])
 
     return (
-        <Context.Provider value={{realm, baseURL, authenticated, contextLoading}}>
+        <Context.Provider value={{realm, baseURL, authenticated, contextLoading, overlayLoading, setOverlayLoading}}>
             {children}
         </Context.Provider>
     )

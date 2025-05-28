@@ -184,7 +184,7 @@ function DecryptedRow({ isUser, user, username, dob, cc }) {
  */
 export default function DatabaseExposure() {
     
-    const {baseURL, realm, contextLoading} = useAppContext();
+    const {baseURL, realm, contextLoading, overlayLoading, setOverlayLoading} = useAppContext();
 
     const [users, setUsers] = useState([]);
 
@@ -192,9 +192,6 @@ export default function DatabaseExposure() {
     const [showExposureAccordion, setShowExposureAccordion] = useState(false);
     // Further expandable information
     const [showDeepDive, setShowDeepDive] = useState(false);
-
-    // Show a loading screen while waiting for context with this variable
-    const [overlayLoading, setOverlayLoading] = useState(false);
 
     // Show a loading screen when loading context (such as when refreshing browser) until finish
     // Fetch all user data when navigating
