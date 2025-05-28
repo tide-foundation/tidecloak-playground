@@ -27,6 +27,7 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setOver
     useEffect(() => {
         if (isInitializing) {
             try {
+                setOverlayLoading(false);
                 initialize();
             }
             catch (error) {
