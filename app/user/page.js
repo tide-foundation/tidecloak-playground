@@ -25,6 +25,9 @@ export default function User(){
 
     // Logged in user object
     const [loggedUser, setLoggedUser] = useState(null);
+    //
+    const [tokenCC, setTokenCC] = useState();
+    const [tokenDoB, setTokenDoB] = useState();
     
     // Encrypted user data in the database, modified to expand for full view or shortened.
     const [expandedBlobs, setExpandedBlobs] = useState({});
@@ -51,6 +54,8 @@ export default function User(){
     // Encrypted Credit Card from database to decrypted in databaseExposureTable
     const [encryptedCc, setEncryptedCc] = useState("");
 
+
+    // Only show overlay when context is loading
     useEffect(() => {
       if (contextLoading){
         setOverlayLoading(true);
@@ -82,6 +87,7 @@ export default function User(){
     const getAllUsers = async () => {
       setDataLoading(true);
 
+      // This is for the Accordion - it shows data directly from the database as is, not from id token.
       const token = await IAMService.getToken(); 
       const users = await appService.getUsers(baseURL, realm, token);
       const loggedVuid =  await IAMService.getValueFromToken("vuid");
@@ -91,6 +97,10 @@ export default function User(){
         }
       });
       setLoggedUser(loggedInUser);
+
+      // Use the encrypted DoB and CC from the identity token for this Users Page
+      setTokenDoB(await IAMService.getDoB());
+      setTokenCC(await IAMService.getCC());
     };
 
     // Decrypt the logged in user's data
@@ -101,17 +111,17 @@ export default function User(){
             let arrayToDecrypt = [];
 
             // Date of Birth
-            if (loggedUser.attributes.dob && IAMService.hasOneRole("_tide_dob.selfdecrypt")){
+            if (tokenDoB && IAMService.hasOneRole("_tide_dob.selfdecrypt")){
               arrayToDecrypt.push({
-                "encrypted": loggedUser.attributes.dob[0],
+                "encrypted": tokenDoB,
                 "tags": ["dob"]
               })
             }
 
             // Credit Card
-            if (loggedUser.attributes.cc && IAMService.hasOneRole("_tide_cc.selfdecrypt")){
+            if (tokenCC && IAMService.hasOneRole("_tide_cc.selfdecrypt")){
                arrayToDecrypt.push({
-                "encrypted": loggedUser.attributes.cc[0],
+                "encrypted": tokenCC,
                 "tags": ["cc"]
               })
             }
@@ -127,23 +137,23 @@ export default function User(){
                 // User Information
                 setFormData(prev => ({...prev, dob: decryptedData[0]}));
                 setFormData(prev => ({...prev, cc: decryptedData[1]}));
-                // Database Exposure Simulation and for Accordion
+                // For Accordion - use the data directly from the database
                 setEncryptedDob(loggedUser.attributes.dob[0]); 
                 setEncryptedCc(loggedUser.attributes.cc[0]); 
               }
               else if (arrayToDecrypt[0].tags[0] === "dob"){
                 // User Information
                 setFormData(prev => ({...prev, dob: decryptedData[0]}));
-                setFormData(prev => ({...prev, cc: loggedUser.attributes.cc[0]}));
-                // Database Exposure Simulation
+                setFormData(prev => ({...prev, cc: tokenCC}));
+                // For the Accordion - use the data directly from the database
                 setEncryptedDob(loggedUser.attributes.dob[0]); 
                 setEncryptedCc(loggedUser.attributes.cc[0]); 
               }
               else { 
                 // User Information
-                setFormData(prev => ({...prev, dob: loggedUser.attributes.dob[0]}));
+                setFormData(prev => ({...prev, dob: tokenDoB}));
                 setFormData(prev => ({...prev, cc: decryptedData[0]}));
-                // Database Exposure Simulation
+                // For Accordion - use the data directly from the database
                 setEncryptedDob(loggedUser.attributes.dob[0]); 
                 setEncryptedCc(loggedUser.attributes.cc[0]); 
               }
@@ -154,36 +164,37 @@ export default function User(){
             setDataLoading(false);
 
           } catch (error){
+            // This catch is currently implemented for this demo's purposes
             // Mainly to handle the raw data from the initialisation. Data needs to be raw initially to be uniquely encrypted and decrypted.
             
             let arrayToEncrypt = []; 
-            setFormData(prev => ({...prev, dob: loggedUser.attributes.dob[0]}));
+            setFormData(prev => ({...prev, dob: tokenDoB}));
             
             // Both fields shouldn't have letters unless it's encrypted, check that they're raw number strings
             // Or check that they're base64
             // Date of Birth
-            if (loggedUser.attributes.dob){
-              if (/[a-zA-Z]/.test(loggedUser.attributes.dob[0])){
-                setFormData(prev => ({...prev, dob: loggedUser.attributes.dob[0]}))
-                setEncryptedDob(loggedUser.attributes.dob[0]); 
+            if (tokenDoB){
+              if (/[a-zA-Z]/.test(tokenDoB)){
+                setFormData(prev => ({...prev, dob: tokenDoB}))
+                setEncryptedDob(tokenDoB); 
               }
               else {
                 arrayToEncrypt.push({
-                  "data": loggedUser.attributes.dob[0],
+                  "data": tokenDoB,
                   "tags": ["dob"]
                 })
               }
             }
           
             // Credit Card
-            if (loggedUser.attributes.cc){
-              if (/[a-zA-Z]/.test(loggedUser.attributes.cc[0])){
-                setFormData(prev => ({...prev, cc: loggedUser.attributes.cc[0]}));
-                setEncryptedCc(loggedUser.attributes.cc[0]); 
+            if (tokenCC){
+              if (/[a-zA-Z]/.test(tokenCC)){
+                setFormData(prev => ({...prev, cc: tokenCC}));
+                setEncryptedCc(tokenCC); 
               }
               else {
                 arrayToEncrypt.push({
-                  "data": loggedUser.attributes.cc[0],
+                  "data": tokenCC,
                   "tags": ["cc"]
                 })
               }
@@ -194,13 +205,13 @@ export default function User(){
               const encryptedData = await IAMService.doEncrypt(arrayToEncrypt);
 
               if (IAMService.hasOneRole("_tide_cc.selfdecrypt")){
-                setFormData(prev => ({...prev, cc: loggedUser.attributes.cc[0]}));
+                setFormData(prev => ({...prev, cc: tokenCC}));
               }
               else {
                 setFormData(prev => ({...prev, cc: encryptedData[1]}));
               }
              
-              // Database Exposure Simulation
+              // For the Accordion - use the data directly from the database
               setEncryptedDob(encryptedData[0]); 
               setEncryptedCc(encryptedData[1]); 
 
@@ -292,6 +303,8 @@ export default function User(){
             // Store the data
             const token = await IAMService.getToken();
             const response = await appService.updateUser(baseURL, realm, loggedUser, token);
+            // Updating the access token should also update the ID token
+            await IAMService.updateToken();
 
             // Show the confirmation message
             if (response.ok){

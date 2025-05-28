@@ -107,6 +107,38 @@
             "claim.name": "vuid",
             "jsonType.label": "String"
           }
+        },
+         {
+          "name": "Tide DoB",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "false",
+            "userinfo.token.claim": "false",
+            "user.attribute": "dob",
+            "id.token.claim": "true",
+            "lightweight.claim": "false",
+            "access.token.claim": "false",
+            "claim.name": "dob",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "Tide CreditCard",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "false",
+            "userinfo.token.claim": "false",
+            "user.attribute": "cc",
+            "id.token.claim": "true",
+            "lightweight.claim": "false",
+            "access.token.claim": "false",
+            "claim.name": "cc",
+            "jsonType.label": "String"
+          }
         }
       ]
     }
