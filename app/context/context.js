@@ -14,16 +14,15 @@ const Context = createContext();
  * @returns {JSX.Element} - HTML, wrapped around everything in layout.js
  */
 export const Provider = ({ children }) => {
-  const [authenticated,   setAuthenticated]   = useState(false);
-  const [contextLoading,  setContextLoading]  = useState(true);
-  const [isInitialized,   setIsInitialized]   = useState(false);
-  const [baseURL,         setBaseURL]         = useState("");
+  const [authenticated, setAuthenticated] = useState(false);
+  const [contextLoading, setContextLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [baseURL, setBaseURL] = useState("");
   const realm = settings.realm;
 
   const initContext = async () => {
     try {
-      // 1) Load config & init TideCloak
-      const adapter = await IAMService.loadConfig();      
+      const adapter = await IAMService.loadConfig();
       if(!adapter) return;
 
       if (adapter?.["auth-server-url"]) {
@@ -39,7 +38,6 @@ export const Provider = ({ children }) => {
     } catch (err) {
       console.error("Failed to initialize app context:", err);
       setContextLoading(false);
-      setIsInitialized(true);
     }
   };
 

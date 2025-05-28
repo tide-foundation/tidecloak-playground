@@ -85,7 +85,7 @@ export default function Login() {
       return;
     }
     fetchConfig();
-  }, [authenticated, router]);
+  }, [authenticated]);
 
 
   // Manage whether the token expired error should be shown using cached session data
