@@ -8,7 +8,7 @@ import AccordionBox from "../components/accordionBox";
 import Button from "../components/button";
 import { FaCheckCircle, FaChevronRight } from "react-icons/fa";
 import { usePathname, useRouter } from "next/navigation";
-import { loadingSquareFullPage } from "../components/loadingSquare";
+import { LoadingSquareFullPage } from "../components/loadingSquare";
 import "../styles/spinKit.css";
 import "../styles/spinner.css";
 
@@ -139,7 +139,7 @@ export default function Admin() {
   // Get current logged in user
   const getLoggedUser = async () => { 
     const token = await IAMService.getToken();
-    const loggedVuid =  await IAMService.getValueFromToken("vuid");
+    const loggedVuid =  IAMService.getValueFromToken("vuid");
     const users = await appService.getUsers(baseURL, realm, token);
     const loggedInUser = users.find(user => {
       if (user.attributes.vuid[0] === loggedVuid){
@@ -411,7 +411,7 @@ export default function Admin() {
         const popupData = await response.json();
     
         if (popupData.requiresApprovalPopup === "true") {
-          const vuid = await IAMService.getValueFromToken("vuid");
+          const vuid = IAMService.getValueFromToken("vuid");
           const heimdall = new Heimdall(popupData.customDomainUri, [vuid]);
           await heimdall.openEnclave();
         
@@ -553,7 +553,7 @@ export default function Admin() {
       !loading
       ?
       <main className="flex-grow w-full pt-6">
-      {loadingOverlay && loadingSquareFullPage()}
+      {loadingOverlay && LoadingSquareFullPage()}
       <div className="w-full px-8 max-w-screen-md mx-auto flex flex-col items-start gap-8">
       <div className="w-full max-w-3xl">
         {pathname === "/admin" && (
@@ -767,6 +767,6 @@ export default function Admin() {
         </div>
         <div className="h-10"></div>
         </main>
-        : loadingSquareFullPage()
+        : <LoadingSquareFullPage/>
     )
 }

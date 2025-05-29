@@ -7,7 +7,7 @@ import appService from "../../lib/appService";
 import { usePathname } from "next/navigation";
 import AccordionBox from "../components/accordionBox";
 import Button from "../components/button";
-import { loadingSquareFullPage } from "../components/loadingSquare";
+import { LoadingSquareFullPage } from "../components/loadingSquare";
 import "../styles/spinKit.css";
 import "../styles/spinner.css";
 
@@ -84,7 +84,7 @@ export default function User(){
 
       const token = await IAMService.getToken(); 
       const users = await appService.getUsers(baseURL, realm, token);
-      const loggedVuid =  await IAMService.getValueFromToken("vuid");
+      const loggedVuid =  IAMService.getValueFromToken("vuid");
       const loggedInUser = users.find(user => {
         if (user.attributes?.vuid[0] === loggedVuid){
             return user;
@@ -506,6 +506,6 @@ export default function User(){
         <div className="h-10"></div>
         </main>
         : null
-      :loadingSquareFullPage() 
+      :<LoadingSquareFullPage/>
     )
 };

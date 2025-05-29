@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import AccordionBox from "./components/accordionBox";
 import Button from "./components/button";
-import kcData from "/tidecloak.json";
 import { useAppContext } from "./context/context";
 import IAMService from "../lib/IAMService";
 import { usePathname, useRouter } from "next/navigation";
@@ -14,8 +13,8 @@ import {
 } from "react-icons/fa";
 import LoadingPage from "./components/LoadingPage";
 import appService from "../lib/appService";
-import { loadingSquareFullPage } from "./components/loadingSquare";
 import EmailInvitation from "./components/emailInvitation";
+import { LoadingSquareFullPage } from "./components/loadingSquare";
 
 /**
  * "/" path containing the Login page, logouts including token expiration is redirected here
@@ -23,7 +22,7 @@ import EmailInvitation from "./components/emailInvitation";
  */
 export default function Login() {
   // Shared context data to check if already authenticated skip this login screen
-  const { authenticated, baseURL } = useAppContext();
+  const { authenticated, baseURL, setIsInitialized } = useAppContext();
 
   // Current path "/"
   const pathname = usePathname();
@@ -39,7 +38,7 @@ export default function Login() {
   // State to show initialiser when the tidecloak.json file has an empty object
   const [isInitializing, setIsInitializing] = useState(false);
   // State to show port status
-  const [portIsPublic, setPortIsPublic] = useState(false);
+  const [portIsPublic, setPortIsPublic] = useState(null);
   // State to show Tide account link status
   const [showLinkedTide, setShowLinkedTide] = useState(false);
   // State to show the loading overlay
@@ -48,37 +47,76 @@ export default function Login() {
   const [isLinked, setIsLinked] = useState(true); 
 
   const [inviteLink, setInviteLink] = useState();
+  // Loaded adapter config
+  const [kcData, setKcData] = useState(null);
 
-  // Check authentication from context
-  useEffect(() => {
-    // Skip login screen if already logged in
-    if (authenticated) {
-      router.push("/auth/redirect");
-    }
-    else if (!authenticated && Object.keys(kcData).length === 0) {
-      // Show initialiser if tidecloak.json object is empty
+  const fetchConfig = async () => {
+  try {
+    const res = await fetch("/api/tidecloakConfig");
+    const data = await res.json();
+
+
+    // Show initialiser if tidecloak.json object is empty
+    if (Object.keys(data).length === 0) {
       setIsInitializing(true);
+      return;
     }
 
     // Get the TideCloak address from the tidecloak.json file if its object is filled by TideCloak
-    if (kcData && Object.keys(kcData).length !== 0 && kcData["auth-server-url"]) {
-      setAdminAddress(kcData["auth-server-url"]);
+    if (data["auth-server-url"]) {
+      setAdminAddress(data["auth-server-url"]);
     }
-  }, [authenticated])
+    setKcData(data);
+    setOverlayLoading(false);
+    return data;
+
+  } catch (error) {
+    console.error("[Login] Failed to load config:", error);
+    setKcData(null);
+    setIsInitializing(true);
+  }
+};
+
+  // Fetch kcData on load and handle redirects
+  useEffect(() => {
+    // Skip login screen if already authenticated
+    if (authenticated) {
+      router.push("/auth/redirect");
+      return;
+    }
+    fetchConfig();
+  }, [authenticated]);
 
 
   // Manage whether the token expired error should be shown using cached session data
   useEffect(() => {
-    // Check the storage if a variable states that the token expired
+    const checkPort = async () => {
+      const data = await fetchConfig();
+      if ( baseURL){
+        checkTideCloakPort(data);
+      }
+    }
     const tokenExpired = sessionStorage.getItem("tokenExpired");
     if (tokenExpired) {
       setShowError(true);
     }
 
-    checkTideCloakPort();
     checkTideLinkMsg();
+    checkPort();
     checkTideLink();
-  }, [])
+
+  }, [baseURL])
+
+  useEffect(() => {
+    if(kcData && baseURL){
+      checkTideCloakPort(kcData);
+      // Get the TideCloak address from the tidecloak.json file if its object is filled by TideCloak
+      if (kcData["auth-server-url"]) {
+        setAdminAddress(kcData["auth-server-url"]);
+      }
+      setOverlayLoading(false);
+    }
+  }, [kcData, baseURL])
 
   const checkTideLinkMsg = async () => {
     const params = new URLSearchParams(window.location.search);
@@ -132,14 +170,13 @@ export default function Login() {
 
   // Can't connect to TideCloak if the ports are not public
   // It's public if there's an Ok response
-  const checkTideCloakPort = async () => {
-    
+  const checkTideCloakPort = async (data) => {    
     const url = `${baseURL}/realms/master/.well-known/openid-configuration`;
 
     try {
       // Only ping this endpoint if initialisation has already happened
       // Else the endpoint doesn't exist, because realm doesn't. 
-      if (Object.keys(kcData).length !== 0){
+      if (data && Object.keys(data).length !== 0){
         const response = await appService.checkPort(url);
 
         if (response.ok) {
@@ -148,6 +185,7 @@ export default function Login() {
           
         }
         else {
+          setPortIsPublic(false);
           throw new Error("TideCloak port is private, please change to public to allow connections.");
         }
       }
@@ -157,7 +195,6 @@ export default function Login() {
     } catch (error){
       setPortIsPublic(false);
       console.log(error);
-      
     }
   };
 
@@ -168,13 +205,32 @@ export default function Login() {
     sessionStorage.removeItem("tokenExpired");
     // Turn off the message if TideCloak port wasn't public before
     setPortIsPublic(true);
+    // Generate invite link
+    const response = await fetch(`/api/inviteUser`, {
+      method: "GET",
+    })
 
-    IAMService.doLogin();
+    if (!response.ok) {
+      checkTideCloakPort(kcData);
+      const errorResponse = await response.json();
+      throw new Error(errorResponse.error || "Failed generate Tide invite link.");
+    }
+
+    const data = await response.json();
+
+    // Redirect to invite link to link Tide account when user has no VUID
+    if (data.inviteURL) {
+      router.push(data.inviteURL);
+    }
+    else {
+      // Login if user has already linked Tide account (VUID exists)
+      IAMService.doLogin();
+    }
   };
 
   // Show the initialiser
   if (isInitializing) {
-    return <LoadingPage isInitializing={isInitializing} setIsInitializing={setIsInitializing} setOverlayLoading={setOverlayLoading} setIsLinked={setIsLinked}/>;
+    return <LoadingPage isInitializing={isInitializing} setIsInitializing={setIsInitializing} setOverlayLoading={setOverlayLoading} setKcData={setKcData} setIsInitialized={setIsInitialized}/>;
   }
 
   // Show Email Invitation Page if demo user not linked to a Tide account after Initialization
@@ -235,7 +291,7 @@ export default function Login() {
                       : null
                   }
                   {
-                    !portIsPublic
+                    portIsPublic !== null && !portIsPublic
                       ?
                       <div className="mt-2 flex items-center text-red-600 text-sm">
                         <FaExclamationCircle className="mr-1" />
@@ -285,6 +341,6 @@ export default function Login() {
         </div>
         <div className="h-10"></div>
       </main>
-      : loadingSquareFullPage()
+      : <LoadingSquareFullPage/>
   );
 }
