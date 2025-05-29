@@ -286,11 +286,14 @@ export default function Login() {
             alt="Playground Logo"
             className="h-10 w-auto"
           />
-                  <h2 className="text-3xl font-bold">Welcome to your demo app</h2>
-                  <p>Traditional IAM is only as secure as the admins and systems managing it. TideCloak fundamentally removes this risk, by ensuring no-one holds the keys to the kingdom. Explore to learn how.</p>
-                  <h3 className="text-xl font-semibold">BYOiD</h3>
-                  <p className="text-base">Login or create an account to see the user experience demo.</p>
+                  <h2 className="text-3xl font-bold">Welcome to Play - a demo of provable security in action</h2>
+                  <p>Your admin is breached. IAM vendor compromised. Cloud host exposed.</p>
+                  <p>And still - no data leaks, no identities stolen, no access abused.</p>
+                  <p>That’s TideCloak. Build trust. Ship fast. Sleep easy.</p>
+                  <h3 className="text-xl font-semibold">Secure "BYOiD" Login</h3>
+                  <p className="text-base">Log in like normal - but your password is never stored, shared, or exposed.</p>
                   <Button onClick={handleLogin} className="hover:bg-red-700">Login</Button>
+                  <p className="text-sm italic text-gray-600 mt-3">Identity for your eyes only.</p>
                   {
                     showError
                       ?
