@@ -7,7 +7,7 @@ import appService from "../../lib/appService";
 import { usePathname } from "next/navigation";
 import AccordionBox from "../components/accordionBox";
 import Button from "../components/button";
-import { loadingSquareFullPage } from "../components/loadingSquare";
+import { LoadingSquareFullPage } from "../components/loadingSquare";
 import "../styles/spinKit.css";
 import "../styles/spinner.css";
 
@@ -25,7 +25,8 @@ export default function User(){
 
     // Logged in user object
     const [loggedUser, setLoggedUser] = useState(null);
-    //
+    
+    // Data from ID Token
     const [tokenCC, setTokenCC] = useState();
     const [tokenDoB, setTokenDoB] = useState();
     
@@ -50,6 +51,9 @@ export default function User(){
     // Encrypted Credit Card from database to decrypted in databaseExposureTable
     const [encryptedCc, setEncryptedCc] = useState("");
 
+    // Show the data all at once (double loading);
+    const [pageLoaded, setPageLoaded] = useState(false);
+
     // Runs first, once context verifies user is authenticated populate all users' demo data
     useEffect(() => {
       if (!contextLoading){
@@ -73,8 +77,6 @@ export default function User(){
 
     // Populate the Database Exposure cards, and set the current logged users
     const getAllUsers = async () => {
-      setOverlayLoading(true);
-
       // This is for the Accordion - it shows data directly from the database as is, not from id token.
       const token = await IAMService.getToken(); 
       const users = await appService.getUsers(baseURL, realm, token);
@@ -146,8 +148,7 @@ export default function User(){
                 setEncryptedCc(loggedUser.attributes.cc[0]); 
               }
             }
-            // Close the overlay
-            setOverlayLoading(false);
+            setPageLoaded(true);
 
           } catch (error){
             // This catch is currently implemented for this demo's purposes
@@ -210,11 +211,9 @@ export default function User(){
             const token = await  IAMService.getToken();
             const response = await appService.updateUser(baseURL, realm, loggedUser, token);
 
-            console.log(error);
+            console.log(error); 
 
-            // Show the data at once
-            setOverlayLoading(false);
-           
+            setPageLoaded(true);
           }
       } 
     };
@@ -297,11 +296,9 @@ export default function User(){
                 setTimeout(() => setUserFeedback(""), 3000); // Clear after 3 seconds
                 getAllUsers(); 
             }
-            setOverlayLoading(false);
             setLoadingButton(false);
         }
         catch (error) {
-          setOverlayLoading(false);
           setLoadingButton(false);
           console.log(error);
         } 
@@ -309,6 +306,8 @@ export default function User(){
 
     return (
       !contextLoading && !overlayLoading
+      ?
+      pageLoaded
       ?
         <main className="flex-grow w-full pt-6 pb-16">
         <div className="w-full px-8 max-w-screen-md mx-auto flex flex-col items-start gap-8">
@@ -500,6 +499,7 @@ export default function User(){
         </div>
         <div className="h-10"></div>
         </main>
-      :loadingSquareFullPage() 
+      : <LoadingSquareFullPage/>
+      :<LoadingSquareFullPage/>
     )
 };

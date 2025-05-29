@@ -509,7 +509,6 @@ async function toggleIGA(baseURL, realm, token) {
             "isIGAEnabled": true,
         })
     });
-    console.log(response);
 
     if (!response.ok) {
         throw new Error("Failed to toggle IGA on.")

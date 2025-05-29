@@ -1,18 +1,19 @@
 import { useState, useEffect } from "react";
 import "../styles/spinKit.css";
 import "../styles/spinner.css";
+import { useAppContext } from "../context/context";
 
 /**
  * Initilizer to set up the realm with default settings
  * @param {boolean} isInitializing - display initializer if true
  * @param {function} setIsInitializing - turn off the initializer once completed
  * @param {function} setOverlayLoading - turn on loading screen when completed to load back to login screen
- * @param {function} setIsLinked - show the email invitation page after initialization 
  * @returns {JSX.Element} - HTML component for the initializer screen 
  */
-export default function LoadingPage({ isInitializing, setIsInitializing, setOverlayLoading}) {
+export default function LoadingPage({ isInitializing, setIsInitializing, setKcData, setIsInitialized }) {
 
     const [currentStep, setCurrentStep] = useState(0);
+    const {setOverlayLoading} = useAppContext();
 
     // Initialiser
     const steps = [
@@ -27,7 +28,9 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setOver
     useEffect(() => {
         if (isInitializing) {
             try {
+                setOverlayLoading(false);
                 initialize();
+                
             }
             catch (error) {
                 console.log(error);
@@ -193,6 +196,9 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setOver
             const errorResponse = await response.json();
             throw new Error(errorResponse.error || "Failed to get adapter for the client.");
         }
+
+        const data = await response.json();
+        return data.kcData;
     }
 
     let restartCounter = 0;
@@ -209,11 +215,14 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setOver
             await uploadImages();
             await signSettings();
             await updateCustomDomainURL({linkedTide: true});
-            await getAdapter();
+            const data = await getAdapter();
+            setKcData(data);
 
             // Load out of the initializer first then stop it to prevent Login screen appearing and giving context time to load 
             setOverlayLoading(true);
             setIsInitializing(false);
+            setIsInitialized(true)
+            
         }
         catch (error) {
             // Delete IDP then realm if an error occurs in initialisation in preparation for restarting the process

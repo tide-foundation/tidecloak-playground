@@ -5,6 +5,8 @@ echo "🔧 [0/3] Installing required dependencies (OpenSSL)..."
 sudo apt-get update
 sudo apt-get install -y libssl-dev
 
+sudo cp .env.overrides .env
+
 echo "🌐 [1/3] Building Codespace URLs..."
 CODESPACE_URL_NEXT=$([ "$CODESPACES" = "true" ] && echo "https://${CODESPACE_NAME}-3000.app.github.dev" || echo "http://localhost:3000")
 CODESPACE_URL_TC=$([ "$CODESPACES" = "true" ] && echo "https://${CODESPACE_NAME}-8080.app.github.dev" || echo "http://localhost:8080")
@@ -32,7 +34,7 @@ echo "📦 Installing Node.js dependencies..."
 npm install
 
 echo "🏗️ Building Playground app..."
-#npm run build
+npm run build
 
 echo ""
 echo "✅ Tidecloak Setup complete. You can close this terminal or continue below."

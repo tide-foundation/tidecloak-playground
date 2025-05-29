@@ -1,11 +1,11 @@
 "use client";
 import IAMService from "../../lib/IAMService";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import Button from "../components/button";
 import {useAppContext} from '../context/context'
 import appService from "../../lib/appService";
 import AccordionBox from "../components/accordionBox";
-import { loadingSquareFullPage } from "../components/loadingSquare";
+import { LoadingSquareFullPage } from "../components/loadingSquare";
 import '../styles/spinKit.css';
 import "../styles/spinner.css";
 
@@ -295,6 +295,6 @@ export default function DatabaseExposure() {
         </div>
         <div className="h-10"/>
         </main>
-        : loadingSquareFullPage()
+        : <LoadingSquareFullPage/>
     );
 }
