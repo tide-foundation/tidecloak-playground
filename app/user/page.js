@@ -326,7 +326,7 @@ export default function User(){
                 {/* Accordion content */}
                 <AccordionBox title="Why is this special?" isOpen={showUserInfoAccordion}>
                   <p>
-                    You’re seeing <strong>dynamic user field access</strong> in action. The form respects granular permissions
+                    You're seeing <strong>dynamic user field access</strong> in action. The form respects granular permissions
                     (read, write, none) in real time.
                   </p>
                   <p>
