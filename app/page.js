@@ -287,9 +287,7 @@ export default function Login() {
             className="h-10 w-auto"
           />
                   <h2 className="text-3xl font-bold">Welcome to Play - a demo of provable security in action</h2>
-                  <p>Your admin is breached. IAM vendor compromised. Cloud host exposed.</p>
-                  <p>And still - no data leaks, no identities stolen, no access abused.</p>
-                  <p>That’s TideCloak. Build trust. Ship fast. Sleep easy.</p>
+                  <p>Your admin is breached. IAM vendor compromised. Cloud host exposed.<br />And still - no data leaks, no identities stolen, no access abused.<br />That’s TideCloak. Build trust. Ship fast. Sleep easy.</p>
                   <h3 className="text-xl font-semibold">Secure "BYOiD" Login</h3>
                   <p className="text-base">Log in like normal - but your password is never stored, shared, or exposed.</p>
                   <Button onClick={handleLogin} className="hover:bg-red-700">Login</Button>
