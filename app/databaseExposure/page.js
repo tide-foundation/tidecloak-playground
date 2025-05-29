@@ -184,7 +184,7 @@ function DecryptedRow({ isUser, user, username, dob, cc }) {
  */
 export default function DatabaseExposure() {
     
-    const {baseURL, realm, contextLoading, overlayLoading, setOverlayLoading} = useAppContext();
+    const {baseURL, realm, contextLoading, overlayLoading} = useAppContext();
 
     const [users, setUsers] = useState([]);
 
@@ -199,7 +199,6 @@ export default function DatabaseExposure() {
         if (!contextLoading){
             getAllUsers();
         }
-        setOverlayLoading(true);
         
     }, [contextLoading])
 
@@ -209,8 +208,6 @@ export default function DatabaseExposure() {
       const token = await IAMService.getToken(); 
       const users = await appService.getUsers(baseURL, realm, token);
       setUsers(users);
-
-      setOverlayLoading(false);
     };
 
     return (

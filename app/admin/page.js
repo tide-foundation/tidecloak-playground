@@ -22,7 +22,7 @@ export default function Admin() {
   // Navigator
   const router = useRouter();
   // Shared context data
-  const { baseURL, realm, authenticated, contextLoading, overlayLoading, setOverlayLoading } = useAppContext();
+  const { baseURL, realm, authenticated, contextLoading, overlayLoading } = useAppContext();
   // Admin state of the logged in demo user
   const [isTideAdmin, setIsTideAdmin] = useState(false);
   // Object representation of the logged in user
@@ -85,7 +85,6 @@ export default function Admin() {
   useEffect(() => {
     if (!contextLoading){
       getRealmRoles();
-      setOverlayLoading(false);
     }
   }, [contextLoading])
 
@@ -263,7 +262,6 @@ export default function Admin() {
     setExpandedIndex(0);
     // Reset form state
     setHasChanges(false);
-    setOverlayLoading(false);
   }
 
   /**

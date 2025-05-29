@@ -50,14 +50,6 @@ export default function User(){
     // Encrypted Credit Card from database to decrypted in databaseExposureTable
     const [encryptedCc, setEncryptedCc] = useState("");
 
-
-    // Only show overlay when context is loading
-    useEffect(() => {
-      if (contextLoading){
-        setOverlayLoading(true);
-      }
-    }, [])
-
     // Runs first, once context verifies user is authenticated populate all users' demo data
     useEffect(() => {
       if (!contextLoading){
@@ -309,7 +301,7 @@ export default function User(){
             setLoadingButton(false);
         }
         catch (error) {
-          //setOverlayLoading(false);
+          setOverlayLoading(false);
           setLoadingButton(false);
           console.log(error);
         } 
