@@ -155,7 +155,7 @@ function DecryptedRow({ isUser, user, username, dob, cc }) {
 
         <div className="flex items-center gap-3">
             
-            <Button onClick={handleDecrypt} disabled={decrypted ? decrypted : loadingButton}>
+            <Button className="hover:bg-red-700" onClick={handleDecrypt} disabled={decrypted ? decrypted : loadingButton}>
                 {decrypted ? "✓ Decrypted" : "Decrypt"}
             </Button>                 
             {

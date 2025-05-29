@@ -480,7 +480,7 @@ export default function User(){
                   {
                   (IAMService.hasOneRole("_tide_dob.selfencrypt") || IAMService.hasOneRole("_tide_cc.selfencrypt")) && (
                     <div className="flex items-center gap-3">
-                      <Button type="submit" disabled={loadingButton}>Save Changes</Button>
+                      <Button className="hover:bg-red-700" type="submit" disabled={loadingButton}>Save Changes</Button>
                       {
                         loadingButton
                         ? <div className="spinner"/>

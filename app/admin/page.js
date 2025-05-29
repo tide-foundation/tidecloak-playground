@@ -451,7 +451,7 @@ export default function Admin() {
 
         <div className="pt-4">
           { request.deleteStatus === "DRAFT" || request.status === "DRAFT"? (
-            <Button onClick={() => {handleUserApprove(request)}} disabled={pending}>
+            <Button className="hover:bg-red-700" onClick={() => {handleUserApprove(request)}} disabled={pending}>
               Review
             </Button>
 
@@ -583,7 +583,7 @@ export default function Admin() {
                   <h2 className="text-3xl font-bold mb-4">Administration</h2>
                   <p className="text-sm text-gray-600 mb-6">This page demonstrates how user privileges can be managed in App, and how the app is uniquely protected against a compromised admin.</p>
                   {!showExplainer ? (
-                    <Button onClick={handleElevateClick}>Elevate to Admin Role</Button>
+                    <Button className="hover:bg-red-700" onClick={handleElevateClick}>Elevate to Admin Role</Button>
                   ) : (
                     <div className="bg-yellow-50 border border-yellow-300 p-4 rounded space-y-3">
                       <p className="font-semibold text-yellow-800">“Yeah, but doesn't the fact you can do this undermine the whole 'quorum-enforced' thing?”</p>
@@ -593,7 +593,7 @@ export default function Admin() {
                         <br /><br /><strong>For this demo, you're a quorum of one.</strong>
                       </p>
                       <div className="flex items-center gap-x-4">
-                        <Button onClick={confirmAdmin} disabled={loadingButton}>Continue as Admin</Button>
+                        <Button className="hover:bg-red-700" onClick={confirmAdmin} disabled={loadingButton}>Continue as Admin</Button>
                         {
                           loadingButton
                           ? <div className="spinner--left"/>
@@ -650,7 +650,7 @@ export default function Admin() {
                       </div>
                     </div>
 
-                    <Button type="submit" disabled={!hasChanges}>Submit Changes</Button>
+                    <Button className="hover:bg-red-700" type="submit" disabled={!hasChanges}>Submit Changes</Button>
                   </form>
 
                   {requests[0] && (
@@ -687,7 +687,7 @@ export default function Admin() {
                               onClick={() => setExpandedIndex(idx)}
                               className={`
       cursor-pointer border rounded p-3
-      ${isActive ? "border-l-4 border-blue-500 bg-blue-50" : "border-gray-200 bg-white"}
+      ${isActive ? "border-l-4 border-red-500 bg-blue-50" : "border-gray-200 bg-white"}
       transition-colors
     `}
                             >

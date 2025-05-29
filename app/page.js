@@ -290,7 +290,7 @@ export default function Login() {
                   <p>Traditional IAM is only as secure as the admins and systems managing it. TideCloak fundamentally removes this risk, by ensuring no-one holds the keys to the kingdom. Explore to learn how.</p>
                   <h3 className="text-xl font-semibold">BYOiD</h3>
                   <p className="text-base">Login or create an account to see the user experience demo.</p>
-                  <Button onClick={handleLogin}>Login</Button>
+                  <Button onClick={handleLogin} className="hover:bg-red-700">Login</Button>
                   {
                     showError
                       ?
