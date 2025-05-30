@@ -43,5 +43,5 @@
   },
 
   "postCreateCommand": "chmod +x .devcontainer/setup.sh && ./.devcontainer/setup.sh",
-  "postStartCommand": "if [ \"$CODESPACES\" = \"true\" ]; then gh codespace ports visibility 8080:public --codespace $CODESPACE_NAME; fi && npm run start"
+  "postStartCommand": "if [ \"$CODESPACES\" = \"true\" ]; then gh codespace ports visibility 8080:public --codespace $CODESPACE_NAME; fi && npm run dev"
 }

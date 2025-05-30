@@ -35,7 +35,6 @@ export const Provider = ({ children }) => {
         setAuthenticated(auth);
         setContextLoading(false);
         setOverlayLoading(false);
-        setIsInitialized(true);   // mark done
       });
     } catch (err) {
       console.error("Failed to initialize app context:", err);

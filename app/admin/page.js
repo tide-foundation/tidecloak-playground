@@ -569,7 +569,7 @@ export default function Admin() {
                   <li>Granular control over sensitive fields</li>
                 </ul>
                 <p>
-                  So you don’t worry about{" "}
+                  So you don't worry about{" "}
                   <a href="#" className="text-blue-600 underline">permission sprawl</a>,{" "}
                   <a href="#" className="text-blue-600 underline">forgotten admin accounts</a>, or{" "}
                   <a href="#" className="text-blue-600 underline">over-permissioned users</a>.
@@ -586,9 +586,9 @@ export default function Admin() {
                     <Button className="hover:bg-red-700" onClick={handleElevateClick}>Elevate to Admin Role</Button>
                   ) : (
                     <div className="bg-yellow-50 border border-yellow-300 p-4 rounded space-y-3">
-                      <p className="font-semibold text-yellow-800">“Yeah, but doesn't the fact you can do this undermine the whole 'quorum-enforced' thing?”</p>
+                      <p className="font-semibold text-yellow-800">"Yeah, but doesn't the fact you can do this undermine the whole 'quorum-enforced' thing?"</p>
                       <p className="text-sm text-yellow-900">
-                        Can’t get anything past you! This ability highlights the usual flaw in IAM systems — that the system itself can assign powers at will.
+                        Can't get anything past you! This ability highlights the usual flaw in IAM systems — that the system itself can assign powers at will.
                         With TideCloak, once hardened with a quorum, even the system can't unilaterally grant admin rights.
                         <br /><br /><strong>For this demo, you're a quorum of one.</strong>
                       </p>
@@ -670,7 +670,7 @@ export default function Admin() {
                       {showChangeInfo && (
                         <AccordionBox title="Quorum-enforced permission changes" isOpen>
                           <p className="text-sm text-gray-600">
-                            Each individual permission change must be reviewed and committed in turn. Click “Review” to open the full approval workflow.
+                            Each individual permission change must be reviewed and committed in turn. Click "Review" to open the full approval workflow.
                           </p>
                         </AccordionBox>
                       )}
