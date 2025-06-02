@@ -67,7 +67,7 @@ function useTideConfig(authenticated) {
  * - Detects ?linkedTide=true → shows success message
  * - Fetches /api/inviteUser to get invite URL or detect linked users
  */
-function useTideLink(baseURL) {
+function useTideLink(baseURL, setOverlayLoading) {
   const [isLinked, setIsLinked] = useState(true);
   const [inviteLink, setInviteLink] = useState('');
   const [showLinkedMsg, setShowLinkedMsg] = useState(false);
@@ -125,21 +125,23 @@ function useTideLink(baseURL) {
 }
 
 export default function Login() {
+
+  const [overlayLoading, setOverlayLoading] = useState(true);
+
   // App context (overlayLoading and re-init are handled in LoadingPage)
-  const { authenticated, baseURL, setIsInitialized } = useAppContext();
+  const { authenticated, baseURL, setIsInitialized} = useAppContext();
 
   // Config and initialization hook
   const { kcData, isInitializing, setKcData, setIsInitializing } = useTideConfig(authenticated);
 
   // Invite/link hook
-  const { isLinked, inviteLink, showLinkedMsg } = useTideLink(baseURL);
+  const { isLinked, inviteLink, showLinkedMsg } = useTideLink(baseURL, setOverlayLoading);
 
   // Local UI state
   const [showLoginAccordion, setShowLoginAccordion] = useState(false);
   const [showBackendDetails, setShowBackendDetails] = useState(false);
   const [showError, setShowError] = useState(false);
   const [portIsPublic, setPortIsPublic] = useState(null);
-  const [overlayLoading, setOverlayLoading] = useState(true);
 
 
   const router = useRouter();
