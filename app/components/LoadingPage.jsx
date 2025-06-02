@@ -10,10 +10,9 @@ import { useAppContext } from "../context/context";
  * @param {function} setOverlayLoading - turn on loading screen when completed to load back to login screen
  * @returns {JSX.Element} - HTML component for the initializer screen 
  */
-export default function LoadingPage({ isInitializing, setIsInitializing, setKcData, setIsInitialized }) {
+export default function LoadingPage({ isInitializing, setIsInitializing, setKcData, setIsInitialized, setOverlayLoading }) {
 
     const [currentStep, setCurrentStep] = useState(0);
-    const {setOverlayLoading} = useAppContext();
 
     // Initialiser
     const steps = [
@@ -28,9 +27,7 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setKcDa
     useEffect(() => {
         if (isInitializing) {
             try {
-                setOverlayLoading(false);
-                initialize();
-                
+                initialize();                
             }
             catch (error) {
                 console.log(error);

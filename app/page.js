@@ -99,8 +99,11 @@ function useTideLink(baseURL) {
         if (res.ok && data.inviteURL) {
           setInviteLink(data.inviteURL);
           setIsLinked(false);
+          setOverlayLoading(false);
+
         } else {
           setIsLinked(true);
+          setOverlayLoading(false);
         }
       } catch (err) {
         if (!cancelled) console.error('[Login] Invite fetch failed:', err);
@@ -123,7 +126,7 @@ function useTideLink(baseURL) {
 
 export default function Login() {
   // App context (overlayLoading and re-init are handled in LoadingPage)
-  const { authenticated, baseURL, overlayLoading, setIsInitialized } = useAppContext();
+  const { authenticated, baseURL, setIsInitialized } = useAppContext();
 
   // Config and initialization hook
   const { kcData, isInitializing, setKcData, setIsInitializing } = useTideConfig(authenticated);
@@ -136,6 +139,8 @@ export default function Login() {
   const [showBackendDetails, setShowBackendDetails] = useState(false);
   const [showError, setShowError] = useState(false);
   const [portIsPublic, setPortIsPublic] = useState(null);
+  const [overlayLoading, setOverlayLoading] = useState(true);
+
 
   const router = useRouter();
   const pathname = usePathname();
@@ -197,6 +202,7 @@ export default function Login() {
         setIsInitializing={setIsInitializing}
         setKcData={setKcData}
         setIsInitialized={setIsInitialized}
+        setOverlayLoading ={setOverlayLoading}
       />
     );
   }
