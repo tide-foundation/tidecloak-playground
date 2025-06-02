@@ -21,7 +21,7 @@ export default function User(){
     const pathname = usePathname();
 
     // Shared data across the application
-    const {baseURL, realm, authenticated, contextLoading, overlayLoading, setOverlayLoading} = useAppContext();
+    const {baseURL, realm, authenticated, contextLoading} = useAppContext();
 
     // Logged in user object
     const [loggedUser, setLoggedUser] = useState(null);
@@ -37,6 +37,10 @@ export default function User(){
     // Expandable extra user information
     const [showUserInfoAccordion, setShowUserInfoAccordion] = useState(false);
     
+    // Show the page only after all data loaded
+    const [dataLoading, setDataLoading] = useState(false);
+    // Show a loading screen while waiting for context with this variable
+    const [overlayLoading, setOverlayLoading] = useState(false);
     // State variable for managing button and its spinner
     const [loadingButton, setLoadingButton] = useState(false);
 
@@ -51,8 +55,13 @@ export default function User(){
     // Encrypted Credit Card from database to decrypted in databaseExposureTable
     const [encryptedCc, setEncryptedCc] = useState("");
 
-    // Show the data all at once (double loading);
-    const [pageLoaded, setPageLoaded] = useState(false);
+
+    // Only show overlay when context is loading
+    useEffect(() => {
+      if (contextLoading){
+        setOverlayLoading(true);
+      }
+    }, [])
 
     // Runs first, once context verifies user is authenticated populate all users' demo data
     useEffect(() => {
@@ -77,10 +86,12 @@ export default function User(){
 
     // Populate the Database Exposure cards, and set the current logged users
     const getAllUsers = async () => {
+      setDataLoading(true);
+
       // This is for the Accordion - it shows data directly from the database as is, not from id token.
       const token = await IAMService.getToken(); 
       const users = await appService.getUsers(baseURL, realm, token);
-      const loggedVuid =  await IAMService.getValueFromToken("vuid");
+      const loggedVuid =  IAMService.getValueFromToken("vuid");
       const loggedInUser = users.find(user => {
         if (user.attributes?.vuid[0] === loggedVuid){
             return user;
@@ -89,8 +100,8 @@ export default function User(){
       setLoggedUser(loggedInUser);
 
       // Use the encrypted DoB and CC from the identity token for this Users Page
-      setTokenDoB(await IAMService.getDoB());
-      setTokenCC(await IAMService.getCC());
+      setTokenDoB(IAMService.getDoB());
+      setTokenCC(IAMService.getCC());
     };
 
     // Decrypt the logged in user's data
@@ -148,7 +159,8 @@ export default function User(){
                 setEncryptedCc(loggedUser.attributes.cc[0]); 
               }
             }
-            setPageLoaded(true);
+            // Close the overlay
+            setOverlayLoading(false);
 
           } catch (error){
             // This catch is currently implemented for this demo's purposes
@@ -211,9 +223,12 @@ export default function User(){
             const token = await  IAMService.getToken();
             const response = await appService.updateUser(baseURL, realm, loggedUser, token);
 
-            console.log(error); 
+            console.log(error);
 
-            setPageLoaded(true);
+            // Show the data at once
+            setOverlayLoading(false);
+            setDataLoading(false);
+           
           }
       } 
     };
@@ -296,6 +311,7 @@ export default function User(){
                 setTimeout(() => setUserFeedback(""), 3000); // Clear after 3 seconds
                 getAllUsers(); 
             }
+            setDataLoading(false);
             setLoadingButton(false);
         }
         catch (error) {
@@ -307,7 +323,7 @@ export default function User(){
     return (
       !contextLoading && !overlayLoading
       ?
-      pageLoaded
+        !dataLoading
       ?
         <main className="flex-grow w-full pt-6 pb-16">
         <div className="w-full px-8 max-w-screen-md mx-auto flex flex-col items-start gap-8">
@@ -326,7 +342,7 @@ export default function User(){
                 {/* Accordion content */}
                 <AccordionBox title="Why is this special?" isOpen={showUserInfoAccordion}>
                   <p>
-                    You're seeing <strong>dynamic user field access</strong> in action. The form respects granular permissions
+                    You’re seeing <strong>dynamic user field access</strong> in action. The form respects granular permissions
                     (read, write, none) in real time.
                   </p>
                   <p>
@@ -499,7 +515,7 @@ export default function User(){
         </div>
         <div className="h-10"></div>
         </main>
-      : <LoadingSquareFullPage/>
+        : null
       :<LoadingSquareFullPage/>
     )
 };

@@ -22,7 +22,7 @@ export default function Admin() {
   // Navigator
   const router = useRouter();
   // Shared context data
-  const { baseURL, realm, authenticated, contextLoading, overlayLoading } = useAppContext();
+  const { baseURL, realm, authenticated, contextLoading } = useAppContext();
   // Admin state of the logged in demo user
   const [isTideAdmin, setIsTideAdmin] = useState(false);
   // Object representation of the logged in user
@@ -36,7 +36,11 @@ export default function Admin() {
   const [activeRequestIndex, setActiveRequestIndex] = useState(0);
   // Current change request being opened
   const [expandedIndex, setExpandedIndex] = useState(0);
-  
+
+  // Show page only if loaded
+  const [loading, setLoading] = useState(true);
+  // Loading overlay for the context
+  const [loadingOverlay, setLoadingOverlay] = useState(false);
   // Spinning loader and button manager
   const [loadingButton, setLoadingButton] = useState(false);
 
@@ -136,7 +140,7 @@ export default function Admin() {
   const getLoggedUser = async () => { 
     const token = await IAMService.getToken();
     const loggedVuid =  IAMService.getValueFromToken("vuid");
-    const users = appService.getUsers(baseURL, realm, token);
+    const users = await appService.getUsers(baseURL, realm, token);
     const loggedInUser = users.find(user => {
       if (user.attributes.vuid[0] === loggedVuid){
           return user;
@@ -160,9 +164,10 @@ export default function Admin() {
   const checkAdminRole = async () => {
       const token = await IAMService.getToken();
       // Get Realm Management default client's ID
-      const clientID = appService.getRealmManagementId(baseURL, realm, token);
+      const clientID = await appService.getRealmManagementId(baseURL, realm, token);
       // Check if user already has the role
-      setIsTideAdmin(appService.checkUserAdminRole(baseURL, realm, loggedUser.id, clientID, token));
+      setIsTideAdmin(await appService.checkUserAdminRole(baseURL, realm, loggedUser.id, clientID, token));
+      setLoading(false);
   }
 
   // Assign this initial user the tide-realm-admin client role managed by the default client Realm Management
@@ -171,7 +176,7 @@ export default function Admin() {
     const token = await IAMService.getToken();
 
     if (!isTideAdmin){
-        const RMClientID = appService.getRealmManagementId(baseURL, realm, token);
+        const RMClientID = await appService.getRealmManagementId(baseURL, realm, token);
 
         // Get the tide-realm-admin role to assign
         const tideAdminRole = await appService.getTideAdminRole(baseURL, realm, loggedUser.id, RMClientID, token);
@@ -201,7 +206,7 @@ export default function Admin() {
   const getChangeRequests = async () => {
     
     const token = await IAMService.getToken();
-    const changeRequests = appService.getUserRequests(baseURL, realm, token);
+    const changeRequests = await appService.getUserRequests(baseURL, realm, token);
     // Remove Denied Requests
     const withoutDeniedReqs = changeRequests.filter((request) => 
       (request.deleteStatus !== "DENIED" && request.status !== "DENIED")
@@ -231,7 +236,7 @@ export default function Admin() {
     localStorage.removeItem("approvals");
 
     // Get all then cancel all requests before assigning new ones
-    const allRequests = appService.getUserRequests(baseURL, realm, token); // Including the denied requests
+    const allRequests = await appService.getUserRequests(baseURL, realm, token); // Including the denied requests
     await cancelRequests(allRequests);
   
     // Compare the current checkbox state with the current permissions. Note: token roles only update when a role change request commits.
@@ -250,7 +255,7 @@ export default function Admin() {
     }
 
     // Get the latest change requests
-    const newRequests = appService.getUserRequests(baseURL, realm, token);
+    const newRequests = await appService.getUserRequests(baseURL, realm, token);
     setRequests(newRequests);
 
     // Set first change request as the one currently opened
@@ -258,6 +263,7 @@ export default function Admin() {
     setExpandedIndex(0);
     // Reset form state
     setHasChanges(false);
+    setLoadingOverlay(false);
   }
 
   /**
@@ -360,7 +366,7 @@ export default function Admin() {
   
         const response = await appService.denyEnclave(baseURL, realm, formData, token);
         if (response.ok){
-          setRequests(appService.getUserRequests(baseURL, realm, token));
+          setRequests(await appService.getUserRequests(baseURL, realm, token));
           setHasUserApproved(false);
           setActiveRequestIndex(prev => prev + 1);
           setExpandedIndex(prev => prev + 1);
@@ -384,7 +390,7 @@ export default function Admin() {
 
         if (response.ok){
           // TideCloak keeps approved change requests so fetch new one and replace
-          const updatedChangeReqs = appService.getUserRequests(baseURL, realm, token);
+          const updatedChangeReqs = await appService.getUserRequests(baseURL, realm, token);
           
           const updatedChangeReq = updatedChangeReqs.find(req => req.draftRecordId === draftId);
           requests[activeRequestIndex] = updatedChangeReq; 
@@ -451,7 +457,7 @@ export default function Admin() {
 
         <div className="pt-4">
           { request.deleteStatus === "DRAFT" || request.status === "DRAFT"? (
-            <Button className="hover:bg-red-700" onClick={() => {handleUserApprove(request)}} disabled={pending}>
+            <Button onClick={() => {handleUserApprove(request)}} disabled={pending}>
               Review
             </Button>
 
@@ -544,9 +550,10 @@ export default function Admin() {
     };
 
     return (
-      !overlayLoading
+      !loading
       ?
       <main className="flex-grow w-full pt-6">
+      {loadingOverlay && LoadingSquareFullPage()}
       <div className="w-full px-8 max-w-screen-md mx-auto flex flex-col items-start gap-8">
       <div className="w-full max-w-3xl">
         {pathname === "/admin" && (
@@ -569,7 +576,7 @@ export default function Admin() {
                   <li>Granular control over sensitive fields</li>
                 </ul>
                 <p>
-                  So you don't worry about{" "}
+                  So you don’t worry about{" "}
                   <a href="#" className="text-blue-600 underline">permission sprawl</a>,{" "}
                   <a href="#" className="text-blue-600 underline">forgotten admin accounts</a>, or{" "}
                   <a href="#" className="text-blue-600 underline">over-permissioned users</a>.
@@ -586,9 +593,9 @@ export default function Admin() {
                     <Button className="hover:bg-red-700" onClick={handleElevateClick}>Elevate to Admin Role</Button>
                   ) : (
                     <div className="bg-yellow-50 border border-yellow-300 p-4 rounded space-y-3">
-                      <p className="font-semibold text-yellow-800">"Yeah, but doesn't the fact you can do this undermine the whole 'quorum-enforced' thing?"</p>
+                      <p className="font-semibold text-yellow-800">“Yeah, but doesn't the fact you can do this undermine the whole 'quorum-enforced' thing?”</p>
                       <p className="text-sm text-yellow-900">
-                        Can't get anything past you! This ability highlights the usual flaw in IAM systems — that the system itself can assign powers at will.
+                        Can’t get anything past you! This ability highlights the usual flaw in IAM systems — that the system itself can assign powers at will.
                         With TideCloak, once hardened with a quorum, even the system can't unilaterally grant admin rights.
                         <br /><br /><strong>For this demo, you're a quorum of one.</strong>
                       </p>
@@ -670,7 +677,7 @@ export default function Admin() {
                       {showChangeInfo && (
                         <AccordionBox title="Quorum-enforced permission changes" isOpen>
                           <p className="text-sm text-gray-600">
-                            Each individual permission change must be reviewed and committed in turn. Click "Review" to open the full approval workflow.
+                            Each individual permission change must be reviewed and committed in turn. Click “Review” to open the full approval workflow.
                           </p>
                         </AccordionBox>
                       )}
