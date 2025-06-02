@@ -1,9 +1,10 @@
-import './styles/tailwind.css';
-import './styles/spinKit.css';
-import './styles/loading.css';
-import Nav from './components/nav';
-import Footer from './components/footer';
-import ClientProvider from './ClientProvider';
+// app/layout.js
+import "./styles/tailwind.css";
+import "./styles/spinKit.css"; 
+import "./styles/loading.css"
+import { Provider } from "./context/context";
+import Nav from "./components/nav";
+import Footer from "./components/footer";
 
 export const metadata = {
   title: 'TideCloak Demo',
@@ -21,11 +22,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className="min-h-screen flex flex-col bg-white">
-        <ClientProvider>
+        <Provider>
           <Nav />
           <main className="flex-grow">{children}</main>
           <Footer />
-        </ClientProvider>
+        </Provider>
       </body>
     </html>
   );

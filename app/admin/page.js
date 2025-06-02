@@ -136,7 +136,7 @@ export default function Admin() {
   const getLoggedUser = async () => { 
     const token = await IAMService.getToken();
     const loggedVuid =  IAMService.getValueFromToken("vuid");
-    const users = await appService.getUsers(baseURL, realm, token);
+    const users = appService.getUsers(baseURL, realm, token);
     const loggedInUser = users.find(user => {
       if (user.attributes.vuid[0] === loggedVuid){
           return user;
@@ -160,9 +160,9 @@ export default function Admin() {
   const checkAdminRole = async () => {
       const token = await IAMService.getToken();
       // Get Realm Management default client's ID
-      const clientID = await appService.getRealmManagementId(baseURL, realm, token);
+      const clientID = appService.getRealmManagementId(baseURL, realm, token);
       // Check if user already has the role
-      setIsTideAdmin(await appService.checkUserAdminRole(baseURL, realm, loggedUser.id, clientID, token));
+      setIsTideAdmin(appService.checkUserAdminRole(baseURL, realm, loggedUser.id, clientID, token));
   }
 
   // Assign this initial user the tide-realm-admin client role managed by the default client Realm Management
@@ -171,7 +171,7 @@ export default function Admin() {
     const token = await IAMService.getToken();
 
     if (!isTideAdmin){
-        const RMClientID = await appService.getRealmManagementId(baseURL, realm, token);
+        const RMClientID = appService.getRealmManagementId(baseURL, realm, token);
 
         // Get the tide-realm-admin role to assign
         const tideAdminRole = await appService.getTideAdminRole(baseURL, realm, loggedUser.id, RMClientID, token);
@@ -201,7 +201,7 @@ export default function Admin() {
   const getChangeRequests = async () => {
     
     const token = await IAMService.getToken();
-    const changeRequests = await appService.getUserRequests(baseURL, realm, token);
+    const changeRequests = appService.getUserRequests(baseURL, realm, token);
     // Remove Denied Requests
     const withoutDeniedReqs = changeRequests.filter((request) => 
       (request.deleteStatus !== "DENIED" && request.status !== "DENIED")
@@ -231,7 +231,7 @@ export default function Admin() {
     localStorage.removeItem("approvals");
 
     // Get all then cancel all requests before assigning new ones
-    const allRequests = await appService.getUserRequests(baseURL, realm, token); // Including the denied requests
+    const allRequests = appService.getUserRequests(baseURL, realm, token); // Including the denied requests
     await cancelRequests(allRequests);
   
     // Compare the current checkbox state with the current permissions. Note: token roles only update when a role change request commits.
@@ -250,7 +250,7 @@ export default function Admin() {
     }
 
     // Get the latest change requests
-    const newRequests = await appService.getUserRequests(baseURL, realm, token);
+    const newRequests = appService.getUserRequests(baseURL, realm, token);
     setRequests(newRequests);
 
     // Set first change request as the one currently opened
@@ -360,7 +360,7 @@ export default function Admin() {
   
         const response = await appService.denyEnclave(baseURL, realm, formData, token);
         if (response.ok){
-          setRequests(await appService.getUserRequests(baseURL, realm, token));
+          setRequests(appService.getUserRequests(baseURL, realm, token));
           setHasUserApproved(false);
           setActiveRequestIndex(prev => prev + 1);
           setExpandedIndex(prev => prev + 1);
@@ -384,7 +384,7 @@ export default function Admin() {
 
         if (response.ok){
           // TideCloak keeps approved change requests so fetch new one and replace
-          const updatedChangeReqs = await appService.getUserRequests(baseURL, realm, token);
+          const updatedChangeReqs = appService.getUserRequests(baseURL, realm, token);
           
           const updatedChangeReq = updatedChangeReqs.find(req => req.draftRecordId === draftId);
           requests[activeRequestIndex] = updatedChangeReq; 
