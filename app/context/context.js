@@ -33,12 +33,10 @@ export const Provider = ({ children }) => {
       IAMService.initIAM(auth => {
         setAuthenticated(auth);
         setContextLoading(false);
-        setOverlayLoading(false);
       });
     } catch (err) {
       console.error("Failed to initialize app context:", err);
       setContextLoading(false);
-      setOverlayLoading(false);
     }
   };
 
