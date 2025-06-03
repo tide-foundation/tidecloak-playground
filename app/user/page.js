@@ -161,6 +161,7 @@ export default function User(){
             }
             // Close the overlay
             setOverlayLoading(false);
+            setDataLoading(false);
 
           } catch (error){
             // This catch is currently implemented for this demo's purposes
@@ -515,7 +516,7 @@ export default function User(){
         </div>
         <div className="h-10"></div>
         </main>
-        : null
-      :<LoadingSquareFullPage/>
+        : <LoadingSquareFullPage/>
+      : <LoadingSquareFullPage/>
     )
 };
