@@ -10,10 +10,17 @@ import { useAppContext } from "../context/context";
  * @param {function} setOverlayLoading - turn on loading screen when completed to load back to login screen
  * @returns {JSX.Element} - HTML component for the initializer screen 
  */
-export default function LoadingPage({ isInitializing, setIsInitializing, setKcData, setIsInitialized }) {
+export default function LoadingPage({ isInitializing, setIsInitializing, setKcData, setIsInitialized, setOverlayLoading }) {
+
+    useEffect(() => {
+        document.body.classList.add("no-scroll");
+
+        return () => {
+            document.body.classList.remove("no-scroll");
+        };
+    }, []);
 
     const [currentStep, setCurrentStep] = useState(0);
-    const {setOverlayLoading} = useAppContext();
 
     // Initialiser
     const steps = [
@@ -28,9 +35,7 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setKcDa
     useEffect(() => {
         if (isInitializing) {
             try {
-                setOverlayLoading(false);
                 initialize();
-                
             }
             catch (error) {
                 console.log(error);
@@ -214,7 +219,7 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setKcDa
             await updateCustomDomainURL();
             await uploadImages();
             await signSettings();
-            await updateCustomDomainURL({linkedTide: true});
+            await updateCustomDomainURL({ linkedTide: true });
             const data = await getAdapter();
             setKcData(data);
 
@@ -222,7 +227,7 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setKcDa
             setOverlayLoading(true);
             setIsInitializing(false);
             setIsInitialized(true)
-            
+
         }
         catch (error) {
             // Delete IDP then realm if an error occurs in initialisation in preparation for restarting the process
@@ -262,17 +267,17 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setKcDa
                 />
 
                 {/* Spinner */}
-            <div className="sk-cube-grid scale-75">
-                <div className="sk-cube sk-cube1" />
-                <div className="sk-cube sk-cube2" />
-                <div className="sk-cube sk-cube3" />
-                <div className="sk-cube sk-cube4" />
-                <div className="sk-cube sk-cube5" />
-                <div className="sk-cube sk-cube6" />
-                <div className="sk-cube sk-cube7" />
-                <div className="sk-cube sk-cube8" />
-                <div className="sk-cube sk-cube9" />
-            </div>
+                <div className="sk-cube-grid scale-75">
+                    <div className="sk-cube sk-cube1" />
+                    <div className="sk-cube sk-cube2" />
+                    <div className="sk-cube sk-cube3" />
+                    <div className="sk-cube sk-cube4" />
+                    <div className="sk-cube sk-cube5" />
+                    <div className="sk-cube sk-cube6" />
+                    <div className="sk-cube sk-cube7" />
+                    <div className="sk-cube sk-cube8" />
+                    <div className="sk-cube sk-cube9" />
+                </div>
 
                 {/* Other Logo with adaptive bounding box */}
                 <img
@@ -292,7 +297,7 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setKcDa
                             {i < currentStep ? (
                                 <div className="w-2 h-2 bg-gray-300 rounded-full" />
                             ) : i === currentStep ? (
-                                <div className="spinner"/>
+                                <div className="spinner" />
                             ) : (
                                 <div className="w-2 h-2 bg-gray-400 rounded-full" />
                             )}
