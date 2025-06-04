@@ -22,6 +22,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className="min-h-screen flex flex-col bg-white">
+        <div id="loading-overlay-root" className="pointer-events-none fixed inset-0 z-50" />
         <Provider>
           <Nav />
           <main className="flex-grow">{children}</main>

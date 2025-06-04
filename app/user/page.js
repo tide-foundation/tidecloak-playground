@@ -38,7 +38,7 @@ export default function User(){
     const [showUserInfoAccordion, setShowUserInfoAccordion] = useState(false);
     
     // Show the page only after all data loaded
-    const [dataLoading, setDataLoading] = useState(false);
+    const [dataLoading, setDataLoading] = useState(true);
     // Show a loading screen while waiting for context with this variable
     const [overlayLoading, setOverlayLoading] = useState(false);
     // State variable for managing button and its spinner
@@ -74,6 +74,7 @@ export default function User(){
 
     // Runs second, perform only when the context receives the logged user details to decrypt
     useEffect(() => {
+      console.log(dataLoading)
       if (loggedUser && !contextLoading){
         getUserData();
       }
@@ -322,14 +323,15 @@ export default function User(){
     };
 
     return (
-      !contextLoading && !overlayLoading
-      ?
-        !dataLoading
-      ?
-        <main className="flex-grow w-full pt-6 pb-16">
+  (contextLoading || overlayLoading || dataLoading)
+    ? (
+      <LoadingSquareFullPage />
+    )
+    : (
+      <main className="flex-grow w-full pt-6 pb-16">
         <div className="w-full px-8 max-w-screen-md mx-auto flex flex-col items-start gap-8">
-        <div className="w-full max-w-3xl">
-        {pathname === "/user" && (
+          <div className="w-full max-w-3xl">
+            {pathname === "/user" && (
               <div key="user" className="space-y-4 relative">
                 {/* Accordion toggle */}
                 <button
@@ -352,171 +354,166 @@ export default function User(){
                   </p>
                 </AccordionBox>
 
-
                 <h2 className="text-3xl font-bold mb-4">User Information</h2>
-                {
-                  !IAMService.hasOneRole("_tide_dob.selfdecrypt") && 
+                {(
+                  !IAMService.hasOneRole("_tide_dob.selfdecrypt") &&
                   !IAMService.hasOneRole("_tide_dob.selfencrypt") &&
                   !IAMService.hasOneRole("_tide_cc.selfdecrypt") &&
                   !IAMService.hasOneRole("_tide_cc.selfencrypt")
-                  ? <p className="text-sm text-gray-600 mb-6">You don't have permission to do anything so we won't even show you the form!</p>
-                  : <p className="text-sm text-gray-600 mb-6">This form is powered by real-time permission logic. Your ability to view or edit each field depends on your current access.</p>
-                }
-                
+                ) ? (
+                  <p className="text-sm text-gray-600 mb-6">
+                    You don't have permission to do anything so we won't even show you the form!
+                  </p>
+                ) : (
+                  <p className="text-sm text-gray-600 mb-6">
+                    This form is powered by real-time permission logic. Your ability to view or edit each field depends on your current access.
+                  </p>
+                )}
 
                 <form className="space-y-6" onSubmit={handleFormSubmit}>
-                  {
-                    ["dob", "cc"].map((field, i) => {
-                      const readPerms = IAMService.hasOneRole(field === "dob"? "_tide_dob.selfdecrypt" : "_tide_cc.selfdecrypt");
-                      const writePerms = IAMService.hasOneRole(field === "dob"? "_tide_dob.selfencrypt" : "_tide_cc.selfencrypt");
-                      const canRead = readPerms? true: false;
-                      const canWrite = writePerms? true: false;
-                      const label = field === "dob" ? "Date of Birth" : "Credit Card Number";
-                      if (!canRead && !canWrite) return (
-                        <div key={i}>
-                        {showUserInfoAccordion && (
-                            <div className="text-xs text-gray-600 mt-2 space-y-2 bg-gray-50 border border-gray-200 rounded p-3">
-                              <h5 className="font-semibold text-gray-700 text-xs uppercase tracking-wide mb-1">
-                                JWT Permissions & Encrypted Value
-                              </h5>
-                              <div className="flex gap-2">
-                                <span
-                                  className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${canRead ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                                    }`}
-                                >
-                                  {canRead ? "✓" : "✕"} Read
-                                </span>
-                                <span
-                                  className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${canWrite ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                                    }`}
-                                >
-                                  {canWrite ? "✓" : "✕"} Write
-                                </span>
-                              </div>
+                  {["dob", "cc"].map((field, i) => {
+                    const readPerms = IAMService.hasOneRole(field === "dob" ? "_tide_dob.selfdecrypt" : "_tide_cc.selfdecrypt");
+                    const writePerms = IAMService.hasOneRole(field === "dob" ? "_tide_dob.selfencrypt" : "_tide_cc.selfencrypt");
+                    const canRead = !!readPerms;
+                    const canWrite = !!writePerms;
+                    const label = field === "dob" ? "Date of Birth" : "Credit Card Number";
 
-                             <div className="break-words whitespace-pre-wrap text-sm">
-                              <span className="font-medium text-gray-700">Value in Database:</span>{" "}
-                              <span
-                                onClick={() =>
-                                  setExpandedBlobs((prev) => ({ ...prev, [field]: !prev[field] }))
-                                }
-                                className="text-blue-600 underline cursor-pointer break-words"
-                              >
-                                {
-                                  field === "dob" 
-                                  ? expandedBlobs[field]
-                                    ? encryptedDob
-                                    : shortenString(encryptedDob)
-                                  : expandedBlobs[field]
-                                    ? encryptedCc
-                                    : shortenString(encryptedCc)
-                                }
-                              </span>
-                            </div>
-                            </div>
-                          )}
-                        </div>
-                      )
-
+                    // If user has neither read nor write permissions, only show the “encrypted” accordion block
+                    if (!canRead && !canWrite) {
                       return (
-                        <div key={field}>
-                          <label className="block font-medium text-sm mb-1">{label}</label>
-                          {canRead && canWrite && (
-                            <input
-                              type={field === "dob" ? "date" : "text"}
-                              value={formData[field]}
-                              onChange={handleUserFieldChange(field)}
-                              className="border rounded px-3 py-2 w-full max-w-md"
-                            />
-                          )}
-
-                          {canRead && !canWrite && (
-                            <input
-                              type="text"
-                              value={formData[field] || ""}
-                              readOnly
-                              className="border rounded px-3 py-2 w-full bg-gray-100 text-gray-700 max-w-md"
-                            />
-                          )}
-
-                          {!canRead && canWrite && (
-                            <input
-                              type={field === "dob" ? "date" : "text"}
-                              placeholder={`Enter ${label.toLowerCase()}`}
-                              value={formData[field]}
-                              onChange={handleUserFieldChange(field)}
-                              className="border rounded px-3 py-2 w-full max-w-md"
-                            />
-                          )}
-
+                        <div key={i}>
                           {showUserInfoAccordion && (
                             <div className="text-xs text-gray-600 mt-2 space-y-2 bg-gray-50 border border-gray-200 rounded p-3">
                               <h5 className="font-semibold text-gray-700 text-xs uppercase tracking-wide mb-1">
-                                JWT Permissions & Encrypted Value
+                                JWT Permissions &amp; Encrypted Value
                               </h5>
                               <div className="flex gap-2">
                                 <span
-                                  className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${canRead ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                                    }`}
+                                  className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${
+                                    canRead ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                                  }`}
                                 >
                                   {canRead ? "✓" : "✕"} Read
                                 </span>
                                 <span
-                                  className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${canWrite ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                                    }`}
+                                  className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${
+                                    canWrite ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                                  }`}
                                 >
                                   {canWrite ? "✓" : "✕"} Write
                                 </span>
                               </div>
-
-                             <div className="break-words whitespace-pre-wrap text-sm">
-                              <span className="font-medium text-gray-700">Value in Database:</span>{" "}
-                              <span
-                                onClick={() =>
-                                  setExpandedBlobs((prev) => ({ ...prev, [field]: !prev[field] }))
-                                }
-                                className="text-blue-600 underline cursor-pointer break-words"
-                              >
-                                {
-                                  field === "dob" 
-                                  ? expandedBlobs[field]
-                                    ? encryptedDob
-                                    : shortenString(encryptedDob)
-                                  : expandedBlobs[field]
-                                    ? encryptedCc
-                                    : shortenString(encryptedCc)
-                                }
-                              </span>
-                            </div>
+                              <div className="break-words whitespace-pre-wrap text-sm">
+                                <span className="font-medium text-gray-700">Value in Database:</span>{" "}
+                                <span
+                                  onClick={() =>
+                                    setExpandedBlobs(prev => ({ ...prev, [field]: !prev[field] }))
+                                  }
+                                  className="text-blue-600 underline cursor-pointer break-words"
+                                >
+                                  {field === "dob"
+                                    ? (expandedBlobs[field] ? encryptedDob : shortenString(encryptedDob))
+                                    : (expandedBlobs[field] ? encryptedCc : shortenString(encryptedCc))}
+                                </span>
+                              </div>
                             </div>
                           )}
                         </div>
-                      )
-                    })
-                  }
-                  {
-                  (IAMService.hasOneRole("_tide_dob.selfencrypt") || IAMService.hasOneRole("_tide_cc.selfencrypt")) && (
+                      );
+                    }
+
+                    // Otherwise, render a normal input (read/write, read-only, or write-only)
+                    return (
+                      <div key={field}>
+                        <label className="block font-medium text-sm mb-1">{label}</label>
+                        {canRead && canWrite && (
+                          <input
+                            type={field === "dob" ? "date" : "text"}
+                            value={formData[field]}
+                            onChange={handleUserFieldChange(field)}
+                            className="border rounded px-3 py-2 w-full max-w-md"
+                          />
+                        )}
+
+                        {canRead && !canWrite && (
+                          <input
+                            type="text"
+                            value={formData[field] || ""}
+                            readOnly
+                            className="border rounded px-3 py-2 w-full bg-gray-100 text-gray-700 max-w-md"
+                          />
+                        )}
+
+                        {!canRead && canWrite && (
+                          <input
+                            type={field === "dob" ? "date" : "text"}
+                            placeholder={`Enter ${label.toLowerCase()}`}
+                            value={formData[field]}
+                            onChange={handleUserFieldChange(field)}
+                            className="border rounded px-3 py-2 w-full max-w-md"
+                          />
+                        )}
+
+                        {showUserInfoAccordion && (
+                          <div className="text-xs text-gray-600 mt-2 space-y-2 bg-gray-50 border border-gray-200 rounded p-3">
+                            <h5 className="font-semibold text-gray-700 text-xs uppercase tracking-wide mb-1">
+                              JWT Permissions &amp; Encrypted Value
+                            </h5>
+                            <div className="flex gap-2">
+                              <span
+                                className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${
+                                  canRead ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                                }`}
+                              >
+                                {canRead ? "✓" : "✕"} Read
+                              </span>
+                              <span
+                                className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${
+                                  canWrite ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                                }`}
+                              >
+                                {canWrite ? "✓" : "✕"} Write
+                              </span>
+                            </div>
+                            <div className="break-words whitespace-pre-wrap text-sm">
+                              <span className="font-medium text-gray-700">Value in Database:</span>{" "}
+                              <span
+                                onClick={() =>
+                                  setExpandedBlobs(prev => ({ ...prev, [field]: !prev[field] }))
+                                }
+                                className="text-blue-600 underline cursor-pointer break-words"
+                              >
+                                {field === "dob"
+                                  ? (expandedBlobs[field] ? encryptedDob : shortenString(encryptedDob))
+                                  : (expandedBlobs[field] ? encryptedCc : shortenString(encryptedCc))}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {(IAMService.hasOneRole("_tide_dob.selfencrypt") || IAMService.hasOneRole("_tide_cc.selfencrypt")) && (
                     <div className="flex items-center gap-3">
-                      <Button className="hover:bg-red-700" type="submit" disabled={loadingButton}>Save Changes</Button>
-                      {
-                        loadingButton
-                        ? <div className="spinner"/>
-                        : null
-                      }
+                      <Button className="hover:bg-red-700" type="submit" disabled={loadingButton}>
+                        Save Changes
+                      </Button>
+                      {loadingButton && <div className="spinner" />}
                       {userFeedback && (
-                        <span className="text-sm text-green-600 font-medium">{userFeedback}</span>
+                        <span className="text-sm text-green-600 font-medium">
+                          {userFeedback}
+                        </span>
                       )}
                     </div>
-
                   )}
                 </form>
               </div>
             )}
+          </div>
         </div>
-        </div>
-        <div className="h-10"></div>
-        </main>
-        : <LoadingSquareFullPage/>
-      : <LoadingSquareFullPage/>
+        <div className="h-10" />
+      </main>
     )
-};
+  )
+}
