@@ -74,7 +74,6 @@ export default function User(){
 
     // Runs second, perform only when the context receives the logged user details to decrypt
     useEffect(() => {
-      console.log(dataLoading)
       if (loggedUser && !contextLoading){
         getUserData();
       }
