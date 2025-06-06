@@ -29,19 +29,6 @@ These are auto-forwarded and opened in your browser.
 
 ### **Have a play with the demo app** ▶️
 
-**a) Tiny manual adjustment needed!**
-
-> [!IMPORTANT]
-> For this to work, you must make sure port 8080 is public to allow your app to access TideCloak.
-> _(GitHub may restricts from automating this step, so you might have to do it manually)_
-
-Go to the Ports tab in Codespaces, find port `TideCloak Server (8080)`, and right-click → `Port visibility` → 'Public'
-
-
-![how to make public](https://raw.githubusercontent.com/tide-foundation/tidecloakspaces/main/image/README/tidecloak_howto_makepublic.gif)
-
-**b) Your Playground app secured by TideCloak is now ready for you to take for a spin**
-
 The initialization screen opens automatically, otherwise check the **Ports tab** in Codespaces for the **Forwarded address** in the format of _https://${CODESPACE_NAME}-3000.app.github.dev_.
 
 ### **Accessing the TideCloak backend**
