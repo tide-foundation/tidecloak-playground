@@ -33,6 +33,14 @@ docker run -d \
 echo "📦 Installing Node.js dependencies..."
 npm install
 
+echo "🏗️ Resetting previous instances..."
+if [ -d ".next" ]; then
+  echo "Removing existing .next directory..."
+  sudo rm -rf .next
+  if ! [ -d ".next" ]; then echo "Deleted!"; else echo "Failed to delete .next directory!"; fi
+fi
+echo "{}" > data/tidecloak.json
+
 echo "🏗️ Building Playground app..."
 #npm run build
 
