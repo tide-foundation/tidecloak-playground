@@ -39,7 +39,7 @@ if [ -d ".next" ]; then
   sudo rm -rf .next
   if ! [ -d ".next" ]; then echo "Deleted!"; else echo "Failed to delete .next directory!"; fi
 fi
-echo "{}" > data/tidecloak.json
+echo "{}" > data/tidecloak.json 
 
 echo "🏗️ Building Playground app..."
 #npm run build
