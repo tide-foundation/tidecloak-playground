@@ -25,6 +25,7 @@ fi
 docker run -d \
   --name tidecloak \
   -p 8080:8080 \
+  -v .:/opt/keycloak/data/h2 \
   -e KC_HOSTNAME=${CODESPACE_URL_TC} \
   -e KC_BOOTSTRAP_ADMIN_USERNAME=admin \
   -e KC_BOOTSTRAP_ADMIN_PASSWORD=password \
@@ -39,7 +40,7 @@ if [ -d ".next" ]; then
   sudo rm -rf .next
   if ! [ -d ".next" ]; then echo "Deleted!"; else echo "Failed to delete .next directory!"; fi
 fi
-echo "{}" > data/tidecloak.json 
+# echo "{}" > data/tidecloak.json <-- Uncomment if you want to reset the Tidecloak data
 
 echo "🏗️ Building Playground app..."
 #npm run build
