@@ -229,13 +229,15 @@ export default function Login() {
           {pathname === '/' && (
             <>
               {/* Explainer toggle */}
-              <button
-                onClick={() => setShowLoginAccordion(x => !x)}
-                className="absolute -top-2 right-0 text-2xl hover:scale-110 transition-transform"
-                aria-label="Toggle explainer"
-              >
-                {showLoginAccordion ? '🤯' : '🤔'}
-              </button>
+<div className="flex justify-end mb-2">
+  <button
+   onClick={() => setShowLoginAccordion(x => !x)}
+   className="text-2xl hover:scale-110 transition-transform"
+   aria-label="Toggle explainer"
+  >
+   {showLoginAccordion ? '🤯' : '🤔'}
+  </button>
+</div>
 
               <AccordionBox title="Why is this login special?" isOpen={showLoginAccordion}>
                 <p>This login showcases <strong>TideCloak's decentralized IAM model</strong>.</p>
@@ -250,12 +252,13 @@ export default function Login() {
                 </h2>
                 <p>
                   Your admin is breached. IAM vendor compromised. Cloud host exposed.<br/>
-                  And still—no data leaks, no identities stolen, no access abused.<br/>
-                  That's TideCloak. Build trust. Ship fast. Sleep easy.
+                  And still - no data leaks, no identities stolen, no access abused.<br/>
+                  That's TideCloak: Build trust. Ship fast. Sleep easy.
                 </p>
+                <hr className="my-6 border-t border-gray-200" />
                 <h3 className="text-xl font-semibold">Secure “BYOiD” Login</h3>
                 <p className="text-base">
-                  Log in like normal—your password is never stored, shared, or exposed.
+                  Log in like normal - But your password is never stored, shared, or exposed.
                 </p>
                 <Button onClick={handleLogin} className="hover:bg-red-700">
                   Login

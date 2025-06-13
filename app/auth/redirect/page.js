@@ -40,7 +40,7 @@ export default function RedirectPage() {
   useEffect(() => {
     if (!contextLoading){
       if (authenticated){
-        router.push("/user");
+        router.push("/home");
       }
       else {
         router.push("/");
