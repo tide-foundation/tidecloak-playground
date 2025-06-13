@@ -251,7 +251,7 @@ export default function Login() {
                   Welcome to Play – a demo of provable security in action
                 </h2>
                 <p>
-                  Your admin is breached. IAM vendor compromised. Cloud host exposed.<br/>
+                  Picture this... Your admin is breached. IAM vendor compromised. Cloud host exposed.<br/>
                   And still - no data leaks, no identities stolen, no access abused.<br/>
                   That's TideCloak: Build trust. Ship fast. Sleep easy.
                 </p>

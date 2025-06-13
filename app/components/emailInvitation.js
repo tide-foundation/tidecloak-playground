@@ -26,7 +26,7 @@ export default function EmailInvitation({ inviteLink }) {
     {showAccordion ? "🤯" : "🤔"}
   </button>
 </div>
-<AccordionBox title="Why link your Tide account?" isOpen={showAccordion}>
+<AccordionBox title="Link what now?" isOpen={showAccordion}>
   <p>TideCloak can be configured for users to "self register" or be "invite only". The demo is set-up as invite only as we've preconfigured a special experience just for you!</p>
               <p>This page simulates an invite you might receive from a service, HR or administrators. But with a twist that changes everything...</p>
               <p>While TideCloak holds a user record of you, it only knows you as an anonymous public key. Your credentials are never seen to TideCloak or anyone for that matter!</p>
