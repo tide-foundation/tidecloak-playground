@@ -242,7 +242,7 @@ export default function Login() {
               <AccordionBox title="Why is this login special?" isOpen={showLoginAccordion}>
                 <p>This login showcases <strong>TideCloak's decentralized IAM model</strong>.</p>
                 <p>Admin powers are <strong>quorum-controlled</strong>, not unilateral.</p>
-                <p>No backdoors—provable security in action.</p>
+                <p>No backdoors. No side channels. Provable security in action.</p>
               </AccordionBox>
 
               <div className="bg-blue-50 rounded shadow p-6 space-y-4">
