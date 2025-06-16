@@ -239,26 +239,53 @@ export default function Login() {
   </button>
 </div>
 
-              <AccordionBox title="Why is this login special?" isOpen={showLoginAccordion}>
-                <p>This login showcases <strong>TideCloak's decentralized IAM model</strong>.</p>
-                <p>Admin powers are <strong>quorum-controlled</strong>, not unilateral.</p>
-                <p>No backdoors. No side channels. Provable security in action.</p>
-              </AccordionBox>
+              <AccordionBox
+  title="Why a breach no longer spirals into disaster"
+  isOpen={showLoginAccordion}
+>
+  <p>
+    TideCloak bakes <em>breach-assumed</em> security into your stack by locking
+    data, identities, and access rights with keys no one will ever hold.
+  </p>
+
+  <ul className="list-disc pl-5 space-y-1 mt-2">
+    <li>
+      Digital authority becomes cryptographic keys - one per
+      user, admin, or service.
+    </li>
+    <li>
+      Ineffable Cryptography is used to operate every key forever in
+      fragments across a decentralized Cybersecurity Fabric, peer-reviewed by
+      RMIT, Deakin, UoW, and others.
+    </li>
+    <li>
+      No single fragment, user or server can authorize a login, decrypt data en mass, or change roles,
+      so nothing useful is exposed even if a DB server, admin account, or vendor is
+      breached.
+    </li>
+    <li>
+      Users authenticate using a decentralized zero-knowledge mechanism known as PRISM. So, their secrets are never trusted to anyone, they cannot be impersonated, and no compromise of one user account will impact another.
+    </li>
+  </ul>
+
+  <p className="mt-2">Same login flow, radically smaller blast radius.</p>
+</AccordionBox>
+
 
               <div className="bg-blue-50 rounded shadow p-6 space-y-4">
                 <img src="/playground-logo_nav.png" alt="Logo" className="h-10 w-auto" />
                 <h2 className="text-3xl font-bold">
-                  Welcome to Play – a demo of provable security in action
+                  Welcome to the world of provable security
                 </h2>
                 <p>
-                  Picture this... Your admin is breached. IAM vendor compromised. Cloud host exposed.<br/>
-                  And still - no data leaks, no identities stolen, no access abused.<br/>
-                  That's TideCloak: Build trust. Ship fast. Sleep easy.
+                  <b>Picture this...</b> Your admin is <b>breached</b>. IAM vendor <b>compromised</b>. Cloud host <b>exposed</b>.<br/>
+                  Yet, no data leaks, no identities stolen, no access abused. That's TideCloak.<br/>
+                  Ship fast. Build trust. Sleep easy.
                 </p>
                 <hr className="my-6 border-t border-gray-200" />
                 <h3 className="text-xl font-semibold">Secure “BYOiD” Login</h3>
                 <p className="text-base">
-                  Log in like normal - But your password is never stored, shared, or exposed.
+                  Login like normal - But your password is never stored, shared, or exposed.
                 </p>
                 <Button onClick={handleLogin} className="hover:bg-red-700">
                   Login
