@@ -16,10 +16,17 @@ docker pull docker.io/tideorg/tidecloak-dev:latest
 if [ "$(docker ps -aq -f name=^tidecloak$)" ]; then
   docker rm tidecloak --force
 fi
+if [ ! -d "./Uploads" ]; then
+  echo "Creating Uploads directory..."
+  mkdir ./Uploads
+else
+  echo "Uploads directory already exists."
+fi
 docker run -d \
   --name tidecloak \
   -p 8080:8080 \
   -v .:/opt/keycloak/data/h2 \
+  -v ./Uploads:/opt/keycloak/Uploads \
   -e KC_HOSTNAME=${CODESPACE_URL_TC} \
   -e KC_BOOTSTRAP_ADMIN_USERNAME=admin \
   -e KC_BOOTSTRAP_ADMIN_PASSWORD=password \
