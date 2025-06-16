@@ -42,11 +42,6 @@
     }
   },
 
-    "containerEnv": {
-    "CHOKIDAR_USEPOLLING": "true",
-    "WATCHPACK_POLLING": "true"
-  },
-
   "postCreateCommand": ".devcontainer/setup.sh",
-"postStartCommand": "if [ \"$CODESPACES\" = \"true\" ]; then echo 'Setting port 8080 to public...'; gh codespace ports visibility 8080:public --codespace $CODESPACE_NAME; fi && npm run dev"
+  "postStartCommand": ".devcontainer/startTC.sh && if [ \"$CODESPACES\" = \"true\" ]; then echo 'Setting port 8080 to public...'; gh codespace ports visibility 8080:public --codespace $CODESPACE_NAME; fi && npm run dev"
 }
