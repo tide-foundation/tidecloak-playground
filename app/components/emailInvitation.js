@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { FaEnvelope, FaMinus, FaTimes } from "react-icons/fa";
 import { useRouter } from "next/navigation";
+import AccordionBox from "./accordionBox";
 
 /**
  * This component is displayed when demo user has not been linked to a Tide-account yet after initialization.
@@ -8,9 +10,28 @@ import { useRouter } from "next/navigation";
 export default function EmailInvitation({ inviteLink }) {
 
     const router = useRouter();
+    const [showAccordion, setShowAccordion] = useState(false);
 
   return (
-    <div className="fixed inset-0 bg-gray-200 flex items-center justify-center px-4 py-8 z-50">
+    <div className="fixed inset-0 bg-gray-200 flex flex-col items-center justify-center px-4 py-8 z-50">
+
+<div className="w-full max-w-2xl">
+      {/* Explainer toggle — same 🤔/🤯 pattern as landing page */}
+<div className="mb-2 flex justify-end">
+  <button
+    onClick={() => setShowAccordion((x) => !x)}
+    className="text-2xl transition-transform hover:scale-110"
+    aria-label="Toggle explainer"
+  >
+    {showAccordion ? "🤯" : "🤔"}
+  </button>
+</div>
+<AccordionBox title="Link what now?" isOpen={showAccordion}>
+  <p>TideCloak can be configured for users to "self register" or be "invite only". The demo is set-up as invite only as we've preconfigured a special experience just for you!</p>
+              <p>This page simulates an invite you might receive from a service, HR or administrators. But with a twist that changes everything...</p>
+              <p>While TideCloak holds a user record of you, it only knows you as an anonymous public key. Your credentials are never seen to TideCloak or anyone for that matter!</p>
+</AccordionBox>
+
       <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-2 rounded-t-lg" style={{
@@ -46,6 +67,7 @@ export default function EmailInvitation({ inviteLink }) {
               Once you're done you'll be redirected to the Play app.
             </p>
           </div>
+        </div>
         </div>
       </div>
     </div>
