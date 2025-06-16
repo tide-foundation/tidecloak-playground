@@ -214,61 +214,54 @@ export default function DatabaseExposure() {
         !contextLoading && !overlayLoading
         ?
         <main className="flex-grow w-full pt-6 pb-16">
-        <div className="w-full px-8 max-w-screen-md mx-auto flex flex-col items-start gap-8">
+        <div className="w-full px-4 max-w-screen-md mx-auto flex flex-col items-start gap-4">
         <div className="w-full max-w-3xl"/>
             <div>
-                <div className="flex justify-between items-center">
-                <h3 className="text-2xl font-semibold">Database Exposure Simulation</h3>
+                <div className="relative">
+  <h3 className="text-2xl font-semibold">Database Exposure Simulation</h3>
 
-                <button
-                    onClick={() => setShowExposureAccordion(prev => !prev)}
-                    className="text-2xl hover:scale-110 transition-transform"
-                    aria-label="Toggle explanation"
-                >
-                    {showExposureAccordion ? "🤯" : "🤔"}
-                </button>
-                </div>
+  <button
+    onClick={() => setShowExposureAccordion(prev => !prev)}
+    className="absolute top-0 right-0 text-2xl hover:scale-110 transition-transform"
+    aria-label="Toggle explanation"
+  >
+    {showExposureAccordion ? "🤯" : "🤔"}
+  </button>
+</div>
 
-                <p className="text-sm text-gray-600 mb-4">This simulates a user table leak through unprotected API or misconfigured server.</p>
 
-                <AccordionBox title="What does this simulate?" isOpen={showExposureAccordion}>
-                <p>
-                    This simulation shows what happens when an encrypted user table is leaked.
-                    Try decrypting your own row — other rows will remain locked unless you have access.
-                </p>
+                {/* Instruction just under the page title */}
+<p className="text-sm text-gray-600 mb-3">
+  Below is a simulated "user" table leak. A full breach goes from a class action down to a single record.
+</p>
 
-                <div className="flex justify-end">
-                    <button
-                    onClick={() => setShowDeepDive(prev => !prev)}
-                    className="flex items-center gap-2 ml-auto text-xs font-medium text-blue-700 hover:text-blue-900 transition"
-                    aria-label="Show technical explanation"
-                    >
-                    <span className="underline">Technical Deep Dive</span>
-                    <span className="text-xl">🤓</span>
-                    </button>
-                </div>
+{/* Accordion content */}
+<AccordionBox title="Why a full DB leak is no longer a crisis" isOpen={showExposureAccordion}>
+  <p>
+    Dump the whole table, copy the S3 backup, or grab a live replica - everything
+    stays unreadable.  TideCloak removes the “catastrophic” from a data breach.
+  </p>
 
-                {showDeepDive && (
-                    <div className="mt-3 border-t pt-4 space-y-3 text-xs text-gray-700">
-                    <p>
-                        🔐 Each record is encrypted at rest. Even if the table is exfiltrated, fields like DOB and CC remain opaque unless a valid JWT with <code className="bg-gray-100 px-1 py-0.5 rounded">read</code> rights is presented.
-                        The decryption flow references permissions attached to the JWT — not role-based access.
-                    </p>
-                    <div className="w-full overflow-auto">
-                        <img
-                        src="/diagrams/db-decrypt-flow.svg"
-                        alt="Decryption permission flow diagram"
-                        className="w-full max-w-md border rounded shadow"
-                        />
-                    </div>
-                    <p className="italic text-gray-500">
-                        Excerpted from the <a href="https://github.com/tide-foundation/tidecloakspaces" className="underline text-blue-600" target="_blank" rel="noopener noreferrer">TideCloakSpaces</a> repo.
-                    </p>
-                    </div>
-                )}
-                </AccordionBox>
+  <ul className="list-disc pl-5 space-y-1 mt-2">
+    <li>
+      <strong>User-sealed rows.</strong>  Each record is locked with that user's
+      Fabric key shards; the database never holds enough to unlock one, let alone all.
+    </li>
+    <li>
+      <strong>Edge-only decryption.</strong>  Plaintext appears only inside the
+      browser session that authenticated.  A breached DBA still sees ciphertext.
+    </li>
+    <li>
+      <strong>Auditable math.</strong> Every decrypt emits a zero-knowledge proof,
+      so you can show regulators that nothing else was exposed.
+    </li>
+  </ul>
+
+</AccordionBox>
+
+
             </div>
-            <div className="mt-6 space-y-6 pb-24 md:pb-36">
+            <div className="space-y-4">
                 {
                     // Let the data load first
                     users.length > 0 && !contextLoading

@@ -342,16 +342,35 @@ export default function User(){
                 </button>
 
                 {/* Accordion content */}
-                <AccordionBox title="Why is this special?" isOpen={showUserInfoAccordion}>
-                  <p>
-                    You’re seeing <strong>dynamic user field access</strong> in action. The form respects granular permissions
-                    (read, write, none) in real time.
-                  </p>
-                  <p>
-                    Access is governed by <strong>immutable policy requests</strong>, and changes are enforced only through
-                    quorum approvals — including admin access itself.
-                  </p>
-                </AccordionBox>
+                <AccordionBox title="Why user data stays private" isOpen={showUserInfoAccordion}>
+  <p>
+    TideCloak turns privacy from “policy paperwork” into math you (and they) can verify.
+  </p>
+
+  <ul className="list-disc pl-5 space-y-1 mt-2">
+    <li>
+      <strong>User-sealed data.</strong> The Cybersecurity Fabric only answers to a rightful user, so
+      servers, DBAs, and even root accounts see ciphertext only without a user's permission.
+    </li>
+    <li>
+      <strong>Proof-based compliance.</strong> The Cybersecurity Fabric emits zero-knowledge
+      proofs auditors can check independently.
+    </li>
+    <li>
+      <strong>Privilege without peeking.</strong> Admins can grant or revoke
+      roles here, but the Cybersecurity Fabric refuses to decrypt on their behalf.
+    </li>
+    <li>
+      <strong>Policy = code.</strong> The read/write flags you toggle compile
+      into Fabric-signed JWTs that can't be forged or escalated.
+    </li>
+  </ul>
+
+  <p className="mt-2">
+    Change a field, hit Save, and watch the Fabric re-encrypt on the fly.
+  </p>
+</AccordionBox>
+
 
                 <h2 className="text-3xl font-bold mb-4">User Information</h2>
                 {(
@@ -361,12 +380,10 @@ export default function User(){
                   !IAMService.hasOneRole("_tide_cc.selfencrypt")
                 ) ? (
                   <p className="text-sm text-gray-600 mb-6">
-                    You don't have permission to do anything so we won't even show you the form!
+                    No roles, no data - exactly as designed. The Fabric refuses to reveal or accept fields you’re not entitled to touch.
                   </p>
                 ) : (
-                  <p className="text-sm text-gray-600 mb-6">
-                    This form is powered by real-time permission logic. Your ability to view or edit each field depends on your current access.
-                  </p>
+                  <p className="text-sm text-gray-600 mb-6">The form renders whatever the Cybersecurity Fabric-signed JWT says you can do - read, write, or nothing. Try changing roles in the admin console, refresh here, and watch fields appear, gray-out, or disappear. Each save re-encrypts the value on the client before it leaves the browser.</p>
                 )}
 
                 <form className="space-y-6" onSubmit={handleFormSubmit}>

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { FaUserCircle, FaDatabase, FaShieldAlt } from "react-icons/fa";
-import AccordionBox from "../components/AccordionBox";
+import AccordionBox from "../components/accordionBox";
 
 export default function HomePage() {
   const [showHomeAccordion, setShowHomeAccordion] = useState(false);
@@ -33,9 +33,9 @@ export default function HomePage() {
       </div>
 
       {/* ─── Accordion content ───────────────────────────────────── */}
-      <AccordionBox title="Why TideCloak changes the rules" isOpen={showHomeAccordion}>
+      <AccordionBox title="Why TideCloak lets you build without breach anxiety" isOpen={showHomeAccordion}>
         <p>
-          These features combine to give you peace of mind. The breach is inevitable, but not the consequences.
+          These features combine to give you peace of mind that no single breach, no matter how bad, will result in catastrophic data exposure or privilege override. The breach is inevitable, but not the consequences.
         </p>
 
         <ul className="list-disc pl-5 space-y-1 mt-2">
