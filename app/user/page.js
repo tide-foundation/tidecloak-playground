@@ -164,72 +164,8 @@ export default function User(){
             setDataLoading(false);
 
           } catch (error){
-            // This catch is currently implemented for this demo's purposes
-            // Mainly to handle the raw data from the initialisation. Data needs to be raw initially to be uniquely encrypted and decrypted.
-            
-            let arrayToEncrypt = []; 
-            setFormData(prev => ({...prev, dob: tokenDoB}));
-            
-            // Both fields shouldn't have letters unless it's encrypted, check that they're raw number strings
-            // Or check that they're base64
-            // Date of Birth
-            if (tokenDoB){
-              if (/[a-zA-Z]/.test(tokenDoB)){
-                setFormData(prev => ({...prev, dob: tokenDoB}))
-                setEncryptedDob(tokenDoB); 
-              }
-              else {
-                arrayToEncrypt.push({
-                  "data": tokenDoB,
-                  "tags": ["dob"]
-                })
-              }
-            }
-          
-            // Credit Card
-            if (tokenCC){
-              if (/[a-zA-Z]/.test(tokenCC)){
-                setFormData(prev => ({...prev, cc: tokenCC}));
-                setEncryptedCc(tokenCC); 
-              }
-              else {
-                arrayToEncrypt.push({
-                  "data": tokenCC,
-                  "tags": ["cc"]
-                })
-              }
-            }
-            
-            if (arrayToEncrypt.length > 0){
-              // Encrypt the data for the first time
-              const encryptedData = await IAMService.doEncrypt(arrayToEncrypt);
-
-              if (IAMService.hasOneRole("_tide_cc.selfdecrypt")){
-                setFormData(prev => ({...prev, cc: tokenCC}));
-              }
-              else {
-                setFormData(prev => ({...prev, cc: encryptedData[1]}));
-              }
-             
-              // For the Accordion - use the data directly from the database
-              setEncryptedDob(encryptedData[0]); 
-              setEncryptedCc(encryptedData[1]); 
-
-              // Encrypted data to be saved on server for demo user to be decrypted with the same key.
-              loggedUser.attributes.dob = encryptedData[0];
-              loggedUser.attributes.cc = encryptedData[1];
-            }
-
-            // Save the updated user object to TideCloak
-            const token = await  IAMService.getToken();
-            const response = await appService.updateUser(baseURL, realm, loggedUser, token);
-
-            console.log(error);
-
-            // Show the data at once
             setOverlayLoading(false);
             setDataLoading(false);
-           
           }
       } 
     };

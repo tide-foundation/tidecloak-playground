@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 
 import IAMService from "../../../lib/IAMService";
 import { LoadingSquareFullPage } from "../../components/loadingSquare";
+import appService from "../../../lib/appService";
 
 /**
  * Manages which path the demo should go down depending on token validity
@@ -15,9 +16,50 @@ import { LoadingSquareFullPage } from "../../components/loadingSquare";
  */
 export default function RedirectPage() {
 
-  const {authenticated, contextLoading} = useAppContext();
-  
+  const { baseURL, realm, authenticated, contextLoading } = useAppContext();
+
   const router = useRouter();
+  
+  const startUserInfoEncryption = async () => {
+  const token = await IAMService.getToken();
+  const loggedVuid = IAMService.getValueFromToken("vuid");
+  const user = await appService.getUserByVuid(baseURL, realm, token, loggedVuid);
+  const tokenDoB = IAMService.getDoB();
+  const tokenCC = IAMService.getCC();
+
+  let arrayToEncrypt = [];
+
+  if (tokenDoB) {
+    if (/[a-zA-Z]/.test(tokenDoB) === false) {
+      arrayToEncrypt.push({
+        "data": tokenDoB,
+        "tags": ["dob"]
+      })
+    }
+  }
+
+  // Credit Card
+  if (tokenCC) {
+    if (/[a-zA-Z]/.test(tokenCC) === false) {
+      arrayToEncrypt.push({
+        "data": tokenCC,
+        "tags": ["cc"]
+      })
+    }
+  }
+
+  if (arrayToEncrypt.length > 0) {
+    // Encrypt the data for the first time
+    const encryptedData = await IAMService.doEncrypt(arrayToEncrypt);
+    // Save the updated user object to TideCloak
+    const token = await IAMService.getToken();
+    user[0].attributes.dob = encryptedData[0];
+    user[0].attributes.cc = encryptedData[1];
+    const response = await appService.updateUser(baseURL, realm, user[0], token);
+    await IAMService.updateToken();
+  }
+
+}
 
   // Handles redirect when middle detects token expiry
   useEffect(() => {
@@ -30,7 +72,7 @@ export default function RedirectPage() {
     const params = new URLSearchParams(window.location.search);
     const auth = params.get("auth");
 
-    if (auth === "failed"){
+    if (auth === "failed") {
       sessionStorage.setItem("tokenExpired", "true");
       doLogOut();
     }
@@ -38,17 +80,18 @@ export default function RedirectPage() {
 
   // Handles redirect when loading context
   useEffect(() => {
-    if (!contextLoading){
-      if (authenticated){
+    if (!contextLoading) {
+      if (authenticated) {
+        startUserInfoEncryption().catch(err =>
+          console.error("Error encrypting user info:", err)
+        );
         router.push("/home");
       }
       else {
         router.push("/");
-      }                
-    }       
+      }
+    }
   }, [contextLoading]);
 
-    return <LoadingSquareFullPage/>
+  return <LoadingSquareFullPage />
 }
-
-

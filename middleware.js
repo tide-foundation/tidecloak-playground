@@ -54,5 +54,5 @@ export async function middleware(req) {
 
 //Which routes the middleware should run on:
 export const config = {
-  matcher: ["/user/:path*", "/admin/:path*", "/databaseExposure/:path*"]
+  matcher: ["/home/:path*", "/user/:path*", "/admin/:path*", "/databaseExposure/:path*"]
 };
