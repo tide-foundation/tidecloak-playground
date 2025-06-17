@@ -569,19 +569,19 @@ export default function Admin() {
               </button>
 
               {/* Accordion Content */}
-              <AccordionBox title="What makes TideCloak special?" isOpen={showAdminAccordion}>
-                <ul className="list-disc list-inside">
-                  <li><strong>Decentralized quorum-based approval</strong></li>
-                  <li>Immutable audit logs</li>
-                  <li>Granular control over sensitive fields</li>
-                </ul>
-                <p>
-                  So you don’t worry about{" "}
-                  <a href="#" className="text-blue-600 underline">permission sprawl</a>,{" "}
-                  <a href="#" className="text-blue-600 underline">forgotten admin accounts</a>, or{" "}
-                  <a href="#" className="text-blue-600 underline">over-permissioned users</a>.
-                </p>
-              </AccordionBox>
+              <AccordionBox
+  title="Why 'root' no longer exists"
+  isOpen={showAdminAccordion}
+>
+  <ul className="list-disc pl-5 space-y-1">
+    <li><strong>BYOiD for admins.</strong> Even super-users authenticate through the decentralized Fabric - no password file or IdP root to hijack.</li>
+    <li><strong>Ownerless root certificate.</strong> The Fabric holds the signing key; nobody - vendors included - can impersonate or escalate.</li>
+    <li><strong>Every change = JWT-signed.</strong> A role lives only if the root cert endorses it; unsigned tweaks are ignored by the app and APIs.</li>
+    <li><strong>Quorum-enforced governance.</strong> Adding or widening roles needs multi-admin approval, baked into the same root key.</li>
+    <li><strong>API-friendly.</strong> All of this is exposed as endpoints you can hit from the app - no trips to a hidden console.</li>
+  </ul>
+</AccordionBox>
+
 
 
 
@@ -595,7 +595,7 @@ export default function Admin() {
                     <div className="bg-yellow-50 border border-yellow-300 p-4 rounded space-y-3">
                       <p className="font-semibold text-yellow-800">“Yeah, but doesn't the fact you can do this undermine the whole 'quorum-enforced' thing?”</p>
                       <p className="text-sm text-yellow-900">
-                        Can’t get anything past you! This ability highlights the usual flaw in IAM systems — that the system itself can assign powers at will.
+                        Can’t get anything past you! This ability highlights the usual flaw in IAM systems - that the system itself can assign powers at will.
                         With TideCloak, once hardened with a quorum, even the system can't unilaterally grant admin rights.
                         <br /><br /><strong>For this demo, you're a quorum of one.</strong>
                       </p>
@@ -675,11 +675,21 @@ export default function Admin() {
                       </div>
 
                       {showChangeInfo && (
-                        <AccordionBox title="Quorum-enforced permission changes" isOpen>
-                          <p className="text-sm text-gray-600">
-                            Each individual permission change must be reviewed and committed in turn. Click “Review” to open the full approval workflow.
-                          </p>
-                        </AccordionBox>
+                        <AccordionBox
+  title="How a change request becomes law"
+  isOpen
+>
+  <ul className="list-disc pl-5 space-y-1">
+    <li><strong>Draft → Quorum.</strong> Submit a draft; the Fabric locks it until N-of-M admins sign.</li>
+    <li><strong>Fabric signs or refuses.</strong> Only after quorum does the ownerless root key sign the updated JWT template.</li>
+    <li><strong>No backdoor 'commit'.</strong> The API call you’re about to hit can’t bypass quorum - the Fabric will flat-out reject it.</li>
+    <li><strong>Immutable audit trail.</strong> Every signature and commit is hashed and stored; tampering is mathematically evident.</li>
+  </ul>
+  <p className="text-sm text-gray-600 mt-2">
+    Click <em>Review</em> to approve as “You,” then watch the other simulated admins light up
+    before the <strong>Commit</strong> button appears.
+  </p>
+</AccordionBox>
                       )}
                       <div className="space-y-4">
 

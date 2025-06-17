@@ -9,7 +9,7 @@ import { LoadingSquareFullPage } from "../components/loadingSquare";
 import '../styles/spinKit.css';
 import "../styles/spinner.css";
 
-// Animation only
+// Animation only, so it looks cool, because the real magic is invisible.
 function DecryptingText({ text, speed = 30 }) {
     const [displayed, setDisplayed] = useState('');
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
@@ -214,50 +214,58 @@ export default function DatabaseExposure() {
         !contextLoading && !overlayLoading
         ?
         <main className="flex-grow w-full pt-6 pb-16">
-        <div className="w-full px-4 max-w-screen-md mx-auto flex flex-col items-start gap-4">
+        <div className="w-full px-4 max-w-screen-md mx-auto flex flex-col items-stretch gap-4">
+
         <div className="w-full max-w-3xl"/>
             <div>
-                <div className="relative">
-  <h3 className="text-2xl font-semibold">Database Exposure Simulation</h3>
+<div className="relative pt-8 w-full">
 
   <button
-    onClick={() => setShowExposureAccordion(prev => !prev)}
+    onClick={() => setShowExposureAccordion(x => !x)}
     className="absolute top-0 right-0 text-2xl hover:scale-110 transition-transform"
     aria-label="Toggle explanation"
   >
     {showExposureAccordion ? "🤯" : "🤔"}
   </button>
-</div>
 
+  <h3 className="text-2xl font-semibold">Database-Leak Drill</h3>
 
-                {/* Instruction just under the page title */}
-<p className="text-sm text-gray-600 mb-3">
-  Below is a simulated "user" table leak. A full breach goes from a class action down to a single record.
-</p>
-
-{/* Accordion content */}
-<AccordionBox title="Why a full DB leak is no longer a crisis" isOpen={showExposureAccordion}>
-  <p>
-    Dump the whole table, copy the S3 backup, or grab a live replica - everything
-    stays unreadable.  TideCloak removes the “catastrophic” from a data breach.
+  <p className="text-sm text-gray-600 mb-3">
+    Pretend your API is wide-open, the S3 backup is public, and the DBA's laptop just got owned. Normally you'd panic. Not anymore.
   </p>
 
-  <ul className="list-disc pl-5 space-y-1 mt-2">
+<AccordionBox
+  title="Why an exposed DB is still unreadable"
+  isOpen={showExposureAccordion}
+>
+    <p className="text-sm text-gray-600 mb-3">
+    Data only decrypts for the user who just logged in on <em>this</em> device. Here's the chain that makes that guarantee:
+  </p>
+  <ul className="list-disc pl-5 space-y-1">
     <li>
-      <strong>User-sealed rows.</strong>  Each record is locked with that user's
-      Fabric key shards; the database never holds enough to unlock one, let alone all.
+      <strong>Authentication can't be faked.</strong> BYOiD authenticates against a decentralized Fabric - it can't be circumvented, brute forced or faked - so "logged-in" really means logged-in.
     </li>
     <li>
-      <strong>Edge-only decryption.</strong>  Plaintext appears only inside the
-      browser session that authenticated.  A breached DBA still sees ciphertext.
+      <strong>User-Device-Session binding.</strong> After BYOiD login, the browser holds a short-lived session key that ties the JWT to the device and session. Steal rows or even the JWT itself, and you still lack that key which makes the decryption process usable.
     </li>
+
     <li>
-      <strong>Auditable math.</strong> Every decrypt emits a zero-knowledge proof,
-      so you can show regulators that nothing else was exposed.
+      <strong>Ownerless root cert.</strong> The Fabric signs tokens with a certificate no one controls; it adds the decrypt claim only if the user truly owns that role.
+    </li>
+
+    <li>
+      <strong>Quorum-gated roles.</strong> Widening access demands multi-admin approval, enforced by the same root key, so no lone insider can mint a “read-all” token.
+    </li>
+
+    <li>
+      <strong>Row-level blast radius.</strong> Even a legit user sees only their own data; a full dump collapses to one user, one device, one session.
     </li>
   </ul>
-
 </AccordionBox>
+
+
+</div>
+
 
 
             </div>
