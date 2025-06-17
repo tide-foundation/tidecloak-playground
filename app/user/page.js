@@ -344,17 +344,13 @@ export default function User(){
                 {/* Accordion content */}
                 <AccordionBox title="Why user data stays private" isOpen={showUserInfoAccordion}>
   <p>
-    TideCloak turns privacy from “policy paperwork” into math you (and they) can verify.
+    TideCloak turns privacy from “policy paperwork” into math you (and your users) can verify.
   </p>
 
   <ul className="list-disc pl-5 space-y-1 mt-2">
     <li>
       <strong>User-sealed data.</strong> The Cybersecurity Fabric only answers to a rightful user, so
-      servers, DBAs, and even root accounts see ciphertext only without a user's permission.
-    </li>
-    <li>
-      <strong>Proof-based compliance.</strong> The Cybersecurity Fabric emits zero-knowledge
-      proofs auditors can check independently.
+      servers, DBAs, and even root accounts see ciphertext only, without a user's permission.
     </li>
     <li>
       <strong>Privilege without peeking.</strong> Admins can grant or revoke
@@ -363,6 +359,9 @@ export default function User(){
     <li>
       <strong>Policy = code.</strong> The read/write flags you toggle compile
       into Fabric-signed JWTs that can't be forged or escalated.
+    </li>
+    <li>
+      <strong>No god-mode.</strong> With the user's permission, your processes can be granted automated access, which the Cybersecurity Fabric will only grant under the strict context you define, which no single user or server can override.
     </li>
   </ul>
 
@@ -380,10 +379,10 @@ export default function User(){
                   !IAMService.hasOneRole("_tide_cc.selfencrypt")
                 ) ? (
                   <p className="text-sm text-gray-600 mb-6">
-                    No roles, no data - exactly as designed. The Fabric refuses to reveal or accept fields you’re not entitled to touch.
+                    No roles, no data - exactly as designed. The Fabric refuses to reveal or accept fields you're not entitled to touch.
                   </p>
                 ) : (
-                  <p className="text-sm text-gray-600 mb-6">The form renders whatever the Cybersecurity Fabric-signed JWT says you can do - read, write, or nothing. Try changing roles in the admin console, refresh here, and watch fields appear, gray-out, or disappear. Each save re-encrypts the value on the client before it leaves the browser.</p>
+                  <p className="text-sm text-gray-600 mb-6">Sensitive data is only revealed to the right user, in the right context, at the edge - its encrypted all the time and anywhere else. User privacy can be guaranteed, while consequences of a breach are massively contained.</p>
                 )}
 
                 <form className="space-y-6" onSubmit={handleFormSubmit}>

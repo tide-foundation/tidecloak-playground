@@ -27,9 +27,12 @@ export default function EmailInvitation({ inviteLink }) {
   </button>
 </div>
 <AccordionBox title="Link what now?" isOpen={showAccordion}>
-  <p>TideCloak can be configured for users to "self register" or be "invite only". The demo is set-up as invite only as we've preconfigured a special experience just for you!</p>
-              <p>This page simulates an invite you might receive from a service, HR or administrators. But with a twist that changes everything...</p>
-              <p>While TideCloak holds a user record of you, it only knows you as an anonymous public key. Your credentials are never seen to TideCloak or anyone for that matter!</p>
+  <ul className="list-disc pl-5 space-y-1 mt-2">
+  <li>TideCloak can be configured for users to "self register" or be "invite only". This demo is set-up as invite only as we've preconfigured a special experience just for you!</li>
+              <li>This page simulates an invite you might receive from a service, HR or administrators. But with a twist that changes everything...</li>
+              <li>While TideCloak holds a user record of you, it <b>only knows you as an anonymous public key</b>.</li>
+                <li>Your credentials are never seen to TideCloak or anyone for that matter!</li>
+              </ul>
 </AccordionBox>
 
       <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl">

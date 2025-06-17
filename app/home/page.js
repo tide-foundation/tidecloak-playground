@@ -40,7 +40,7 @@ export default function HomePage() {
 
         <ul className="list-disc pl-5 space-y-1 mt-2">
           <li><strong>BYOiD</strong> - decentralized, zero-knowledge login; passwords are never stored or exposed.</li>
-          <li><strong>Edge Decryption</strong> - data decrypts only on the device of an authenticated and authorised user, so DB dumps stay noise.</li>
+          <li><strong>Edge Decryption</strong> - data decrypts only on the device of an authenticated and authorised user, anywhere else it's garble.</li>
           <li><strong>Quorum-guarded Governance</strong> - any new permission needs majority admin approval; one insider can't run wild.</li>
         </ul>
 

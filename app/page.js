@@ -254,9 +254,9 @@ export default function Login() {
       user, admin, or service.
     </li>
     <li>
-      Ineffable Cryptography is used to operate every key forever in
+      Ineffable Cryptography is used to operate each key forever in
       fragments across a decentralized Cybersecurity Fabric, peer-reviewed by
-      RMIT, Deakin, UoW, and others.
+      RMIT University, Deakin, UoW, and others.
     </li>
     <li>
       No single fragment, user or server can authorize a login, decrypt data en mass, or change roles,
@@ -327,7 +327,7 @@ export default function Login() {
                 </button>
                 {showBackendDetails && (
                   <AccordionBox title="TideCloak Administration" isOpen>
-                    <p className="mb-4">Explore your fully-fledged IAM system’s admin console:</p>
+                    <p className="mb-4">TideCloak is built on RedHat's Keycloak a powerful, enterprise-grade IAM/SSO with everything you'd want in the box. In this demo we show how to engage with the backend via API, but you also have a fully-fledged admin console you can explore here:</p>
                     <div className="border border-dashed border-gray-500 p-4">
                       <ul className="list-disc list-inside">
                         <li>
