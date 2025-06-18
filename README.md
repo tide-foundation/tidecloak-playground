@@ -1,6 +1,10 @@
 # TideCloak developer playground 🚀
 
-A secure, privacy-first identity and data management sandbox built with TideCloak. This repo demonstrates key functionality of TideCloak through interactive examples and self-hosted services — all runnable in one-click via **GitHub Codespaces**.
+Open this Codespace to see what building **without breach anxiety** feels like. TideCloak is an IAM that locks your platforms data, identities and access rights with keys no-one will ever hold - Not admins, vendors, users, or even us.
+
+TideCloak layers its decentralized Cybersecurity Fabric on top of [Keycloak](https://www.keycloak.org/), so you keep the standard OpenID/OAuth toolkit while gaining verifiable immunity to credential theft, mis-configuration, and insider abuse.
+
+The playground sandbox spins up in one click on GitHub Codespaces and guides you through the model with interactive demos.
 
 ---
 
@@ -105,5 +109,6 @@ This project is licensed under the [MIT License]().
 ## 📚 Resources
 
 * [Tide Foundation](https://tide.org/)
+* [Reimagiing Cybersecurity for Devs](https://tide.org/blog/rethinking-cybersecurity-for-developers)
 * [TideCloak Documentation](https://docs.tidecloak.com)
 * [GitHub Codespaces Docs](https://docs.github.com/en/codespaces)
