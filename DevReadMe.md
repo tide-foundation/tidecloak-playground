@@ -21,8 +21,8 @@ Let's get started!
 
 Playing in the Playground:
 
-- The Playgound `User` screen will open, showing the blue loader. You'll see dummy User information. Some details you can access, and others will appear in raw form (encrypted). Feel free to try and change the values and `Save Changes`.
-- Click on the `Database Exposure` tab. This page will emulate the result of a database leak where you can see all the user records, all encypted with keys nowhere in the system! Try and `Decrypt` any thing.
+- The Playground `User` screen will open, showing the blue loader. You'll see dummy User information. Some details you can access, and others will appear in raw form (encrypted). Feel free to try and change the values and `Save Changes`.
+- Click on the `Database Exposure` tab. This page will emulate the result of a database leak where you can see all the user records, all encypted with keys nowhere in the system! Try and `Decrypt` anything.
 - Click `Administration`. Let's change your access permissions. Click `Elevate to Admin Role` and continue as Admin. You can set the user (you) permissions as you like and submit the change suggestion.
 - Click to `Review`, as an Admin would. You'll need to first sign in as yourself (you're an Admin now). Review the suggested change and accept (or not, what do I care). You'll see a simulation of other 2 (out of 5) admins that review and accept the change as well. Now `Commit` the change to apply it.
 - Go back to the `User` tab to witness your newly assigned permissions. See what happens when you're changing the details now.
