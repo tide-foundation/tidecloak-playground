@@ -1,6 +1,6 @@
 # TideCloak developer playground 🚀
 
-Open this Codespace to see what building **without breach anxiety** feels like. TideCloak is an IAM that locks your platforms data, identities and access rights with keys no-one will ever hold - Not admins, vendors, users, or even us.
+Open this Codespace to see what building **without breach anxiety** feels like. TideCloak is an Identity & Access Management system that locks your platforms data, identities and access rights with keys no-one will ever hold - Not admins, vendors, users, or even us.
 
 TideCloak layers its decentralized Cybersecurity Fabric on top of [Keycloak](https://www.keycloak.org/) (Red Hat's battle-tested open-source IAM), so you keep the standard OpenID/OAuth toolkit while gaining verifiable immunity to credential theft, mis-configuration, and insider abuse.
 
@@ -43,47 +43,6 @@ Then in the **Ports tab** click on the **Forwarded addess** in the format of _ht
 > When you click `Login` for the first time, you'll see the below Github warning. Just press `Continue` to move on.
 
 <img src="https://raw.githubusercontent.com/tide-foundation/tidecloakspaces/main/image/README/1743562446996.png" alt="Codespaces warning" style="border: 2px solid #ccc; border-radius: 6px;" />
-
-## 🔧 Development Environment
-
-This project uses a custom [dev container](.devcontainer/devcontainer.json) which includes:
-
-- Node.js 18 (via [official container](https://mcr.microsoft.com/devcontainers/javascript-node))
-- Docker-in-Docker support
-- ESLint, Prettier, GitLens, Docker extensions
-- Auto-forwarding of ports 3000 and 8080
-- A post-creation script: [`setup.sh`](.devcontainer/setup.sh)
-
-### Codespace Setup Overview
-
-On first boot, your Codespace runs this command:
-
-```bash
-
-chmod +x .devcontainer/setup.sh
-./.devcontainer/setup.sh
-npm install
-npm run dev
-```
-
-## 🗂 Project Structure
-
-```bash
-.
-├── .devcontainer/        # Codespaces config and setup script
-├── app/                  # Application routes and API handlers
-├── lib/                  # Helper libraries and utilities
-├── public/               # Static assets (e.g. images, fonts)
-├── tide-modules/         # Custom TideCloak modules
-├── .gitignore
-├── README.md
-├── middleware.js         # Edge/middleware logic
-├── next.config.js        # Next.js configuration
-├── package.json          # NPM dependencies and scripts
-├── postcss.config.js     # PostCSS configuration
-├── tailwind.config.js    # Tailwind CSS configuration
-├── test-realm.json       # TideCloak realm configuration
-├── tidecloak.json        # General TideCloak config
 
 ```
 
