@@ -240,7 +240,7 @@ export default function Login() {
 </div>
 
               <AccordionBox
-  title="Why a breach no longer spirals into disaster"
+  title="Why a breach no longer spells disaster"
   isOpen={showLoginAccordion}
 >
   <p>

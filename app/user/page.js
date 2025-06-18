@@ -280,12 +280,12 @@ export default function User(){
                 {/* Accordion content */}
                 <AccordionBox title="Why user data stays private" isOpen={showUserInfoAccordion}>
   <p>
-    TideCloak turns privacy from policy paperwork into math you—and your users—can verify.
+    TideCloak turns privacy from policy paperwork into math you - and your users - can verify.
   </p>
 
   <ul className="list-disc pl-5 space-y-1 mt-2">
     <li>
-      <strong>User-sealed data.</strong> BYOiD proves the requester’s identity, and the Cybersecurity Fabric answers only to that user, so servers, DBAs, and even root accounts see ciphertext.
+      <strong>User-sealed data.</strong> BYOiD proves the requester's identity, and the Cybersecurity Fabric answers only to that user, so servers, DBAs, and even root accounts see ciphertext.
     </li>
     <li>
       <strong>Edge-only decryption.</strong> Multi-party computation returns puzzle pieces that can be assembled only with the short-lived session key in this browser; the Fabric itself never sees plaintext.
@@ -294,7 +294,7 @@ export default function User(){
       <strong>Privilege without peeking.</strong> Admins can grant or revoke roles, but the Fabric refuses to decrypt on their behalf.
     </li>
     <li>
-      <strong>Policy = code.</strong> The read/write flags you toggle compile into Fabric-signed JWTs that can’t be forged or escalated.
+      <strong>Policy = code.</strong> The read/write flags you toggle compile into Fabric-signed JWTs that can't be forged or escalated.
     </li>
   </ul>
 

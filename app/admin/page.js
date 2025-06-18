@@ -595,7 +595,7 @@ export default function Admin() {
                     <div className="bg-yellow-50 border border-yellow-300 p-4 rounded space-y-3">
                       <p className="font-semibold text-yellow-800">“Yeah, but doesn't the fact you can do this undermine the whole 'quorum-enforced' thing?”</p>
                       <p className="text-sm text-yellow-900">
-                        Can’t get anything past you! This ability highlights the usual flaw in IAM systems - that the system itself can assign powers at will.
+                        Can't get anything past you! This ability highlights the usual flaw in IAM systems - that the system itself can assign powers at will.
                         With TideCloak, once hardened with a quorum, even the system can't unilaterally grant admin rights.
                         <br /><br /><strong>For this demo, you're a quorum of one.</strong>
                       </p>
@@ -680,9 +680,9 @@ export default function Admin() {
   isOpen
 >
   <ul className="list-disc pl-5 space-y-1">
-    <li><strong>Draft → Quorum.</strong> Submit a draft; the Fabric locks it until N-of-M admins sign.</li>
+    <li><strong>Draft → Quorum.</strong> Submit a draft; the Fabric locks it until T-of-N admins sign.</li>
     <li><strong>Fabric signs or refuses.</strong> Only after quorum does the ownerless root key sign the updated JWT template.</li>
-    <li><strong>No backdoor 'commit'.</strong> The API call you’re about to hit can’t bypass quorum - the Fabric will flat-out reject it.</li>
+    <li><strong>No backdoor 'commit'.</strong> The API call you're about to hit can't bypass quorum - the Fabric will flat-out reject it.</li>
     <li><strong>Immutable audit trail.</strong> Every signature and commit is hashed and stored; tampering is mathematically evident.</li>
   </ul>
   <p className="text-sm text-gray-600 mt-2">

@@ -256,7 +256,7 @@ export default function DatabaseExposure() {
 </p>
 
 <AccordionBox
-  title="Why an exposed DB is still unreadable"
+  title="Why an exposed database is still unreadable"
   isOpen={showExposureAccordion}
 >
     <p className="text-sm text-gray-600 mb-3">
