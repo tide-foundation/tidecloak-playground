@@ -577,8 +577,8 @@ export default function Admin() {
     <li><strong>BYOiD for admins.</strong> Even super-users authenticate through the decentralized Fabric - no password file or IdP root to hijack.</li>
     <li><strong>Ownerless root certificate.</strong> The Fabric holds the signing key; nobody - vendors included - can impersonate or escalate.</li>
     <li><strong>Every change = JWT-signed.</strong> A role lives only if the root cert endorses it; unsigned tweaks are ignored by the app and APIs.</li>
-    <li><strong>Quorum-enforced governance.</strong> Adding or widening roles needs multi-admin approval, baked into the same root key.</li>
-    <li><strong>API-friendly.</strong> All of this is exposed as endpoints you can hit from the app - no trips to a hidden console.</li>
+    <li><strong>Quorum-enforced governance.</strong> Adding or widening roles needs multi-admin approval, baked into the same root cert.</li>
+    <li><strong>API-friendly.</strong> All of this is exposed as endpoints you can hit from the app.</li>
   </ul>
 </AccordionBox>
 

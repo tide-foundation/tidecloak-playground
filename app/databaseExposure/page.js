@@ -230,9 +230,30 @@ export default function DatabaseExposure() {
 
   <h3 className="text-2xl font-semibold">Database-Leak Drill</h3>
 
-  <p className="text-sm text-gray-600 mb-3">
-    Pretend your API is wide-open, the S3 backup is public, and the DBA's laptop just got owned. Normally you'd panic. Not anymore.
-  </p>
+    <p className="text-sm text-gray-600 mb-3">
+  Your user API&nbsp;
+  <a href="https://techcrunch.com/2025/03/31/api-testing-firm-apisec-exposed-customer-data-during-security-lapse/"
+     target="_blank" rel="noopener noreferrer"
+     className="underline text-blue-600">
+    just leaked
+  </a>&nbsp;, S3 bucket&nbsp;
+  <a href="https://cybersecuritynews.com/86000-healthcare-staff-records-exposed/"
+     target="_blank" rel="noopener noreferrer"
+     className="underline text-blue-600">
+    left public
+  </a>&nbsp;, a dev laptop&nbsp; 
+  <a href="https://www.theverge.com/2023/2/28/23618353/lastpass-security-breach-disclosure-password-vault-encryption-update"
+     target="_blank" rel="noopener noreferrer"
+     className="underline text-blue-600">
+    stolen
+  </a>&nbsp;, even your IAM vendor&nbsp;
+  <a href="https://www.informationweek.com/cyber-resilience/massive-okta-breach-what-cisos-should-know"
+     target="_blank" rel="noopener noreferrer"
+     className="underline text-blue-600">
+    breached
+  </a>.  
+  Normally you'd panic. Not anymore.
+</p>
 
 <AccordionBox
   title="Why an exposed DB is still unreadable"

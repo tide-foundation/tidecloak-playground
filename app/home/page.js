@@ -35,16 +35,17 @@ export default function HomePage() {
       {/* ─── Accordion content ───────────────────────────────────── */}
       <AccordionBox title="Why TideCloak lets you build without breach anxiety" isOpen={showHomeAccordion}>
         <p>
-          These features combine to give you peace of mind that no single breach, no matter how bad, will result in catastrophic data exposure or privilege override. The breach is inevitable, but not the consequences.
+          These properties combine to give you peace of mind that no single breach, no matter how nasty, will result in catastrophic data exposure or privilege abuse. The breach is inevitable, but not the consequences:
         </p>
 
         <ul className="list-disc pl-5 space-y-1 mt-2">
-          <li><strong>BYOiD</strong> - decentralized, zero-knowledge login; passwords are never stored or exposed.</li>
-          <li><strong>Edge Decryption</strong> - data decrypts only on the device of an authenticated and authorised user, anywhere else it's garble.</li>
-          <li><strong>Quorum-guarded Governance</strong> - any new permission needs majority admin approval; one insider can't run wild.</li>
+          <li><strong>BYOiD</strong> - decentralized, zero-knowledge login; passwords are never stored or exposed, and can't be brute forced.</li>
+          <li><strong>Quorum-guarded Governance</strong> - a permission granted is a permission intended, as it must pass majority admin approval; no more god-mode.</li>
+          <li><strong>Edge Decryption</strong> - data decrypts only on the device of an authenticated and authorized user, anywhere else it's garble.</li>
+          
         </ul>
 
-        <p className="mt-2">Pick a demo below to watch each safeguard in action.</p>
+        <p className="mt-2">Pick an experience below to watch each safeguard in action.</p>
       </AccordionBox>
 
       {/* ─── Demo tiles ───────────────────────────────────────────── */}

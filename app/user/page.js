@@ -280,31 +280,29 @@ export default function User(){
                 {/* Accordion content */}
                 <AccordionBox title="Why user data stays private" isOpen={showUserInfoAccordion}>
   <p>
-    TideCloak turns privacy from “policy paperwork” into math you (and your users) can verify.
+    TideCloak turns privacy from policy paperwork into math you—and your users—can verify.
   </p>
 
   <ul className="list-disc pl-5 space-y-1 mt-2">
     <li>
-      <strong>User-sealed data.</strong> The Cybersecurity Fabric only answers to a rightful user, so
-      servers, DBAs, and even root accounts see ciphertext only, without a user's permission.
+      <strong>User-sealed data.</strong> BYOiD proves the requester’s identity, and the Cybersecurity Fabric answers only to that user, so servers, DBAs, and even root accounts see ciphertext.
     </li>
     <li>
-      <strong>Privilege without peeking.</strong> Admins can grant or revoke
-      roles here, but the Cybersecurity Fabric refuses to decrypt on their behalf.
+      <strong>Edge-only decryption.</strong> Multi-party computation returns puzzle pieces that can be assembled only with the short-lived session key in this browser; the Fabric itself never sees plaintext.
     </li>
     <li>
-      <strong>Policy = code.</strong> The read/write flags you toggle compile
-      into Fabric-signed JWTs that can't be forged or escalated.
+      <strong>Privilege without peeking.</strong> Admins can grant or revoke roles, but the Fabric refuses to decrypt on their behalf.
     </li>
     <li>
-      <strong>No god-mode.</strong> With the user's permission, your processes can be granted automated access, which the Cybersecurity Fabric will only grant under the strict context you define, which no single user or server can override.
+      <strong>Policy = code.</strong> The read/write flags you toggle compile into Fabric-signed JWTs that can’t be forged or escalated.
     </li>
   </ul>
 
   <p className="mt-2">
-    Change a field, hit Save, and watch the Fabric re-encrypt on the fly.
+    Change a field, hit <em>Save</em>, and watch the Fabric re-encrypt on the fly.
   </p>
 </AccordionBox>
+
 
 
                 <h2 className="text-3xl font-bold mb-4">User Information</h2>
@@ -318,7 +316,7 @@ export default function User(){
                     No roles, no data - exactly as designed. The Fabric refuses to reveal or accept fields you're not entitled to touch.
                   </p>
                 ) : (
-                  <p className="text-sm text-gray-600 mb-6">Sensitive data is only revealed to the right user, in the right context, at the edge - its encrypted all the time and anywhere else. User privacy can be guaranteed, while consequences of a breach are massively contained.</p>
+                  <p className="text-sm text-gray-600 mb-6">Sensitive data is only revealed to the right user, in the right context, at the edge - otherwise its encrypted all the time. User privacy can be guaranteed, while consequences of a breach are massively contained.</p>
                 )}
 
                 <form className="space-y-6" onSubmit={handleFormSubmit}>

@@ -254,8 +254,8 @@ export default function Login() {
       user, admin, or service.
     </li>
     <li>
-      Ineffable Cryptography is used to operate each key forever in
-      fragments across a decentralized Cybersecurity Fabric, peer-reviewed by
+      Ineffable Cryptography is used to operate those keys, forever in
+      fragments across a decentralized Cybersecurity Fabric; peer-reviewed by
       RMIT University, Deakin, UoW, and others.
     </li>
     <li>
