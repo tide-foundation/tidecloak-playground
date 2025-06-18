@@ -28,7 +28,7 @@ export default function EmailInvitation({ inviteLink }) {
 </div>
 <AccordionBox title="Link what now?" isOpen={showAccordion}>
   <ul className="list-disc pl-5 space-y-1 mt-2">
-  <li>TideCloak can be configured for users to "self register" or be "invite only". This demo is set-up as invite only as we've preconfigured a special experience just for you!</li>
+  <li>TideCloak can be configured for users to "self register" or be "invite only". This demo is setup as invite only as we've preconfigured a special experience just for you!</li>
               <li>This page simulates an invite you might receive from a service, HR or administrators. But with a twist that changes everything...</li>
               <li>While TideCloak holds a user record of you, it <b>only knows you as an anonymous public key</b>.</li>
                 <li>Your credentials are never seen to TideCloak or anyone for that matter!</li>
@@ -55,7 +55,7 @@ export default function EmailInvitation({ inviteLink }) {
           <div className="text-gray-800 leading-relaxed whitespace-pre-wrap">
             <p>Dear Human,<br />&nbsp;</p>
             <p>You've been invited to connect as the <strong><i>demo user</i></strong> for the Play app.<br />&nbsp;</p>
-            <p>Create or connect your Tide account by clicking <strong><i>Accept</i></strong> below and following the prompts.<br />&nbsp;</p>
+            <p>Create or link your Tide account by clicking <strong><i>Accept</i></strong> below and following the prompts.<br />&nbsp;</p>
             <p>A Tide account allows you to login to any service with guaranteed privacy and ownership of your identity.</p>
           </div>
 

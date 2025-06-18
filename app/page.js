@@ -278,7 +278,7 @@ export default function Login() {
                   Welcome to the world of provable security
                 </h2>
                 <p>
-                  <b>Picture this...</b> Your admin is <b>breached</b>. IAM vendor <b>compromised</b>. Cloud host <b>exposed</b>.<br/>
+                  <b>Picture this...</b> Your admin is <b>breached</b>, cloud host <b>exposed</b>.<br/>
                   Yet, no data leaks, no identities stolen, no access abused. That's TideCloak.<br/>
                   Ship fast. Build trust. Sleep easy.
                 </p>
