@@ -1,4 +1,6 @@
-# TideCloak developer playground 🚀
+![play_github_heading](https://github.com/user-attachments/assets/d16628c3-cd0f-4d0b-8937-00084737029c)
+
+# TideCloak developer playground
 
 Open this Codespace to see what building **without breach anxiety** feels like. TideCloak is an Identity & Access Management system that locks your platforms data, identities and access rights with keys no-one will ever hold - Not admins, vendors, users, or even us.
 
@@ -44,8 +46,6 @@ Then in the **Ports tab** click on the **Forwarded addess** in the format of _ht
 
 <img src="https://raw.githubusercontent.com/tide-foundation/tidecloakspaces/main/image/README/1743562446996.png" alt="Codespaces warning" style="border: 2px solid #ccc; border-radius: 6px;" />
 
-```
-
 ## 🤝 Contributing
 
 We welcome contributions! To get started:
@@ -68,6 +68,6 @@ This project is licensed under the [MIT License]().
 ## 📚 Resources
 
 * [Tide Foundation](https://tide.org/)
-* [Reimagiing Cybersecurity for Devs](https://tide.org/blog/rethinking-cybersecurity-for-developers)
+* [Reimagining Cybersecurity for Devs](https://tide.org/blog/rethinking-cybersecurity-for-developers)
 * [TideCloak Documentation](https://docs.tidecloak.com)
 * [GitHub Codespaces Docs](https://docs.github.com/en/codespaces)
