@@ -44,7 +44,7 @@ Then in the **Ports tab** click on the **Forwarded addess** in the format of _ht
 > [!WARNING]
 > When you click `Login` for the first time, you'll see the below Github warning. Just press `Continue` to move on.
 
-<img src="https://raw.githubusercontent.com/tide-foundation/tidecloakspaces/main/image/README/1743562446996.png" alt="Codespaces warning" style="border: 2px solid #ccc; border-radius: 6px;" />
+<img src="https://raw.githubusercontent.com/tide-foundation/tidecloakspaces/main/image/README/1743562446996.png" width="50%" alt="Codespaces warning" style="border: 2px solid #ccc; border-radius: 6px;" />
 
 ## 🤝 Contributing
 
