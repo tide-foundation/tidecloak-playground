@@ -82,7 +82,7 @@ The initializer calls endpoints in order to setup a TideCloak for the NextJS app
 
 The minimum relevant endpoints in order of execution:
 - Get a master token from the default realm-management client (POST /realms/master/protocol/openid-connect/token).
-- Create the realm based on default settings within test-realm.json in this demo (POST /admin/realms).
+- Create the realm based on default settings within tidecloak-demo-realm.json in this demo (POST /admin/realms).
 - Create the Tide IDP and activate its license (POST /admin/realms/{realm}/vendorResources/setUpTideRealm).
 - Toggle IGA on and leave it on (POST /admin/realms/{realm}/tideAdminResources/toggle-iga).
 - Get all client change requests to approve of all default clients and contexts (GET /admin/realms/{realm}/tide-admin/change-set/clients/requests).

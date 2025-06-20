@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect } from "react";
 // Instead of tidecloak.json as writing to that configuration file rerenders the whole application.
-import settings from "/test-realm.json";
+import settings from "/tidecloak-demo-realm.json";
 import IAMService from "../../lib/IAMService";
 
 // Create once, share, and  avoid creating on each rerender. 

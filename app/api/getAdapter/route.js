@@ -1,5 +1,5 @@
 import configs from "../apiConfigs";
-import settings from "/test-realm.json";
+import settings from "/tidecloak-demo-realm.json";
 import fs from "fs";
 import path from "path";
 import apiService from "../apiService";
@@ -13,7 +13,7 @@ export async function GET(){
     // Shared variables from /api/apiConfigs.js
     const realm = configs.realm;
     const baseURL = configs.baseURL;
-    // From /test-realm.json
+    // From /tidecloak-demo-realm.json
     const clientName = settings.clients[0].clientId; 
 
     // Fetch a master token with the default admin and password (set in the command for setting up keycloak) from the default keycloak admin-cli client

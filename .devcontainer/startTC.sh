@@ -6,7 +6,7 @@ CODESPACE_URL_NEXT=$([ "$CODESPACES" = "true" ] && echo "https://${CODESPACE_NAM
 CODESPACE_URL_TC=$([ "$CODESPACES" = "true" ] && echo "https://${CODESPACE_NAME}-8080.app.github.dev" || echo "http://localhost:8080")
 
 echo "🔄 [2/3] Updating with Codespace URL..."
-sed -i "s|http://localhost:3000|${CODESPACE_URL_NEXT}|g" ./test-realm.json
+sed -i "s|http://localhost:3000|${CODESPACE_URL_NEXT}|g" ./tidecloak-demo-realm.json
 sed -i "s|http://localhost:3000|${CODESPACE_URL_NEXT}|g" ./app/api/apiConfigs.js
 sed -i "s|http://localhost:8080|${CODESPACE_URL_TC}|g" ./app/api/apiConfigs.js
 sed -i "s|http://localhost:3000|${CODESPACE_URL_NEXT}|g" ./DevReadMe.md

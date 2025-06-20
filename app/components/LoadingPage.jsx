@@ -44,7 +44,7 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setKcDa
     }, []);
 
 
-    // Create the demo realm using the settings provided in test-realm.json
+    // Create the demo realm using the settings provided in tidecloak-demo-realm.json
     const createRealm = async () => {
         setCurrentStep(1);
         const response = await fetch(`/api/createRealm`, {

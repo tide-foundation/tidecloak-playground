@@ -54,7 +54,7 @@ async function getMasterToken(baseURL) {
  * Create the realm for the demo
  * @param {string} baseURL - url body provided in the apiConfigs.js
  * @param {string} token - master token
- * @param {JSON} settings - imported settings from the test-realm.json
+ * @param {JSON} settings - imported settings from the tidecloak-demo-realm.json
  * @returns {Promise<Object>} - response status object based on the result of creating the realm
  */
 async function createDefaultRealm(baseURL, settings, token) {
@@ -304,10 +304,10 @@ async function assignRealmRole(baseURL, realm, userId, role, token) {
 
 /**
  * GET - /admin/realms/{realm}/clients
- * Get the client ID of the demo using the provided client name in test-realm.json
+ * Get the client ID of the demo using the provided client name in tidecloak-demo-realm.json
  * @param {string} baseURL - url body provided in the apiConfigs.js
  * @param {string} realm - the realm name provided in the apiConfigs.js 
- * @param {string} clientName - client name (ID) from the test-realm.json 
+ * @param {string} clientName - client name (ID) from the tidecloak-demo-realm.json 
  * @param {string} token - master token
  * @returns {Promise<Object>} - response status with client ID
  */
@@ -329,7 +329,7 @@ async function getClientID(baseURL, realm, clientName, token) {
 
 /**
  * GET - /admin/realms/{realm}/vendorResources/get-installations-provider
- * Get the adapter configurations for the client specified in the test-realm.json, these configurations will be written to tidecloak.json.
+ * Get the adapter configurations for the client specified in the tidecloak-demo-realm.json, these configurations will be written to tidecloak.json.
  * @param {string} baseURL - url body provided in the apiConfigs.js
  * @param {string} realm - the realm name provided in the apiConfigs.js 
  * @param {string} clientID - client Id from getClientID()
