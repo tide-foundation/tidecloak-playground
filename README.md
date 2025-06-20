@@ -1,6 +1,6 @@
-![play_github_heading](https://github.com/user-attachments/assets/d16628c3-cd0f-4d0b-8937-00084737029c)
+![play_github_heading](https://github.com/user-attachments/assets/14e76359-799e-4fc6-8c53-d00c8c174e87)
 
-# TideCloak developer playground
+# TideCloak developer capability playground
 
 Open this Codespace to see what building **without breach anxiety** feels like. TideCloak is an Identity & Access Management system that locks your platforms data, identities and access rights with keys no-one will ever hold - Not admins, vendors, users, or even us.
 
