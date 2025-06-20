@@ -1,6 +1,6 @@
 // This file shares the common API parameters across the endpoints to conveniently change values such as the base URL.
 // Default values are used for local hosting TideCloak when .env isn't provided.
-import settings from "/test-realm.json";
+import settings from "/tidecloak-demo-realm.json";
 
 const envConfig = {
   BASEURL: process.env.BASE_URL ?? (() =>{
