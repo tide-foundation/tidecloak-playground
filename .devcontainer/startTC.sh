@@ -12,7 +12,6 @@ sed -i "s|http://localhost:8080|${CODESPACE_URL_TC}|g" ./app/api/apiConfigs.js
 sed -i "s|http://localhost:3000|${CODESPACE_URL_NEXT}|g" ./DevReadMe.md
 
 echo "🐳 [3/3] Pulling and starting Tidecloak container..."
-docker pull docker.io/tideorg/tidecloak-dev:0.9.4
 if [ "$(docker ps -aq -f name=^tidecloak$)" ]; then
   docker rm tidecloak --force
 fi
@@ -30,7 +29,7 @@ docker run -d \
   -e KC_HOSTNAME=${CODESPACE_URL_TC} \
   -e KC_BOOTSTRAP_ADMIN_USERNAME=admin \
   -e KC_BOOTSTRAP_ADMIN_PASSWORD=password \
-  tideorg/tidecloak-dev:0.9.4
+  tideorg/tidecloak-dev:latest
 
 if [ -d ".next" ]; then
   echo "Removing previous .next directory..."
