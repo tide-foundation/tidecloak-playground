@@ -4,7 +4,7 @@
 
 Open this Codespace to see what building **without breach anxiety** feels like. TideCloak is an Identity & Access Management system that locks your platform's data, identities and access rights with keys no-one will ever hold - Not admins, vendors, users, or even us.
 
-TideCloak layers its decentralized Cybersecurity Fabric on top of [Keycloak](https://www.keycloak.org/) (Red Hat's battle-tested open-source IAM), so you keep the standard OpenID/OAuth toolkit while gaining verifiable immunity to credential theft, mis-configuration, insider abuse, and attacks we don't see coming yet.
+TideCloak layers its decentralized Cybersecurity Fabric on top of [Keycloak](https://www.keycloak.org/) (Red Hat's battle-tested open-source IAM), so you keep the standard OpenID/OAuth toolkit while gaining verifiable immunity to credential theft, mis-configuration, insider abuse, and attacks we don't even see coming yet.
 
 The playground sandbox spins up in one click on GitHub Codespaces and guides you through the model with interactive demos.
 
