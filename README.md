@@ -46,9 +46,7 @@ If the page doesn't open check the **Ports tab** in Codespaces for the **Forward
 In the **Ports tab** click on the **Forwarded addess** in the format of _https://${CODESPACE_NAME}-8080.app.github.dev_. The default administrator credentials are `admin` / `password`.
 
 > [!NOTE]
-> For the first visit, you'll see the below Github warning. Just press `Continue` to move on.
-
-<img src="https://raw.githubusercontent.com/tide-foundation/tidecloakspaces/main/image/README/1743562446996.png" width="50%" alt="Codespaces warning" style="border: 2px solid #ccc; border-radius: 6px;" />
+> For the first visit, you'll see the below Github warning like [this](https://raw.githubusercontent.com/tide-foundation/tidecloakspaces/main/image/README/1743562446996.png). Just press `Continue` to move on.
 
 ## 🤝 Contributing
 
