@@ -74,4 +74,3 @@ This project is licensed under the [MIT License]().
 * [Tide Foundation](https://tide.org/)
 * [Reimagining Cybersecurity for Devs](https://tide.org/blog/rethinking-cybersecurity-for-developers)
 * [TideCloak Documentation](https://docs.tidecloak.com)
-* [GitHub Codespaces Docs](https://docs.github.com/en/codespaces)
