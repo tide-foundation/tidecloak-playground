@@ -26,18 +26,18 @@ Launch a preconfigured development environment directly in your browser:
 
 Feel free to grab a coffee, star this project, or read about the latest breach headlines, that won't bother you when you're TideCloaked.
 
-You’ll see:
+### ▶️ **Have a play**
 
-- `https://${CODESPACE_NAME}-3000.app.github.dev` → ✅ **Playground App**
-- `https://${CODESPACE_NAME}-8000.app.github.dev` → 🔐 **TideCloak IAM**
-
-### **Have a play with the demo app** ▶️
-
-The initialization screen opens automatically. Once initialization is complete your experience will begin. If the page doesn't open check the **Ports tab** in Codespaces for the **Forwarded address** (also shown above).
+The initialization screen opens automatically. Once initialization is complete your experience will begin.
 
 | Initialization: Set's up your experience             |  Invite: You're ready to go |
 :-------------------------:|:-------------------------:
 |![play_github_heading](https://github.com/RaymondThach/tidecloak-playground/blob/main/public/init.gif?raw=true)  |  ![play_github_heading](https://github.com/user-attachments/assets/fe25f509-297e-4384-91dd-94f017de34bf)|
+
+If the page doesn't open check the **Ports tab** in Codespaces for the **Forwarded address**:
+
+- `https://${CODESPACE_NAME}-3000.app.github.dev` → ✅ **Playground App**
+- `https://${CODESPACE_NAME}-8000.app.github.dev` → 🔐 **TideCloak IAM**
 
 ### **Accessing the TideCloak backend**
 
