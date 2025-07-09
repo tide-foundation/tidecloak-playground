@@ -500,7 +500,7 @@ async function activateIDPLicense(baseURL, realm, token) {
  * @returns {Promise<Object>} - status response
  */
 async function toggleIGA(baseURL, realm, token) {
-    const response = await fetch(`${baseURL}/admin/realms/${realm}/tideAdminResources/toggle-iga`, {
+    const response = await fetch(`${baseURL}/admin/realms/${realm}/tide-admin/toggle-iga`, {
         method: 'POST',
         headers: {
             "authorization": `Bearer ${token}`,

@@ -14,7 +14,7 @@
     "react-scripts": "^5.0.1",
     "sqlite": "5.1.1",
     "sqlite3": "5.1.7",
-    "tidecloak-js": "^0.7.2"
+    "tidecloak-js": "^0.9.10"
   },
   "scripts": {
     "dev": "next dev",
