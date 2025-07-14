@@ -2,7 +2,7 @@
 
 A secure, privacy-first identity and data management sandbox built with TideCloak. This demo demonstrates key functionalities of TideCloak through an example app you can interact with and change.
 
-Setting up can take a while (7 mins or so), so here's what you should expect:
+Setting up can take a while (5 mins or so), so here's what you should expect:
 
 - You'll notice at the `TERMINAL` window below, different progress messages, like:
 - "✔️ Finishing up..." - meaning, VSCode web was successfully set up in codespaces.
@@ -27,6 +27,5 @@ Playing in the Playground:
 - Click to `Review`, as an Admin would. You'll need to first sign in as yourself (you're an Admin now). Review the suggested change and accept (or not, what do I care). You'll see a simulation of other 2 (out of 5) admins that review and accept the change as well. Now `Commit` the change to apply it.
 - Go back to the `User` tab to witness your newly assigned permissions. See what happens when you're changing the details now.
 - Check the `Database Exposure` again and see what you can and can't access with your newly assigned permissions.
-
 
 If you encounter any issues mid-run, try refresh the Playground browser tab and it should fix itself.

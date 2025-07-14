@@ -16,7 +16,7 @@ Launch a preconfigured development environment directly in your browser:
 
 [![Open in Codespaces](https://github.com/codespaces/badge.svg)](https://codespace.new/tide-foundation/tidecloak-playground?quickstart=1)
 
-**While you wait (7 mins or so), here's what happens automatically:**
+**While you wait (5 mins or so), here's what happens automatically:**
 
 - Installs required dependencies (`libssl-dev`)
 - Auto-updates config files with your Codespace URLs
@@ -30,9 +30,9 @@ Feel free to grab a coffee, star this project, or read about the latest breach h
 
 The initialization screen opens automatically. Once initialization is complete your experience will begin.
 
-| Initialization: Set's up your experience             |  Invite: You're ready to go |
-:-------------------------:|:-------------------------:
-|![play_github_heading](https://github.com/RaymondThach/tidecloak-playground/blob/main/public/init.gif?raw=true)  |  ![play_github_heading](https://github.com/user-attachments/assets/fe25f509-297e-4384-91dd-94f017de34bf)|
+|                                   Initialization: Set's up your experience                                   |                                      Invite: You're ready to go                                      |
+| :-----------------------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------: |
+| ![play_github_heading](https://github.com/RaymondThach/tidecloak-playground/blob/main/public/init.gif?raw=true) | ![play_github_heading](https://github.com/user-attachments/assets/fe25f509-297e-4384-91dd-94f017de34bf) |
 
 If the page doesn't open check the **Ports tab** in Codespaces for the **Forwarded address**:
 
