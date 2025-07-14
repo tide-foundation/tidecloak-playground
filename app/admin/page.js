@@ -665,6 +665,7 @@ export default function Admin() {
                       {/* Sub-heading + info toggle */}
                       <div className="relative mb-2">
                         <h3 className="text-xl font-semibold">Change Requests</h3>
+                        <p className="text-sm text-gray-700">Play your role as an admin in the quorum, by reviewing the Change Request. We'll simulate the others before you can then commit the change.</p>
                         <button
                           onClick={() => setShowChangeInfo(prev => !prev)}
                           className="absolute -top-2 right-0 text-2xl hover:scale-110 transition-transform"
