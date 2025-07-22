@@ -38,14 +38,10 @@ function DecryptingText({ text, speed = 30 }) {
 
 /**
  * Representation of each card and the decryption functionality for them
- * @param {boolean} isUser - true if it's the logged in user to decrypt or not
  * @param {Object} user - user object representation of demo user and dummy users
- * @param {string} username - to be displayed on each card
- * @param {string} dob - encrypted string to be decrypted and displayed on each card 
- * @param {string} cc - encrypted string to be decrypted and displayed on each card 
  * @returns {JSX.Element} - HTML for each card to be decrypted
  */
-function DecryptedRow({ user, baseUrl, realm }) {
+function DecryptedRow({ user }) {
     // --- state hooks
     // State variable for handling Decrypt Button
     const [decrypted, setDecrypted] = useState(false);
@@ -213,7 +209,7 @@ export default function DatabaseExposure() {
             const unmanagedAttributes = await appService.getUserAttributes(baseURL, realm, user.id, token);
             user.attributes = {
                 ...user.attributes,
-                unmanagedAttributes
+                ...unmanagedAttributes
             }
         })
         setUsers(users);

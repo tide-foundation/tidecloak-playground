@@ -22,8 +22,8 @@ export default function RedirectPage() {
   
   const startUserInfoEncryption = async () => {
   const token = await IAMService.getToken();
-  const loggedVuid = IAMService.getValueFromToken("vuid");
-  const user = await appService.getUserByVuid(baseURL, realm, token, loggedVuid);
+  const loggedUserId = IAMService.getValueFromToken("sub");
+  const user = await appService.getUser(baseURL, realm, token, loggedUserId);
   const tokenDoB = IAMService.getDoB();
   const tokenCC = IAMService.getCC();
 
@@ -53,9 +53,9 @@ export default function RedirectPage() {
     const encryptedData = await IAMService.doEncrypt(arrayToEncrypt);
     // Save the updated user object to TideCloak
     const token = await IAMService.getToken();
-    user[0].attributes.dob = encryptedData[0];
-    user[0].attributes.cc = encryptedData[1];
-    const response = await appService.updateUser(baseURL, realm, user[0], token);
+    user.attributes.dob = encryptedData[0];
+    user.attributes.cc = encryptedData[1];
+    const response = await appService.updateUser(baseURL, realm, user, token);
     await IAMService.updateToken();
   }
 

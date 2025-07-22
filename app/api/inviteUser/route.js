@@ -1,3 +1,4 @@
+import appService from "../../../lib/appService";
 import configs from "../apiConfigs";
 import apiService from "../apiService";
 
@@ -18,9 +19,11 @@ export async function GET(){
         // Get the user object to check if the demo user is already linked to a Tide account
         const demoUserResult = await apiService.getDemoUser(baseURL, realm, masterToken);
         const demoUser = demoUserResult.body;
-
+        const demoAttributes = await appService.getUserAttributes(baseURL, realm, demoUser.id, masterToken);
+        demoUser.attributes = {...demoUser.attributes, ...demoAttributes}
+        
         // Check if demo user is already linked, if so don't generate a URL and proceed with login
-        if (demoUser.attributes.vuid){
+        if (demoUser.attributes.vuid?.[0]){
             return new Response(JSON.stringify({ok: true}), {status: 200}); 
         }
         else {
