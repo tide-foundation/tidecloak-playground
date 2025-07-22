@@ -139,13 +139,8 @@ export default function Admin() {
   // Get current logged in user
   const getLoggedUser = async () => { 
     const token = await IAMService.getToken();
-    const loggedVuid =  IAMService.getValueFromToken("vuid");
-    const users = await appService.getUsers(baseURL, realm, token);
-    const loggedInUser = users.find(user => {
-      if (user.attributes.vuid[0] === loggedVuid){
-          return user;
-      }
-    });
+    const loggedUserId =  IAMService.getValueFromToken("sub");
+    const loggedInUser = await appService.getUser(baseURL, realm, token, loggedUserId);
     setLoggedUser(loggedInUser);
   };
   

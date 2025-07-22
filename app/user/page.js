@@ -90,13 +90,8 @@ export default function User(){
 
       // This is for the Accordion - it shows data directly from the database as is, not from id token.
       const token = await IAMService.getToken(); 
-      const users = await appService.getUsers(baseURL, realm, token);
-      const loggedVuid =  IAMService.getValueFromToken("vuid");
-      const loggedInUser = users.find(user => {
-        if (user.attributes?.vuid[0] === loggedVuid){
-            return user;
-        }
-      });
+      const loggedUserId =  IAMService.getValueFromToken("sub");
+      const loggedInUser = await appService.getUser(baseURL, realm, token, loggedUserId);
       setLoggedUser(loggedInUser);
 
       // Use the encrypted DoB and CC from the identity token for this Users Page
