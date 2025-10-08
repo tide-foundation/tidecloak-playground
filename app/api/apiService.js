@@ -165,7 +165,7 @@ async function createUser(baseURL, realm, token, username, dob, cc) {
         },
         body: JSON.stringify({
             "username": username,
-            "email": "testuser@tidecloak.com",
+            "email": `${username}@tidecloak.com`,
             "attributes": {
                 "dob": dob,
                 "cc": cc,
@@ -179,7 +179,7 @@ async function createUser(baseURL, realm, token, username, dob, cc) {
 
     // Conflict case, but there should only be one user on initialisation.
     if (response.status === 409) {
-        throw new Error("User already exists.");
+        throw new Error(await response.text());
     }
 
     if (!response.ok) {
