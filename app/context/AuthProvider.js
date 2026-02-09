@@ -36,6 +36,30 @@ export function AuthProvider({ children }) {
     loadConfig();
   }, []);
 
+  // Poll for config changes when config is empty (during initialization)
+  useEffect(() => {
+    if (!configLoading && (!config || !config.realm)) {
+      console.log("[AuthProvider] Config empty, polling for initialization completion...");
+      const pollInterval = setInterval(async () => {
+        try {
+          const response = await fetch('/data/tidecloak.json');
+          if (response.ok) {
+            const data = await response.json();
+            if (data && data.realm) {
+              console.log("[AuthProvider] Config initialized, reloading...");
+              setConfig(data);
+              clearInterval(pollInterval);
+            }
+          }
+        } catch (err) {
+          // Ignore polling errors
+        }
+      }, 2000); // Poll every 2 seconds
+
+      return () => clearInterval(pollInterval);
+    }
+  }, [config, configLoading]);
+
   // Show loading state while config is loading
   if (configLoading) {
     return <div>Loading configuration...</div>;
