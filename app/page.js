@@ -113,12 +113,17 @@ function useTideLink(baseURL, setOverlayLoading) {
     if (baseURL) {
       checkLinkParams();
       fetchInvite();
+    } else if (baseURL === '') {
+      // baseURL is explicitly empty (not undefined), context is loaded but no baseURL
+      // This shouldn't happen but handle gracefully
+      setOverlayLoading(false);
+      setIsLinked(true);
     }
 
     return () => {
       cancelled = true;
     };
-  }, [baseURL, updateDomain]);
+  }, [baseURL, updateDomain, setOverlayLoading]);
 
   return { isLinked, inviteLink, showLinkedMsg };
 }
@@ -129,13 +134,21 @@ export default function Login() {
 
   // Auth context
   const auth = useAuth();
-  const { authenticated, baseURL, setIsInitialized} = auth;
+  const { authenticated, baseURL, contextLoading, setIsInitialized} = auth;
 
   // Config and initialization hook
   const { kcData, isInitializing, setKcData, setIsInitializing } = useTideConfig(authenticated);
 
   // Invite/link hook
   const { isLinked, inviteLink, showLinkedMsg } = useTideLink(baseURL, setOverlayLoading);
+
+  // If TideCloak context is still initializing, turn off overlay loading once it's done
+  useEffect(() => {
+    if (!contextLoading && overlayLoading && !baseURL) {
+      // Context finished loading but no baseURL (shouldn't happen, but handle gracefully)
+      setOverlayLoading(false);
+    }
+  }, [contextLoading, overlayLoading, baseURL]);
 
   // Local UI state
   const [showLoginAccordion, setShowLoginAccordion] = useState(false);
