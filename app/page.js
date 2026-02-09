@@ -113,14 +113,20 @@ function useTideLink(baseURL, setOverlayLoading) {
       }
     }
 
+    console.log('[useTideLink] Effect running with baseURL:', baseURL);
+
     if (baseURL) {
+      console.log('[useTideLink] baseURL is truthy, calling fetchInvite');
       checkLinkParams();
       fetchInvite();
     } else if (baseURL === '') {
+      console.log('[useTideLink] baseURL is empty string');
       // baseURL is explicitly empty (not undefined), context is loaded but no baseURL
       // This shouldn't happen but handle gracefully
       setOverlayLoading(false);
       setIsLinked(true);
+    } else {
+      console.log('[useTideLink] baseURL is falsy (undefined/null):', baseURL);
     }
 
     return () => {
