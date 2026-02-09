@@ -177,6 +177,21 @@ function AuthContextProvider({ children, configLoading }) {
     return await IAMService.doDecrypt(data);
   }, []);
 
+  /**
+   * Force token update immediately (wraps IAMService forceUpdateToken).
+   * Unlike refreshToken which only refreshes if expired, this forces an immediate refresh.
+   * @returns {Promise<void>}
+   */
+  const forceUpdateToken = useCallback(async () => {
+    // Try the forceUpdateToken method if available, otherwise fall back to refreshToken
+    if (typeof IAMService.forceUpdateToken === 'function') {
+      return await IAMService.forceUpdateToken();
+    } else {
+      console.warn("IAMService.forceUpdateToken not available, falling back to refreshToken");
+      return await tideCloakContext.refreshToken();
+    }
+  }, [tideCloakContext]);
+
   // Combine TideCloak context with custom methods
   const contextValue = {
     ...tideCloakContext,
@@ -187,6 +202,7 @@ function AuthContextProvider({ children, configLoading }) {
     // Backward compatibility aliases
     hasOneRole,
     updateToken: tideCloakContext.refreshToken,
+    forceUpdateToken,
     // Token value getters
     getValueFromToken,
     getValueFromIdToken,

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthProvider";
+import { useApiWithTokenRefresh } from "../hooks/useApiWithTokenRefresh";
 import appService from "../../lib/appService";
 import { usePathname } from "next/navigation";
 import AccordionBox from "../components/accordionBox";
@@ -22,6 +23,7 @@ export default function User(){
     // Auth context
     const auth = useAuth();
     const {baseURL, realm, authenticated, contextLoading} = auth;
+    const { callWithRefresh } = useApiWithTokenRefresh(auth);
 
     // Logged in user object
     const [loggedUser, setLoggedUser] = useState(null);
@@ -93,29 +95,31 @@ export default function User(){
       setDataLoading(true);
 
       try {
-        // This is for the Accordion - it shows data directly from the database as is, not from id token.
-        const token = await auth.getToken();
-        const users = await appService.getUsers(baseURL, realm, token);
-        const loggedVuid =  auth.getValueFromToken("vuid");
+        await callWithRefresh(async () => {
+          // This is for the Accordion - it shows data directly from the database as is, not from id token.
+          const token = await auth.getToken();
+          const users = await appService.getUsers(baseURL, realm, token);
+          const loggedVuid =  auth.getValueFromToken("vuid");
 
-        // Safety check: ensure users is an array
-        if (!Array.isArray(users)) {
-          console.error("getUsers did not return an array:", users);
-          setDataLoading(false);
-          setOverlayLoading(false);
-          return;
-        }
-
-        const loggedInUser = users.find(user => {
-          if (user.attributes?.vuid[0] === loggedVuid){
-              return user;
+          // Safety check: ensure users is an array
+          if (!Array.isArray(users)) {
+            console.error("getUsers did not return an array:", users);
+            setDataLoading(false);
+            setOverlayLoading(false);
+            return;
           }
-        });
-        setLoggedUser(loggedInUser);
 
-        // Use the encrypted DoB and CC from the identity token for this Users Page
-        setTokenDoB(auth.getValueFromIdToken("dob"));
-        setTokenCC(auth.getValueFromIdToken("cc"));
+          const loggedInUser = users.find(user => {
+            if (user.attributes?.vuid[0] === loggedVuid){
+                return user;
+            }
+          });
+          setLoggedUser(loggedInUser);
+
+          // Use the encrypted DoB and CC from the identity token for this Users Page
+          setTokenDoB(auth.getValueFromIdToken("dob"));
+          setTokenCC(auth.getValueFromIdToken("cc"));
+        }, "getAllUsers");
       } catch (error) {
         console.error("Error in getAllUsers:", error);
         setDataLoading(false);

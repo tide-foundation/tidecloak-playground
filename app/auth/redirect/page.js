@@ -70,18 +70,33 @@ export default function RedirectPage() {
 
     const response = await appService.updateUser(baseURL, realm, user[0], token);
 
-    // Force token refresh to get updated ID token with encrypted values
-    // Refresh multiple times to ensure we get the latest token with encrypted data
-    console.log("Refreshing token to get encrypted data in ID token...");
-    await auth.refreshToken();
+    // Force immediate token refresh to get updated ID token with encrypted values
+    console.log("Force refreshing token to get encrypted data in ID token...");
 
     // Wait a bit for backend to propagate changes
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Refresh again to ensure we have the latest
-    await auth.refreshToken();
+    // Force refresh immediately (not just when expired)
+    await auth.forceUpdateToken();
+    console.log("First force refresh complete. Waiting for backend propagation...");
 
-    console.log("Token refreshed. New ID token dob:", auth.getValueFromIdToken("dob")?.substring(0, 50) + "...");
+    // Wait for backend to propagate
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Second force refresh
+    await auth.forceUpdateToken();
+    console.log("Second force refresh complete. Waiting...");
+
+    // Wait again
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Third force refresh to ensure we have the latest token
+    await auth.forceUpdateToken();
+
+    const updatedDob = auth.getValueFromIdToken("dob");
+    const updatedCc = auth.getValueFromIdToken("cc");
+    console.log("Token force refresh complete. New ID token dob:", updatedDob?.substring(0, 50) + "...");
+    console.log("Token force refresh complete. New ID token cc:", updatedCc?.substring(0, 50) + "...");
   }
 
 }

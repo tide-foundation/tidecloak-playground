@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import appService from "../../lib/appService";
 import { useAuth } from "../context/AuthProvider";
+import { useApiWithTokenRefresh } from "../hooks/useApiWithTokenRefresh";
 import AccordionBox from "../components/accordionBox";
 import Button from "../components/button";
 import { FaCheckCircle, FaChevronRight } from "react-icons/fa";
@@ -22,6 +23,7 @@ export default function Admin() {
   // Shared context data
   const auth = useAuth();
   const { baseURL, realm, authenticated, contextLoading, getToken, hasRealmRole, hasClientRole, approveTideRequests } = auth;
+  const { callWithRefresh } = useApiWithTokenRefresh(auth);
   // Admin state of the logged in demo user
   const [isTideAdmin, setIsTideAdmin] = useState(false);
   // Object representation of the logged in user
@@ -209,21 +211,23 @@ export default function Admin() {
       return;
     }
 
-    const token = await auth.getToken();
-    const changeRequests = await appService.getUserRequests(baseURL, realm, token);
+    await callWithRefresh(async () => {
+      const token = await auth.getToken();
+      const changeRequests = await appService.getUserRequests(baseURL, realm, token);
 
-    // Safety check: ensure changeRequests is an array
-    if (!Array.isArray(changeRequests)) {
-      console.error("getUserRequests did not return an array:", changeRequests);
-      setRequests([]);
-      return;
-    }
+      // Safety check: ensure changeRequests is an array
+      if (!Array.isArray(changeRequests)) {
+        console.error("getUserRequests did not return an array:", changeRequests);
+        setRequests([]);
+        return;
+      }
 
-    // Remove Denied Requests
-    const withoutDeniedReqs = changeRequests.filter((request) =>
-      (request.deleteStatus !== "DENIED" && request.status !== "DENIED")
-    )
-    setRequests(withoutDeniedReqs);
+      // Remove Denied Requests
+      const withoutDeniedReqs = changeRequests.filter((request) =>
+        (request.deleteStatus !== "DENIED" && request.status !== "DENIED")
+      )
+      setRequests(withoutDeniedReqs);
+    }, "getChangeRequests");
   }
 
   // Fetch all realm role objects to assign to user based on check box states
