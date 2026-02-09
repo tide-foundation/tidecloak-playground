@@ -1,6 +1,7 @@
-import configs from "../apiConfigs";                
-import settings from "../../../tidecloak-demo-realm.json";   
-import apiService from "../apiService";          
+import configs from "../apiConfigs";
+import apiService from "../apiService";
+import fs from "fs";
+import path from "path";
 
 
 /**
@@ -9,6 +10,10 @@ import apiService from "../apiService";
  * @returns {Promise<Object>} - response status with message for client side to use
  */
 export async function GET(){
+    // Read settings from tidecloak-demo-realm.json at runtime
+    const settingsPath = path.join(process.cwd(), "tidecloak-demo-realm.json");
+    const settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+
     // Shared variable from /api/apiConfigs.js
     const baseURL = configs.baseURL;
 
@@ -16,7 +21,7 @@ export async function GET(){
     const masterToken = await apiService.getMasterToken(baseURL);
 
     try {
-        // Create the realm, importing the settings from tidecloak-demo-realm.json
+        // Create the realm, reading the settings from tidecloak-demo-realm.json
         const result = await apiService.createDefaultRealm(baseURL, settings, masterToken);
 
         return new Response(JSON.stringify({...result}), {status: result.status});
