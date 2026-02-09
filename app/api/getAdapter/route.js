@@ -1,5 +1,5 @@
 import configs from "../apiConfigs";
-import settings from "/tidecloak-demo-realm.json";
+import settings from "../../../tidecloak-demo-realm.json";
 import fs from "fs";
 import path from "path";
 import apiService from "../apiService";

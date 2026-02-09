@@ -1,6 +1,6 @@
 
 import configs from "../apiConfigs";
-import settings from "/tidecloak-demo-realm.json";
+import settings from "../../../tidecloak-demo-realm.json";
 import apiService from "../apiService";
 
 /**
