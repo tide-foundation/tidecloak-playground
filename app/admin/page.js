@@ -1,9 +1,7 @@
 "use client"
 import { useState, useEffect, useRef } from "react";
-import IAMService from "../../lib/IAMService";
 import appService from "../../lib/appService";
-import { useAppContext } from "../context/context";
-import { Heimdall } from "../../tide-modules/heimdall";
+import { useAuth } from "../context/AuthProvider";
 import AccordionBox from "../components/accordionBox";
 import Button from "../components/button";
 import { FaCheckCircle, FaChevronRight } from "react-icons/fa";
@@ -22,7 +20,8 @@ export default function Admin() {
   // Navigator
   const router = useRouter();
   // Shared context data
-  const { baseURL, realm, authenticated, contextLoading } = useAppContext();
+  const auth = useAuth();
+  const { baseURL, realm, authenticated, contextLoading, getToken, hasRealmRole, hasClientRole, approveTideRequests } = auth;
   // Admin state of the logged in demo user
   const [isTideAdmin, setIsTideAdmin] = useState(false);
   // Object representation of the logged in user
@@ -138,8 +137,8 @@ export default function Admin() {
 
   // Get current logged in user
   const getLoggedUser = async () => { 
-    const token = await IAMService.getToken();
-    const loggedVuid =  IAMService.getValueFromToken("vuid");
+    const token = await auth.getToken();
+    const loggedVuid =  auth.getValueFromToken("vuid");
     const users = await appService.getUsers(baseURL, realm, token);
     const loggedInUser = users.find(user => {
       if (user.attributes.vuid[0] === loggedVuid){
@@ -152,17 +151,17 @@ export default function Admin() {
   // Get the current user realm roles to prefill the boxes and for updating the permissions
   const setUserPermissions = async () => { 
     if (loggedUser){
-      setHasDobReadPerm(IAMService.hasOneRole("_tide_dob.selfdecrypt"));
-      setHasDobWritePerm(IAMService.hasOneRole("_tide_dob.selfencrypt"));
+      setHasDobReadPerm(auth.hasOneRole("_tide_dob.selfdecrypt"));
+      setHasDobWritePerm(auth.hasOneRole("_tide_dob.selfencrypt"));
 
-      setHasCcReadPerm(IAMService.hasOneRole("_tide_cc.selfdecrypt"));
-      setHasCcWritePerm(IAMService.hasOneRole("_tide_cc.selfencrypt"));
+      setHasCcReadPerm(auth.hasOneRole("_tide_cc.selfdecrypt"));
+      setHasCcWritePerm(auth.hasOneRole("_tide_cc.selfencrypt"));
     }
   };
 
   // On initial render check if logged user is admin to decide which components to show
   const checkAdminRole = async () => {
-      const token = await IAMService.getToken();
+      const token = await auth.getToken();
       // Get Realm Management default client's ID
       const clientID = await appService.getRealmManagementId(baseURL, realm, token);
       // Check if user already has the role
@@ -173,7 +172,7 @@ export default function Admin() {
   // Assign this initial user the tide-realm-admin client role managed by the default client Realm Management
   const confirmAdmin = async () => {
     setLoadingButton(true);
-    const token = await IAMService.getToken();
+    const token = await auth.getToken();
 
     if (!isTideAdmin){
         const RMClientID = await appService.getRealmManagementId(baseURL, realm, token);
@@ -190,7 +189,7 @@ export default function Admin() {
         if (response.ok) {
             // Force update of token without logging out
            
-            await IAMService.updateToken();
+            await auth.updateToken();
             setIsTideAdmin(true); 
            
             console.log("Admin Role Assigned");
@@ -205,7 +204,7 @@ export default function Admin() {
   // Get latest change requests to display and update when pressing commit
   const getChangeRequests = async () => {
     
-    const token = await IAMService.getToken();
+    const token = await auth.getToken();
     const changeRequests = await appService.getUserRequests(baseURL, realm, token);
     // Remove Denied Requests
     const withoutDeniedReqs = changeRequests.filter((request) => 
@@ -216,7 +215,7 @@ export default function Admin() {
 
   // Fetch all realm role objects to assign to user based on check box states
   const getRealmRoles = async () => {
-    const token = await IAMService.getToken();
+    const token = await auth.getToken();
     setDobWriteRole(await appService.getRealmRole(baseURL, realm, "_tide_dob.selfencrypt", token));
     setDobReadRole(await appService.getRealmRole(baseURL, realm, "_tide_dob.selfdecrypt", token));
     setCcReadRole(await appService.getRealmRole(baseURL, realm, "_tide_cc.selfdecrypt", token));
@@ -230,7 +229,7 @@ export default function Admin() {
   const handleAdminPermissionSubmit = async (e) => {
     e.preventDefault();
 
-    const token = await IAMService.getToken();
+    const token = await auth.getToken();
 
     // Clear cached data of the demo admins who have approved for a reset
     localStorage.removeItem("approvals");
@@ -246,10 +245,10 @@ export default function Admin() {
     const rolesInfo = [dobReadRole, dobWriteRole, ccReadRole, ccWriteRole];
 
     for (let i = 0; i < checkBoxPerms.length; i++){
-      if (checkBoxPerms[i] && !IAMService.hasOneRole(roles[i])){      
+      if (checkBoxPerms[i] && !auth.hasOneRole(roles[i])){      
         await appService.assignRealmRole(baseURL, realm, loggedUser.id, rolesInfo[i], token);
       }
-      else if (!checkBoxPerms[i] && IAMService.hasOneRole(roles[i])){
+      else if (!checkBoxPerms[i] && auth.hasOneRole(roles[i])){
         await appService.unassignRealmRole(baseURL, realm, loggedUser.id, rolesInfo[i], token);
       }
     }
@@ -356,7 +355,7 @@ export default function Admin() {
       // POST /tideAdminResources/add-rejection
       // Add denied status to change request 
       const addRejection = async (action, draftId, type) => {
-        const token = await IAMService.getToken();    
+        const token = await auth.getToken();    
         
         // Key value pairs
         const formData = new FormData();
@@ -376,7 +375,7 @@ export default function Admin() {
       // POST /tideAdminResources/add-authorization
       // Add approve status to change request
       const addApproval = async (action, draftId, type, authorizerApproval, authorizerAuthentication) => {
-        const token = await IAMService.getToken();
+        const token = await auth.getToken();
 
         // Key value pairs
         const formData = new FormData();
@@ -405,30 +404,36 @@ export default function Admin() {
         
       // When user presses Review button to show the Tide Enclave popup
       const handleUserApprove = async (changeRequest) => {
-        const token = await IAMService.getToken();
-        // Get popup data for the change request to know that it requires the enclave and pass data to the popup
-        const response = await appService.reviewChangeRequest(baseURL, realm, changeRequest, token);
-        const popupData = await response.json();
-    
-        if (popupData.requiresApprovalPopup === "true") {
-          const vuid = IAMService.getValueFromToken("vuid");
-          const heimdall = new Heimdall(popupData.customDomainUri, [vuid]);
-          await heimdall.openEnclave();
-        
-          // Waiting user response for auth approval
-          const authorizerApproval = await heimdall.getAuthorizerApproval(popupData.changeSetRequests, "UserContext:1", popupData.expiry, "base64url");
-          
-          // If Deny is clicked
-          if (authorizerApproval.accepted === false) {
-            addRejection(changeRequest.actionType, changeRequest.draftRecordId, changeRequest.changeSetType);
-            heimdall.closeEnclave(); 
-          } else if (authorizerApproval.accepted === true) { // If Approve is clicked
-            const authorizerAuthentication = await heimdall.getAuthorizerAuthentication();
-            addApproval(changeRequest.actionType, changeRequest.draftRecordId, changeRequest.changeSetType, authorizerApproval.data, authorizerAuthentication);
-            heimdall.closeEnclave();
-           
+        try {
+          const token = await auth.getToken();
+
+          // Get raw change set request bytes (matching ideed-SWARM's GetRawChangeSetRequest)
+          const changeSetBytes = await appService.reviewChangeRequest(baseURL, realm, changeRequest, token);
+
+          if (!changeSetBytes) {
+            console.error("No data from reviewChangeRequest");
+            return;
           }
-        };
+
+          console.log("Change set bytes:", changeSetBytes);
+
+          // Use auth.approveTideRequests method (matching ideed-SWARM's approveTideRequests)
+          const approvalResult = (await auth.approveTideRequests([{
+            id: "UserContext:1",
+            request: changeSetBytes
+          }]))[0]; // Only 1 request at a time for now
+
+          // If Deny is clicked
+          if (approvalResult.denied) {
+            addRejection(changeRequest.actionType, changeRequest.draftRecordId, changeRequest.changeSetType);
+          } else if (approvalResult.approved) { // If Approve is clicked
+            // The approved request includes both approval and authentication data
+            addApproval(changeRequest.actionType, changeRequest.draftRecordId, changeRequest.changeSetType, approvalResult.approved.request, approvalResult.approved.request);
+          }
+          // If pending, do nothing (user closed the popup without deciding)
+        } catch (error) {
+          console.error("Error in handleUserApprove:", error);
+        }
       };
 
       return (
@@ -489,7 +494,7 @@ export default function Admin() {
       
       try{
 
-        const token = await IAMService.getToken();
+        const token = await auth.getToken();
 
         const body = JSON.stringify({
           "actionType": request.actionType,
@@ -512,7 +517,7 @@ export default function Admin() {
           localStorage.removeItem("approvals");
           
           // Get a new token to have check the currently assigned roles to the logged in user
-          await IAMService.updateToken();
+          await auth.updateToken();
 
           
           // Reset states for next change request
@@ -534,7 +539,7 @@ export default function Admin() {
 
     // If submit button is pressed again, cancel all the change requests
     const cancelRequests = async (requests) => {
-      const token = await IAMService.getToken();
+      const token = await auth.getToken();
         
       for (let i = 0; i < requests.length; i++) {
           const request = requests[i];

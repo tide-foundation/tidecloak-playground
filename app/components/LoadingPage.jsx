@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import "../styles/spinKit.css";
 import "../styles/spinner.css";
-import { useAppContext } from "../context/context";
 
 /**
  * Initilizer to set up the realm with default settings

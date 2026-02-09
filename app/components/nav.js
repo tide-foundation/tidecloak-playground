@@ -1,14 +1,15 @@
-"use client"; 
+"use client";
 
-import IAMService from "../../lib/IAMService";
 import { usePathname, useRouter } from "next/navigation";
-import Link from "next/link";              // NEW
+import Link from "next/link";
 import Button from "../components/button";
+import { useAuth } from "../context/AuthProvider";
 
 /**
  * Top navigation bar shown after login.
  */
 export default function Nav() {
+  const auth = useAuth();
   const pathname = usePathname();
   const router   = useRouter();
 
@@ -56,7 +57,7 @@ export default function Nav() {
         Administration
       </button>
 
-      <Button onClick={() => IAMService.doLogout()}>Logout</Button>
+      <Button onClick={() => auth.logout()}>Logout</Button>
     </nav>
   );
 }

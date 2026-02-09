@@ -12,8 +12,7 @@ import {
   FaChevronDown,
   FaCheckCircle,
 } from 'react-icons/fa';
-import { useAppContext } from './context/context';
-import IAMService from '../lib/IAMService';
+import { useAuth } from './context/AuthProvider';
 import appService from '../lib/appService';
 
 /**
@@ -128,8 +127,9 @@ export default function Login() {
 
   const [overlayLoading, setOverlayLoading] = useState(true);
 
-  // App context (overlayLoading and re-init are handled in LoadingPage)
-  const { authenticated, baseURL, setIsInitialized} = useAppContext();
+  // Auth context
+  const auth = useAuth();
+  const { authenticated, baseURL, setIsInitialized} = auth;
 
   // Config and initialization hook
   const { kcData, isInitializing, setKcData, setIsInitializing } = useTideConfig(authenticated);
@@ -182,7 +182,7 @@ export default function Login() {
       if (res.ok && data.inviteURL) {
         router.push(data.inviteURL);
       } else {
-        IAMService.doLogin();
+        auth.login();
       }
     } catch (err) {
       console.error('[Login] handleLogin error:', err);

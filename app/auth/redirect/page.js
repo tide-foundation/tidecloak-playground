@@ -2,11 +2,10 @@
 
 import { useEffect } from "react";
 
-import { useAppContext } from "../../context/context";
+import { useAuth } from "../../context/AuthProvider";
 
 import { useRouter } from "next/navigation";
 
-import IAMService from "../../../lib/IAMService";
 import { LoadingSquareFullPage } from "../../components/loadingSquare";
 import appService from "../../../lib/appService";
 
@@ -16,16 +15,17 @@ import appService from "../../../lib/appService";
  */
 export default function RedirectPage() {
 
-  const { baseURL, realm, authenticated, contextLoading } = useAppContext();
+  const auth = useAuth();
+  const { baseURL, realm, authenticated, contextLoading } = auth;
 
   const router = useRouter();
-  
+
   const startUserInfoEncryption = async () => {
-  const token = await IAMService.getToken();
-  const loggedVuid = IAMService.getValueFromToken("vuid");
+  const token = await auth.getToken();
+  const loggedVuid = auth.getValueFromToken("vuid");
   const user = await appService.getUserByVuid(baseURL, realm, token, loggedVuid);
-  const tokenDoB = IAMService.getDoB();
-  const tokenCC = IAMService.getCC();
+  const tokenDoB = auth.getValueFromIdToken("dob");
+  const tokenCC = auth.getValueFromIdToken("cc");
 
   let arrayToEncrypt = [];
 
@@ -50,13 +50,13 @@ export default function RedirectPage() {
 
   if (arrayToEncrypt.length > 0) {
     // Encrypt the data for the first time
-    const encryptedData = await IAMService.doEncrypt(arrayToEncrypt);
+    const encryptedData = await auth.doEncrypt(arrayToEncrypt);
     // Save the updated user object to TideCloak
-    const token = await IAMService.getToken();
+    const token = await auth.getToken();
     user[0].attributes.dob = encryptedData[0];
     user[0].attributes.cc = encryptedData[1];
     const response = await appService.updateUser(baseURL, realm, user[0], token);
-    await IAMService.updateToken();
+    await auth.updateToken();
   }
 
 }
@@ -64,7 +64,7 @@ export default function RedirectPage() {
   // Handles redirect when middle detects token expiry
   useEffect(() => {
     const doLogOut = async () => {
-      IAMService.doLogout();
+      auth.logout();
     }
     // Must be placed inside useEffect, because parameters don't exist during build for production
     // Parse the query string with URLSearchParams instead of useSearchParams()
