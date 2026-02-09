@@ -10,12 +10,13 @@ import { useAuth } from "../context/AuthProvider";
  */
 export default function Nav() {
   const auth = useAuth();
+  const { backgroundProcessing } = auth;
   const pathname = usePathname();
   const router   = useRouter();
 
-  // Navigate only if we aren’t already on that route
+  // Navigate only if we aren't already on that route and not processing
   const handleNavigate = (route) => {
-    if (pathname !== route) router.push(route);
+    if (!backgroundProcessing && pathname !== route) router.push(route);
   };
 
   // Utility to highlight the active button
@@ -38,21 +39,30 @@ export default function Nav() {
 
       <button
         onClick={() => handleNavigate("/user")}
-        className={`px-4 py-2 rounded transition ${getButtonClasses("/user")}`}
+        disabled={backgroundProcessing}
+        className={`px-4 py-2 rounded transition ${getButtonClasses("/user")} ${
+          backgroundProcessing ? "opacity-50 cursor-not-allowed" : ""
+        }`}
       >
         User
       </button>
 
       <button
         onClick={() => handleNavigate("/databaseExposure")}
-        className={`px-4 py-2 rounded transition ${getButtonClasses("/databaseExposure")}`}
+        disabled={backgroundProcessing}
+        className={`px-4 py-2 rounded transition ${getButtonClasses("/databaseExposure")} ${
+          backgroundProcessing ? "opacity-50 cursor-not-allowed" : ""
+        }`}
       >
         Database Exposure
       </button>
 
       <button
         onClick={() => handleNavigate("/admin")}
-        className={`px-4 py-2 rounded transition ${getButtonClasses("/admin")}`}
+        disabled={backgroundProcessing}
+        className={`px-4 py-2 rounded transition ${getButtonClasses("/admin")} ${
+          backgroundProcessing ? "opacity-50 cursor-not-allowed" : ""
+        }`}
       >
         Administration
       </button>

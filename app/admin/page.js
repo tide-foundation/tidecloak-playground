@@ -189,12 +189,31 @@ export default function Admin() {
         const response = await fetch(`/api/commitAdminRole`);
 
         if (response.ok) {
-            // Force update of token without logging out
-           
-            await auth.updateToken();
-            setIsTideAdmin(true); 
-           
-            console.log("Admin Role Assigned");
+            // Force immediate token refresh to get updated token with admin role
+            console.log("Admin role committed. Force refreshing token...");
+
+            // Wait for backend to propagate changes
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Force refresh immediately (not just when expired)
+            await auth.forceUpdateToken();
+            console.log("First force refresh complete. Waiting for backend propagation...");
+
+            // Wait for backend to propagate
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Second force refresh
+            await auth.forceUpdateToken();
+            console.log("Second force refresh complete. Waiting...");
+
+            // Wait again
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Third force refresh to ensure we have the latest token
+            await auth.forceUpdateToken();
+
+            setIsTideAdmin(true);
+            console.log("Admin Role Assigned and token refreshed");
         }
     }
     else {
@@ -537,11 +556,32 @@ export default function Admin() {
 
           // Clear the locally stored approved users array
           localStorage.removeItem("approvals");
-          
-          // Get a new token to have check the currently assigned roles to the logged in user
-          await auth.updateToken();
 
-          
+          // Force immediate token refresh to get updated roles
+          console.log("Change committed. Force refreshing token...");
+
+          // Wait for backend to propagate changes
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          // Force refresh immediately (not just when expired)
+          await auth.forceUpdateToken();
+          console.log("First force refresh complete. Waiting for backend propagation...");
+
+          // Wait for backend to propagate
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          // Second force refresh
+          await auth.forceUpdateToken();
+          console.log("Second force refresh complete. Waiting...");
+
+          // Wait again
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          // Third force refresh to ensure we have the latest token
+          await auth.forceUpdateToken();
+          console.log("Token force refresh complete with updated roles");
+
+
           // Reset states for next change request
           setApprovals([false, false, false, false, false]);
           setTotalApproved(1);

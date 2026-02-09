@@ -57,6 +57,7 @@ export function AuthProvider({ children }) {
 function AuthContextProvider({ children, configLoading }) {
   const tideCloakContext = useTideCloak();
   const [realm, setRealm] = useState("");
+  const [backgroundProcessing, setBackgroundProcessing] = useState(false);
 
   // Extract realm from config when context is initialized
   useEffect(() => {
@@ -199,6 +200,9 @@ function AuthContextProvider({ children, configLoading }) {
     // Map isInitializing to contextLoading for backward compatibility
     // Also consider config loading state
     contextLoading: tideCloakContext.isInitializing || configLoading,
+    // Background processing state (for showing loading UI without blocking navigation)
+    backgroundProcessing,
+    setBackgroundProcessing,
     // Backward compatibility aliases
     hasOneRole,
     updateToken: tideCloakContext.refreshToken,

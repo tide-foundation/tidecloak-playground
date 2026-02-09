@@ -262,14 +262,36 @@ export default function User(){
             // Store the data
             const token = await auth.getToken();
             const response = await appService.updateUser(baseURL, realm, loggedUser, token);
-            // Updating the access token should also update the ID token
-            await auth.updateToken();
+
+            // Force immediate token refresh to get updated ID token with new encrypted values
+            console.log("User data updated. Force refreshing token...");
+
+            // Wait for backend to propagate changes
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Force refresh immediately (not just when expired)
+            await auth.forceUpdateToken();
+            console.log("First force refresh complete. Waiting for backend propagation...");
+
+            // Wait for backend to propagate
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Second force refresh
+            await auth.forceUpdateToken();
+            console.log("Second force refresh complete. Waiting...");
+
+            // Wait again
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Third force refresh to ensure we have the latest token
+            await auth.forceUpdateToken();
+            console.log("Token force refresh complete with updated user data");
 
             // Show the confirmation message
             if (response.ok){
                 setUserFeedback("Changes saved!");
                 setTimeout(() => setUserFeedback(""), 3000); // Clear after 3 seconds
-                getAllUsers(); 
+                getAllUsers();
             }
             setDataLoading(false);
             setLoadingButton(false);
