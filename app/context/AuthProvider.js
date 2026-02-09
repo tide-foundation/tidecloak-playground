@@ -184,13 +184,29 @@ function AuthContextProvider({ children, configLoading }) {
    * @returns {Promise<void>}
    */
   const forceUpdateToken = useCallback(async () => {
-    // Try the forceUpdateToken method if available, otherwise fall back to refreshToken
+    // Try the forceUpdateToken method if available
     if (typeof IAMService.forceUpdateToken === 'function') {
+      console.log("Using IAMService.forceUpdateToken");
       return await IAMService.forceUpdateToken();
-    } else {
-      console.warn("IAMService.forceUpdateToken not available, falling back to refreshToken");
-      return await tideCloakContext.refreshToken();
     }
+
+    // Try getting the TideCloak client directly and calling updateToken with -1 to force refresh
+    // This forces an immediate refresh regardless of current token expiry
+    try {
+      const kc = IAMService.getTideCloakClient();
+      if (kc && typeof kc.updateToken === 'function') {
+        console.log("Using TideCloak client updateToken with forced refresh (-1)");
+        // Pass -1 to force immediate refresh
+        await kc.updateToken(-1);
+        return;
+      }
+    } catch (error) {
+      console.warn("Could not access TideCloak client for forced update:", error);
+    }
+
+    // Fallback to regular refresh (may not force if token isn't expired)
+    console.warn("Using fallback refreshToken - may not force refresh");
+    return await tideCloakContext.refreshToken();
   }, [tideCloakContext]);
 
   // Combine TideCloak context with custom methods

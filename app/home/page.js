@@ -4,8 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { FaUserCircle, FaDatabase, FaShieldAlt } from "react-icons/fa";
 import AccordionBox from "../components/accordionBox";
+import { useAuth } from "../context/AuthProvider";
 
 export default function HomePage() {
+  const auth = useAuth();
+  const { backgroundProcessing } = auth;
   const [showHomeAccordion, setShowHomeAccordion] = useState(false);
 
   const demos = [
@@ -51,11 +54,21 @@ export default function HomePage() {
       {/* ─── Demo tiles ───────────────────────────────────────────── */}
       <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {demos.map(({ title, href, icon: Icon }) => (
-          <Link key={href} href={href} className="group">
-            <div className="flex h-full flex-col items-center justify-center gap-4
+          <Link
+            key={href}
+            href={href}
+            onClick={(e) => {
+              if (backgroundProcessing) {
+                e.preventDefault();
+              }
+            }}
+            className={`group ${backgroundProcessing ? 'pointer-events-none' : ''}`}
+          >
+            <div className={`flex h-full flex-col items-center justify-center gap-4
                             rounded-2xl border border-gray-200 bg-gray-50 p-10 text-center
                             shadow-sm transition-all duration-200
-                            group-hover:border-blue-500 group-hover:bg-blue-50 group-hover:shadow-md">
+                            group-hover:border-blue-500 group-hover:bg-blue-50 group-hover:shadow-md
+                            ${backgroundProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}>
               <Icon className="h-10 w-10 text-gray-600 transition-transform duration-200 group-hover:scale-105 group-hover:text-blue-600" />
               <span className="text-lg font-semibold tracking-tight text-gray-800 group-hover:text-blue-700">
                 {title}

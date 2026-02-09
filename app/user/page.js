@@ -22,7 +22,7 @@ export default function User(){
 
     // Auth context
     const auth = useAuth();
-    const {baseURL, realm, authenticated, contextLoading} = auth;
+    const {baseURL, realm, authenticated, contextLoading, setBackgroundProcessing} = auth;
     const { callWithRefresh } = useApiWithTokenRefresh(auth);
 
     // Logged in user object
@@ -265,6 +265,7 @@ export default function User(){
 
             // Force immediate token refresh to get updated ID token with new encrypted values
             console.log("User data updated. Force refreshing token...");
+            setBackgroundProcessing(true);
 
             // Wait for backend to propagate changes
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -286,6 +287,8 @@ export default function User(){
             // Third force refresh to ensure we have the latest token
             await auth.forceUpdateToken();
             console.log("Token force refresh complete with updated user data");
+
+            setBackgroundProcessing(false);
 
             // Show the confirmation message
             if (response.ok){

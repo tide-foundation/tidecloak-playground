@@ -22,7 +22,7 @@ export default function Admin() {
   const router = useRouter();
   // Shared context data
   const auth = useAuth();
-  const { baseURL, realm, authenticated, contextLoading, getToken, hasRealmRole, hasClientRole, approveTideRequests } = auth;
+  const { baseURL, realm, authenticated, contextLoading, getToken, hasRealmRole, hasClientRole, approveTideRequests, setBackgroundProcessing } = auth;
   const { callWithRefresh } = useApiWithTokenRefresh(auth);
   // Admin state of the logged in demo user
   const [isTideAdmin, setIsTideAdmin] = useState(false);
@@ -191,6 +191,7 @@ export default function Admin() {
         if (response.ok) {
             // Force immediate token refresh to get updated token with admin role
             console.log("Admin role committed. Force refreshing token...");
+            setBackgroundProcessing(true);
 
             // Wait for backend to propagate changes
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -212,6 +213,7 @@ export default function Admin() {
             // Third force refresh to ensure we have the latest token
             await auth.forceUpdateToken();
 
+            setBackgroundProcessing(false);
             setIsTideAdmin(true);
             console.log("Admin Role Assigned and token refreshed");
         }
@@ -559,6 +561,7 @@ export default function Admin() {
 
           // Force immediate token refresh to get updated roles
           console.log("Change committed. Force refreshing token...");
+          setBackgroundProcessing(true);
 
           // Wait for backend to propagate changes
           await new Promise(resolve => setTimeout(resolve, 1000));
@@ -580,6 +583,8 @@ export default function Admin() {
           // Third force refresh to ensure we have the latest token
           await auth.forceUpdateToken();
           console.log("Token force refresh complete with updated roles");
+
+          setBackgroundProcessing(false);
 
 
           // Reset states for next change request
