@@ -222,10 +222,9 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setKcDa
             const data = await getAdapter();
             setKcData(data);
 
-            // Load out of the initializer first then stop it to prevent Login screen appearing and giving context time to load 
-            setOverlayLoading(true);
-            setIsInitializing(false);
-            setIsInitialized(true)
+            // Reload the page to pick up the new config
+            console.log("[LoadingPage] Initialization complete, reloading...");
+            window.location.reload();
 
         }
         catch (error) {
