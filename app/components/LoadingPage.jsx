@@ -51,8 +51,8 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setKcDa
         });
 
         if (!response.ok) {
-            const errorResponse = await response.json();
-            throw new Error(errorResponse.error || "Failed to create the realm.");
+            const errorMessage = await getErrorMessage(response, "Failed to create the realm.");
+            throw new Error(errorMessage);
         }
     };
 
@@ -60,12 +60,11 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setKcDa
     const deleteIDP = async () => {
         const response = await fetch(`/api/deleteIDP`, {
             method: "GET",
-
         })
 
         if (!response.ok) {
-            const errorResponse = await response.json();
-            throw new Error(errorResponse.error || "Failed to delete the IDP, manual deletion of IDP then realm required via Keycloak.");
+            const errorMessage = await getErrorMessage(response, "Failed to delete the IDP, manual deletion of IDP then realm required via Keycloak.");
+            throw new Error(errorMessage);
         }
     };
 
@@ -73,12 +72,11 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setKcDa
     const deleteRealm = async () => {
         const response = await fetch(`/api/deleteRealm`, {
             method: "GET",
-
         })
 
         if (!response.ok) {
-            const errorResponse = await response.json();
-            throw new Error(errorResponse.error || "Failed to delete the realm, manual deletion of realm required via Keycloak.");
+            const errorMessage = await getErrorMessage(response, "Failed to delete the realm, manual deletion of realm required via Keycloak.");
+            throw new Error(errorMessage);
         }
     }
 
@@ -87,12 +85,11 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setKcDa
         setCurrentStep(2);
         const response = await fetch(`/api/getLicense`, {
             method: "GET",
-
         })
 
         if (!response.ok) {
-            const errorResponse = await response.json();
-            throw new Error(errorResponse.error || "Failed to activate IDP license.");
+            const errorMessage = await getErrorMessage(response, "Failed to activate IDP license.");
+            throw new Error(errorMessage);
         }
     }
 
@@ -100,12 +97,11 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setKcDa
     const toggleIGA = async () => {
         const response = await fetch(`/api/toggleIGA`, {
             method: "GET",
-
         })
 
         if (!response.ok) {
-            const errorResponse = await response.json();
-            throw new Error(errorResponse.error || "Failed to toggle IGA on.");
+            const errorMessage = await getErrorMessage(response, "Failed to toggle IGA on.");
+            throw new Error(errorMessage);
         }
     }
 
@@ -114,12 +110,11 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setKcDa
         setCurrentStep(3);
         const response = await fetch(`/api/createUsers`, {
             method: "GET",
-
         })
 
         if (!response.ok) {
-            const errorResponse = await response.json();
-            throw new Error(errorResponse.error || "Failed to create users.");
+            const errorMessage = await getErrorMessage(response, "Failed to create users.");
+            throw new Error(errorMessage);
         }
     }
 
@@ -128,12 +123,11 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setKcDa
         setCurrentStep(4);
         const response = await fetch(`/api/assignRealmRoles`, {
             method: "GET",
-
         })
 
         if (!response.ok) {
-            const errorResponse = await response.json();
-            throw new Error(errorResponse.error || "Failed to assign roles to the demo user.");
+            const errorMessage = await getErrorMessage(response, "Failed to assign roles to the demo user.");
+            throw new Error(errorMessage);
         }
     }
 
@@ -142,12 +136,11 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setKcDa
         setCurrentStep(5);
         const response = await fetch(`/api/commitClients`, {
             method: "GET",
-
         })
 
         if (!response.ok) {
-            const errorResponse = await response.json();
-            throw new Error(errorResponse.error || "Failed to approve and commit clients.");
+            const errorMessage = await getErrorMessage(response, "Failed to approve and commit clients.");
+            throw new Error(errorMessage);
         }
     }
 
@@ -180,12 +173,11 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setKcDa
     const signSettings = async () => {
         const response = await fetch(`/api/signSettings`, {
             method: "GET",
-
         })
 
         if (!response.ok) {
-            const errorResponse = await response.json();
-            throw new Error(errorResponse.error || "Failed to sign the realm settings.");
+            const errorMessage = await getErrorMessage(response, "Failed to sign the realm settings.");
+            throw new Error(errorMessage);
         }
     }
 
@@ -193,17 +185,30 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setKcDa
     const getAdapter = async () => {
         const response = await fetch(`/api/getAdapter`, {
             method: "GET",
-
         })
 
         if (!response.ok) {
-            const errorResponse = await response.json();
-            throw new Error(errorResponse.error || "Failed to get adapter for the client.");
+            const errorMessage = await getErrorMessage(response, "Failed to get adapter for the client.");
+            throw new Error(errorMessage);
         }
 
         const data = await response.json();
         return data.kcData;
     }
+
+    // Helper to safely parse JSON responses
+    const getErrorMessage = async (response, defaultMessage) => {
+        try {
+            const text = await response.text();
+            if (text) {
+                const json = JSON.parse(text);
+                return json.error || defaultMessage;
+            }
+        } catch (err) {
+            // Not JSON or empty response
+        }
+        return defaultMessage;
+    };
 
     let restartCounter = 0;
 
