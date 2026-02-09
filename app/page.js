@@ -249,6 +249,11 @@ export default function Login() {
     return <LoadingSquareFullPage />;
   }
 
+  // 5) User is authenticated - show loader while redirecting
+  if (authenticated && kcData && Object.keys(kcData).length > 0) {
+    return <LoadingSquareFullPage />;
+  }
+
   // ── MAIN LOGIN UI ──
   const adminAddress = kcData['auth-server-url'] || 'Need to setup backend first.';
 

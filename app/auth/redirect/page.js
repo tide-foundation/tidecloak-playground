@@ -57,10 +57,20 @@ export default function RedirectPage() {
     const encryptedData = await auth.doEncrypt(arrayToEncrypt);
     // Save the updated user object to TideCloak
     const token = await auth.getToken();
-    user[0].attributes.dob = encryptedData[0];
-    user[0].attributes.cc = encryptedData[1];
+
+    // Map encrypted data back to correct attributes based on tags
+    for (let i = 0; i < arrayToEncrypt.length; i++) {
+      const tag = arrayToEncrypt[i].tags[0];
+      if (tag === "dob") {
+        user[0].attributes.dob = encryptedData[i];
+      } else if (tag === "cc") {
+        user[0].attributes.cc = encryptedData[i];
+      }
+    }
+
     const response = await appService.updateUser(baseURL, realm, user[0], token);
-    await auth.updateToken();
+    // Force token refresh to get updated ID token with encrypted values
+    await auth.refreshToken();
   }
 
 }
