@@ -245,12 +245,17 @@ export default function Login() {
   }
 
   // 4) Context overlay still loading or checking link status
-  if (overlayLoading || checkingLink) {
+  if (overlayLoading || checkingLink || contextLoading) {
     return <LoadingSquareFullPage />;
   }
 
   // 5) User is authenticated - show loader while redirecting
   if (authenticated && kcData && Object.keys(kcData).length > 0) {
+    return <LoadingSquareFullPage />;
+  }
+
+  // 6) Safety: if authenticated without config, still show loader
+  if (authenticated) {
     return <LoadingSquareFullPage />;
   }
 

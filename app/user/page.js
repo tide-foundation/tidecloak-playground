@@ -88,20 +88,35 @@ export default function User(){
     const getAllUsers = async () => {
       setDataLoading(true);
 
-      // This is for the Accordion - it shows data directly from the database as is, not from id token.
-      const token = await auth.getToken();
-      const users = await appService.getUsers(baseURL, realm, token);
-      const loggedVuid =  auth.getValueFromToken("vuid");
-      const loggedInUser = users.find(user => {
-        if (user.attributes?.vuid[0] === loggedVuid){
-            return user;
-        }
-      });
-      setLoggedUser(loggedInUser);
+      try {
+        // This is for the Accordion - it shows data directly from the database as is, not from id token.
+        const token = await auth.getToken();
+        const users = await appService.getUsers(baseURL, realm, token);
+        const loggedVuid =  auth.getValueFromToken("vuid");
 
-      // Use the encrypted DoB and CC from the identity token for this Users Page
-      setTokenDoB(auth.getValueFromIdToken("dob"));
-      setTokenCC(auth.getValueFromIdToken("cc"));
+        // Safety check: ensure users is an array
+        if (!Array.isArray(users)) {
+          console.error("getUsers did not return an array:", users);
+          setDataLoading(false);
+          setOverlayLoading(false);
+          return;
+        }
+
+        const loggedInUser = users.find(user => {
+          if (user.attributes?.vuid[0] === loggedVuid){
+              return user;
+          }
+        });
+        setLoggedUser(loggedInUser);
+
+        // Use the encrypted DoB and CC from the identity token for this Users Page
+        setTokenDoB(auth.getValueFromIdToken("dob"));
+        setTokenCC(auth.getValueFromIdToken("cc"));
+      } catch (error) {
+        console.error("Error in getAllUsers:", error);
+        setDataLoading(false);
+        setOverlayLoading(false);
+      }
     };
 
     // Decrypt the logged in user's data
