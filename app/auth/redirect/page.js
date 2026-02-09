@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { useAuth } from "../../context/AuthProvider";
 
@@ -19,6 +19,10 @@ export default function RedirectPage() {
   const { baseURL, realm, authenticated, contextLoading } = auth;
 
   const router = useRouter();
+
+  // Track encryption state
+  const [isEncrypting, setIsEncrypting] = useState(false);
+  const [encryptionComplete, setEncryptionComplete] = useState(false);
 
   const startUserInfoEncryption = async () => {
   const token = await auth.getToken();
@@ -82,16 +86,40 @@ export default function RedirectPage() {
   useEffect(() => {
     if (!contextLoading) {
       if (authenticated) {
-        startUserInfoEncryption().catch(err =>
-          console.error("Error encrypting user info:", err)
-        );
-        router.push("/home");
+        // Start encryption and wait for it to complete before navigating
+        setIsEncrypting(true);
+        startUserInfoEncryption()
+          .then(() => {
+            setIsEncrypting(false);
+            setEncryptionComplete(true);
+            router.push("/home");
+          })
+          .catch(err => {
+            console.error("Error encrypting user info:", err);
+            setIsEncrypting(false);
+            setEncryptionComplete(true);
+            // Navigate anyway even if encryption fails
+            router.push("/home");
+          });
       }
       else {
         router.push("/");
       }
     }
   }, [contextLoading]);
+
+  // Show encryption status if encrypting
+  if (isEncrypting) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+        <LoadingSquareFullPage />
+        <div className="mt-8 text-center">
+          <p className="text-xl font-semibold text-gray-700">Encrypting your data...</p>
+          <p className="text-sm text-gray-500 mt-2">Please wait while we secure your information</p>
+        </div>
+      </div>
+    );
+  }
 
   return <LoadingSquareFullPage />
 }

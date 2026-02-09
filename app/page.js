@@ -70,6 +70,7 @@ function useTideLink(baseURL, setOverlayLoading) {
   const [isLinked, setIsLinked] = useState(true);
   const [inviteLink, setInviteLink] = useState('');
   const [showLinkedMsg, setShowLinkedMsg] = useState(false);
+  const [checkingLink, setCheckingLink] = useState(true); // Track if we're still checking
 
   const updateDomain = useCallback(async () => {
     const res = await fetch('/api/updateCustomDomainURL');
@@ -100,15 +101,18 @@ function useTideLink(baseURL, setOverlayLoading) {
           console.log('[useTideLink] Setting invite link:', data.inviteURL);
           setInviteLink(data.inviteURL);
           setIsLinked(false);
+          setCheckingLink(false);
           setOverlayLoading(false);
         } else {
           console.log('[useTideLink] No invite URL, user appears linked or error occurred');
           setIsLinked(true);
+          setCheckingLink(false);
           setOverlayLoading(false);
         }
       } catch (err) {
         if (!cancelled) console.error('[Login] Invite fetch failed:', err);
         setIsLinked(true);
+        setCheckingLink(false);
         setOverlayLoading(false);
       }
     }
@@ -134,7 +138,7 @@ function useTideLink(baseURL, setOverlayLoading) {
     };
   }, [baseURL, updateDomain]);
 
-  return { isLinked, inviteLink, showLinkedMsg };
+  return { isLinked, inviteLink, showLinkedMsg, checkingLink };
 }
 
 export default function Login() {
@@ -149,7 +153,7 @@ export default function Login() {
   const { kcData, isInitializing, setKcData, setIsInitializing } = useTideConfig(authenticated);
 
   // Invite/link hook
-  const { isLinked, inviteLink, showLinkedMsg } = useTideLink(baseURL, setOverlayLoading);
+  const { isLinked, inviteLink, showLinkedMsg, checkingLink } = useTideLink(baseURL, setOverlayLoading);
 
   // Local UI state
   const [showLoginAccordion, setShowLoginAccordion] = useState(false);
@@ -235,13 +239,13 @@ export default function Login() {
   }
 
   // 3) Demo user needs to link account
-  if (!isLinked && !overlayLoading) {
+  if (!isLinked && !overlayLoading && !checkingLink) {
     console.log('[Login] Showing EmailInvitation with link:', inviteLink);
     return <EmailInvitation inviteLink={inviteLink} />;
   }
 
-  // 4) Context overlay still loading
-  if (overlayLoading) {
+  // 4) Context overlay still loading or checking link status
+  if (overlayLoading || checkingLink) {
     return <LoadingSquareFullPage />;
   }
 
