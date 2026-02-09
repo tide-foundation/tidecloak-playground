@@ -1,6 +1,6 @@
 // an example nextJS middleware router that does server-side validation on all traffic to secure pages
 import { NextResponse } from "next/server";
-import { verifyTideCloakToken } from '/lib/tideJWT';
+import { verifyTideCloakToken } from './lib/tideJWT';
 
 // Developer should list all secure pages and their respective allowed roles
 const routesRoles = [
