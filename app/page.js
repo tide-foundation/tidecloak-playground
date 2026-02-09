@@ -94,19 +94,22 @@ function useTideLink(baseURL, setOverlayLoading) {
       try {
         const res = await fetch('/api/inviteUser');
         const data = await res.json();
+        console.log('[useTideLink] fetchInvite response:', { ok: res.ok, data });
         if (cancelled) return;
         if (res.ok && data.inviteURL) {
+          console.log('[useTideLink] Setting invite link:', data.inviteURL);
           setInviteLink(data.inviteURL);
           setIsLinked(false);
           setOverlayLoading(false);
-
         } else {
+          console.log('[useTideLink] No invite URL, user appears linked or error occurred');
           setIsLinked(true);
           setOverlayLoading(false);
         }
       } catch (err) {
         if (!cancelled) console.error('[Login] Invite fetch failed:', err);
         setIsLinked(true);
+        setOverlayLoading(false);
       }
     }
 
@@ -204,6 +207,17 @@ export default function Login() {
 
   // ── EARLY RETURNS ──
 
+  // Debug logging
+  console.log('[Login] State check:', {
+    kcData: kcData ? 'loaded' : kcData,
+    isInitializing,
+    isLinked,
+    overlayLoading,
+    hasInviteLink: !!inviteLink,
+    baseURL,
+    contextLoading
+  });
+
   // 1) Still fetching config
   if (kcData === undefined) {
     return <LoadingSquareFullPage />;
@@ -224,6 +238,7 @@ export default function Login() {
 
   // 3) Demo user needs to link account
   if (!isLinked && !overlayLoading) {
+    console.log('[Login] Showing EmailInvitation with link:', inviteLink);
     return <EmailInvitation inviteLink={inviteLink} />;
   }
 
