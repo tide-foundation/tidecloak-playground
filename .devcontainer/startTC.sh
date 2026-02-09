@@ -54,20 +54,20 @@ else
   echo "Uploads directory already exists."
 fi
 if [ "$CODESPACES" = "true" ]; then
-  # Codespaces: Use HTTPS, no port in URLs
+  # Codespaces: Use full URL to avoid port in generated URLs
+  echo "   Using KC_HOSTNAME_URL: ${CODESPACE_URL_TC}"
   docker run -d \
     --name tidecloak \
     -p 8080:8080 \
     -v .:/opt/keycloak/data/h2 \
     -v ./Uploads:/opt/keycloak/Uploads \
-    -e KC_HOSTNAME=${KC_HOSTNAME_VALUE} \
-    -e KC_HOSTNAME_STRICT_HTTPS=true \
+    -e KC_HOSTNAME_URL=${CODESPACE_URL_TC} \
     -e KC_HTTP_ENABLED=true \
     -e KC_BOOTSTRAP_ADMIN_USERNAME=admin \
     -e KC_BOOTSTRAP_ADMIN_PASSWORD=password \
     tideorg/tidecloak-dev:latest
 else
-  # Local: Use HTTP with port
+  # Local: Use hostname with port
   docker run -d \
     --name tidecloak \
     -p 8080:8080 \
