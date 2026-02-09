@@ -1,10 +1,11 @@
 {
   "name": "Tidecloak Playground",
-  "image": "mcr.microsoft.com/devcontainers/javascript-node:18",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:24",
 
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {
-      "version": "latest"
+      "version": "latest",
+      "moby": false
     },
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
