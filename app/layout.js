@@ -1,8 +1,8 @@
 // app/layout.js
 import "./styles/tailwind.css";
-import "./styles/spinKit.css"; 
+import "./styles/spinKit.css";
 import "./styles/loading.css"
-import { Provider } from "./context/context";
+import { AuthProvider } from "./context/AuthProvider";
 import Nav from "./components/nav";
 import Footer from "./components/footer";
 
@@ -23,11 +23,11 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className="min-h-screen flex flex-col bg-white">
         <div id="loading-overlay-root" className="pointer-events-none fixed inset-0 z-50" />
-        <Provider>
+        <AuthProvider>
           <Nav />
           <main className="flex-grow">{children}</main>
           <Footer />
-        </Provider>
+        </AuthProvider>
       </body>
     </html>
   );

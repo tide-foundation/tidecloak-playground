@@ -1,8 +1,8 @@
 "use client"
 
-import IAMService from "../../lib/IAMService";
 import { useState, useEffect } from "react";
-import { useAppContext } from "../context/context";
+import { useAuth } from "../context/AuthProvider";
+import { useApiWithTokenRefresh } from "../hooks/useApiWithTokenRefresh";
 import appService from "../../lib/appService";
 import { usePathname } from "next/navigation";
 import AccordionBox from "../components/accordionBox";
@@ -20,8 +20,10 @@ export default function User(){
     // Current path displayed
     const pathname = usePathname();
 
-    // Shared data across the application
-    const {baseURL, realm, authenticated, contextLoading} = useAppContext();
+    // Auth context
+    const auth = useAuth();
+    const {baseURL, realm, authenticated, contextLoading, setBackgroundProcessing} = auth;
+    const { callWithRefresh } = useApiWithTokenRefresh(auth);
 
     // Logged in user object
     const [loggedUser, setLoggedUser] = useState(null);
@@ -65,12 +67,10 @@ export default function User(){
 
     // Runs first, once context verifies user is authenticated populate all users' demo data
     useEffect(() => {
-      if (!contextLoading){
-        if (authenticated){
-          getAllUsers();
-        }
+      if (!contextLoading && authenticated && baseURL && realm){
+        getAllUsers();
       }
-    }, [authenticated])
+    }, [contextLoading, authenticated, baseURL, realm])
 
     // Runs second, perform only when the context receives the logged user details to decrypt
     useEffect(() => {
@@ -86,22 +86,45 @@ export default function User(){
 
     // Populate the Database Exposure cards, and set the current logged users
     const getAllUsers = async () => {
+      // Guard: ensure required values are available
+      if (!baseURL || !realm) {
+        console.warn("getAllUsers: baseURL or realm not available yet");
+        return;
+      }
+
       setDataLoading(true);
 
-      // This is for the Accordion - it shows data directly from the database as is, not from id token.
-      const token = await IAMService.getToken(); 
-      const users = await appService.getUsers(baseURL, realm, token);
-      const loggedVuid =  IAMService.getValueFromToken("vuid");
-      const loggedInUser = users.find(user => {
-        if (user.attributes?.vuid[0] === loggedVuid){
-            return user;
-        }
-      });
-      setLoggedUser(loggedInUser);
+      try {
+        await callWithRefresh(async () => {
+          // This is for the Accordion - it shows data directly from the database as is, not from id token.
+          const token = await auth.getToken();
+          const users = await appService.getUsers(baseURL, realm, token);
+          const loggedVuid =  auth.getValueFromToken("vuid");
 
-      // Use the encrypted DoB and CC from the identity token for this Users Page
-      setTokenDoB(IAMService.getDoB());
-      setTokenCC(IAMService.getCC());
+          // Safety check: ensure users is an array
+          if (!Array.isArray(users)) {
+            console.error("getUsers did not return an array:", users);
+            setDataLoading(false);
+            setOverlayLoading(false);
+            return;
+          }
+
+          const loggedInUser = users.find(user => {
+            if (user.attributes?.vuid[0] === loggedVuid){
+                return user;
+            }
+          });
+          setLoggedUser(loggedInUser);
+
+          // Use the encrypted DoB and CC from the identity token for this Users Page
+          setTokenDoB(auth.getValueFromIdToken("dob"));
+          setTokenCC(auth.getValueFromIdToken("cc"));
+        }, "getAllUsers");
+      } catch (error) {
+        console.error("Error in getAllUsers:", error);
+        setDataLoading(false);
+        setOverlayLoading(false);
+      }
     };
 
     // Decrypt the logged in user's data
@@ -112,7 +135,7 @@ export default function User(){
             let arrayToDecrypt = [];
 
             // Date of Birth
-            if (tokenDoB && IAMService.hasOneRole("_tide_dob.selfdecrypt")){
+            if (tokenDoB && auth.hasOneRole("_tide_dob.selfdecrypt")){
               arrayToDecrypt.push({
                 "encrypted": tokenDoB,
                 "tags": ["dob"]
@@ -120,7 +143,7 @@ export default function User(){
             }
 
             // Credit Card
-            if (tokenCC && IAMService.hasOneRole("_tide_cc.selfdecrypt")){
+            if (tokenCC && auth.hasOneRole("_tide_cc.selfdecrypt")){
                arrayToDecrypt.push({
                 "encrypted": tokenCC,
                 "tags": ["cc"]
@@ -132,7 +155,7 @@ export default function User(){
             }
 
             if (arrayToDecrypt.length > 0){
-              const decryptedData = await IAMService.doDecrypt(arrayToDecrypt);
+              const decryptedData = await auth.doDecrypt(arrayToDecrypt);
               
               if (arrayToDecrypt.length === 2){
                 // User Information
@@ -187,7 +210,7 @@ export default function User(){
 
             let arrayToEncrypt = [];
 
-            if (formData.dob !== "" && IAMService.hasOneRole("_tide_dob.selfencrypt")){ 
+            if (formData.dob !== "" && auth.hasOneRole("_tide_dob.selfencrypt")){ 
               if (loggedUser.attributes.dob){
                 if (/[a-zA-Z]/.test(formData.dob)){
                   console.log("DoB can't have letters. Don't encrypt as it may already be encrypted.");
@@ -201,7 +224,7 @@ export default function User(){
               }
             }
 
-            if (formData.cc !== "" && IAMService.hasOneRole("_tide_cc.selfencrypt")){
+            if (formData.cc !== "" && auth.hasOneRole("_tide_cc.selfencrypt")){
               if (loggedUser.attributes.cc){
                 if (/[a-zA-Z]/.test(formData.cc)){
                   console.log("CC can't have letters. Don't encrypt as it may already be encrypted.");
@@ -216,7 +239,7 @@ export default function User(){
             }
 
             if (arrayToEncrypt.length > 0){
-              const encryptedData = await IAMService.doEncrypt(arrayToEncrypt);
+              const encryptedData = await auth.doEncrypt(arrayToEncrypt);
               if (arrayToEncrypt.length === 2){
                 setEncryptedDob(encryptedData[0]);
                 setEncryptedCc(encryptedData[1]); 
@@ -237,16 +260,41 @@ export default function User(){
             }
 
             // Store the data
-            const token = await IAMService.getToken();
+            const token = await auth.getToken();
             const response = await appService.updateUser(baseURL, realm, loggedUser, token);
-            // Updating the access token should also update the ID token
-            await IAMService.updateToken();
+
+            // Force immediate token refresh to get updated ID token with new encrypted values
+            console.log("User data updated. Force refreshing token...");
+            setBackgroundProcessing(true);
+
+            // Wait for backend to propagate changes
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Force refresh immediately (not just when expired)
+            await auth.forceUpdateToken();
+            console.log("First force refresh complete. Waiting for backend propagation...");
+
+            // Wait for backend to propagate
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Second force refresh
+            await auth.forceUpdateToken();
+            console.log("Second force refresh complete. Waiting...");
+
+            // Wait again
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Third force refresh to ensure we have the latest token
+            await auth.forceUpdateToken();
+            console.log("Token force refresh complete with updated user data");
+
+            setBackgroundProcessing(false);
 
             // Show the confirmation message
             if (response.ok){
                 setUserFeedback("Changes saved!");
                 setTimeout(() => setUserFeedback(""), 3000); // Clear after 3 seconds
-                getAllUsers(); 
+                getAllUsers();
             }
             setDataLoading(false);
             setLoadingButton(false);
@@ -307,10 +355,10 @@ export default function User(){
 
                 <h2 className="text-3xl font-bold mb-4">User Information</h2>
                 {(
-                  !IAMService.hasOneRole("_tide_dob.selfdecrypt") &&
-                  !IAMService.hasOneRole("_tide_dob.selfencrypt") &&
-                  !IAMService.hasOneRole("_tide_cc.selfdecrypt") &&
-                  !IAMService.hasOneRole("_tide_cc.selfencrypt")
+                  !auth.hasOneRole("_tide_dob.selfdecrypt") &&
+                  !auth.hasOneRole("_tide_dob.selfencrypt") &&
+                  !auth.hasOneRole("_tide_cc.selfdecrypt") &&
+                  !auth.hasOneRole("_tide_cc.selfencrypt")
                 ) ? (
                   <p className="text-sm text-gray-600 mb-6">
                     No roles, no data - exactly as designed. The Fabric refuses to reveal or accept fields you're not entitled to touch.
@@ -321,8 +369,8 @@ export default function User(){
 
                 <form className="space-y-6" onSubmit={handleFormSubmit}>
                   {["dob", "cc"].map((field, i) => {
-                    const readPerms = IAMService.hasOneRole(field === "dob" ? "_tide_dob.selfdecrypt" : "_tide_cc.selfdecrypt");
-                    const writePerms = IAMService.hasOneRole(field === "dob" ? "_tide_dob.selfencrypt" : "_tide_cc.selfencrypt");
+                    const readPerms = auth.hasOneRole(field === "dob" ? "_tide_dob.selfdecrypt" : "_tide_cc.selfdecrypt");
+                    const writePerms = auth.hasOneRole(field === "dob" ? "_tide_dob.selfencrypt" : "_tide_cc.selfencrypt");
                     const canRead = !!readPerms;
                     const canWrite = !!writePerms;
                     const label = field === "dob" ? "Date of Birth" : "Credit Card Number";
@@ -443,7 +491,7 @@ export default function User(){
                     );
                   })}
 
-                  {(IAMService.hasOneRole("_tide_dob.selfencrypt") || IAMService.hasOneRole("_tide_cc.selfencrypt")) && (
+                  {(auth.hasOneRole("_tide_dob.selfencrypt") || auth.hasOneRole("_tide_cc.selfencrypt")) && (
                     <div className="flex items-center gap-3">
                       <Button className="hover:bg-red-700" type="submit" disabled={loadingButton}>
                         Save Changes

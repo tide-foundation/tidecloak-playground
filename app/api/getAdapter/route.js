@@ -1,5 +1,4 @@
 import configs from "../apiConfigs";
-import settings from "/tidecloak-demo-realm.json";
 import fs from "fs";
 import path from "path";
 import apiService from "../apiService";
@@ -10,6 +9,10 @@ import apiService from "../apiService";
  * @returns {Promise<Object>} - status reponse object based on whether the configurations were written.
  */
 export async function GET(){
+    // Read settings from tidecloak-demo-realm.json at runtime
+    const settingsPath = path.join(process.cwd(), "tidecloak-demo-realm.json");
+    const settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+
     // Shared variables from /api/apiConfigs.js
     const realm = configs.realm;
     const baseURL = configs.baseURL;

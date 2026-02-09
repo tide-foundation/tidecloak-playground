@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
-import { useAppContext } from "../../context/context";
+import { useAuth } from "../../context/AuthProvider";
 
 import { useRouter } from "next/navigation";
 
-import IAMService from "../../../lib/IAMService";
 import { LoadingSquareFullPage } from "../../components/loadingSquare";
 import appService from "../../../lib/appService";
 
@@ -16,16 +15,21 @@ import appService from "../../../lib/appService";
  */
 export default function RedirectPage() {
 
-  const { baseURL, realm, authenticated, contextLoading } = useAppContext();
+  const auth = useAuth();
+  const { baseURL, realm, authenticated, contextLoading, setBackgroundProcessing } = auth;
 
   const router = useRouter();
-  
+
+  // Track encryption state
+  const [isEncrypting, setIsEncrypting] = useState(false);
+  const [encryptionComplete, setEncryptionComplete] = useState(false);
+
   const startUserInfoEncryption = async () => {
-  const token = await IAMService.getToken();
-  const loggedVuid = IAMService.getValueFromToken("vuid");
+  const token = await auth.getToken();
+  const loggedVuid = auth.getValueFromToken("vuid");
   const user = await appService.getUserByVuid(baseURL, realm, token, loggedVuid);
-  const tokenDoB = IAMService.getDoB();
-  const tokenCC = IAMService.getCC();
+  const tokenDoB = auth.getValueFromIdToken("dob");
+  const tokenCC = auth.getValueFromIdToken("cc");
 
   let arrayToEncrypt = [];
 
@@ -50,13 +54,49 @@ export default function RedirectPage() {
 
   if (arrayToEncrypt.length > 0) {
     // Encrypt the data for the first time
-    const encryptedData = await IAMService.doEncrypt(arrayToEncrypt);
+    const encryptedData = await auth.doEncrypt(arrayToEncrypt);
     // Save the updated user object to TideCloak
-    const token = await IAMService.getToken();
-    user[0].attributes.dob = encryptedData[0];
-    user[0].attributes.cc = encryptedData[1];
+    const token = await auth.getToken();
+
+    // Map encrypted data back to correct attributes based on tags
+    for (let i = 0; i < arrayToEncrypt.length; i++) {
+      const tag = arrayToEncrypt[i].tags[0];
+      if (tag === "dob") {
+        user[0].attributes.dob = encryptedData[i];
+      } else if (tag === "cc") {
+        user[0].attributes.cc = encryptedData[i];
+      }
+    }
+
     const response = await appService.updateUser(baseURL, realm, user[0], token);
-    await IAMService.updateToken();
+
+    // Force immediate token refresh to get updated ID token with encrypted values
+    console.log("Force refreshing token to get encrypted data in ID token...");
+
+    // Wait a bit for backend to propagate changes
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Force refresh immediately (not just when expired)
+    await auth.forceUpdateToken();
+    console.log("First force refresh complete. Waiting for backend propagation...");
+
+    // Wait for backend to propagate
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Second force refresh
+    await auth.forceUpdateToken();
+    console.log("Second force refresh complete. Waiting...");
+
+    // Wait again
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Third force refresh to ensure we have the latest token
+    await auth.forceUpdateToken();
+
+    const updatedDob = auth.getValueFromIdToken("dob");
+    const updatedCc = auth.getValueFromIdToken("cc");
+    console.log("Token force refresh complete. New ID token dob:", updatedDob?.substring(0, 50) + "...");
+    console.log("Token force refresh complete. New ID token cc:", updatedCc?.substring(0, 50) + "...");
   }
 
 }
@@ -64,7 +104,7 @@ export default function RedirectPage() {
   // Handles redirect when middle detects token expiry
   useEffect(() => {
     const doLogOut = async () => {
-      IAMService.doLogout();
+      auth.logout();
     }
     // Must be placed inside useEffect, because parameters don't exist during build for production
     // Parse the query string with URLSearchParams instead of useSearchParams()
@@ -82,16 +122,47 @@ export default function RedirectPage() {
   useEffect(() => {
     if (!contextLoading) {
       if (authenticated) {
-        startUserInfoEncryption().catch(err =>
-          console.error("Error encrypting user info:", err)
-        );
-        router.push("/home");
+        // Show overlay loading briefly, then navigate while encryption continues
+        setIsEncrypting(true);
+        setBackgroundProcessing(true);
+
+        // Show loading screen for 800ms, then navigate to homepage
+        setTimeout(() => {
+          setIsEncrypting(false);
+          router.push("/home");
+        }, 800);
+
+        // Start encryption in background (continues after navigation)
+        startUserInfoEncryption()
+          .then(() => {
+            setEncryptionComplete(true);
+            setBackgroundProcessing(false);
+            console.log("Background encryption complete");
+          })
+          .catch(err => {
+            console.error("Error encrypting user info:", err);
+            setEncryptionComplete(true);
+            setBackgroundProcessing(false);
+          });
       }
       else {
         router.push("/");
       }
     }
   }, [contextLoading]);
+
+  // Show encryption status if encrypting
+  if (isEncrypting) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+        <LoadingSquareFullPage />
+        <div className="mt-8 text-center">
+          <p className="text-xl font-semibold text-gray-700">Encrypting your data...</p>
+          <p className="text-sm text-gray-500 mt-2">Please wait while we secure your information</p>
+        </div>
+      </div>
+    );
+  }
 
   return <LoadingSquareFullPage />
 }

@@ -1,10 +1,11 @@
 {
   "name": "Tidecloak Playground",
-  "image": "mcr.microsoft.com/devcontainers/javascript-node:18",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:24",
 
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {
-      "version": "latest"
+      "version": "latest",
+      "moby": false
     },
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
@@ -44,7 +45,10 @@
 
   "containerEnv": {
     "CHOKIDAR_USEPOLLING": "true",
-    "WATCHPACK_POLLING": "true"
+    "WATCHPACK_POLLING": "true",
+    "CODESPACES": "${localEnv:CODESPACES}",
+    "CODESPACE_NAME": "${localEnv:CODESPACE_NAME}",
+    "GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN": "${localEnv:GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}"
   },
 
   "postCreateCommand": ".devcontainer/setup.sh",

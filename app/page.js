@@ -12,8 +12,7 @@ import {
   FaChevronDown,
   FaCheckCircle,
 } from 'react-icons/fa';
-import { useAppContext } from './context/context';
-import IAMService from '../lib/IAMService';
+import { useAuth } from './context/AuthProvider';
 import appService from '../lib/appService';
 
 /**
@@ -71,6 +70,7 @@ function useTideLink(baseURL, setOverlayLoading) {
   const [isLinked, setIsLinked] = useState(true);
   const [inviteLink, setInviteLink] = useState('');
   const [showLinkedMsg, setShowLinkedMsg] = useState(false);
+  const [checkingLink, setCheckingLink] = useState(true); // Track if we're still checking
 
   const updateDomain = useCallback(async () => {
     const res = await fetch('/api/updateCustomDomainURL');
@@ -95,25 +95,42 @@ function useTideLink(baseURL, setOverlayLoading) {
       try {
         const res = await fetch('/api/inviteUser');
         const data = await res.json();
+        console.log('[useTideLink] fetchInvite response:', { ok: res.ok, data });
         if (cancelled) return;
         if (res.ok && data.inviteURL) {
+          console.log('[useTideLink] Setting invite link:', data.inviteURL);
           setInviteLink(data.inviteURL);
           setIsLinked(false);
+          setCheckingLink(false);
           setOverlayLoading(false);
-
         } else {
+          console.log('[useTideLink] No invite URL, user appears linked or error occurred');
           setIsLinked(true);
+          setCheckingLink(false);
           setOverlayLoading(false);
         }
       } catch (err) {
         if (!cancelled) console.error('[Login] Invite fetch failed:', err);
         setIsLinked(true);
+        setCheckingLink(false);
+        setOverlayLoading(false);
       }
     }
 
+    console.log('[useTideLink] Effect running with baseURL:', baseURL);
+
     if (baseURL) {
+      console.log('[useTideLink] baseURL is truthy, calling fetchInvite');
       checkLinkParams();
       fetchInvite();
+    } else if (baseURL === '') {
+      console.log('[useTideLink] baseURL is empty string');
+      // baseURL is explicitly empty (not undefined), context is loaded but no baseURL
+      // This shouldn't happen but handle gracefully
+      setOverlayLoading(false);
+      setIsLinked(true);
+    } else {
+      console.log('[useTideLink] baseURL is falsy (undefined/null):', baseURL);
     }
 
     return () => {
@@ -121,21 +138,22 @@ function useTideLink(baseURL, setOverlayLoading) {
     };
   }, [baseURL, updateDomain]);
 
-  return { isLinked, inviteLink, showLinkedMsg };
+  return { isLinked, inviteLink, showLinkedMsg, checkingLink };
 }
 
 export default function Login() {
 
   const [overlayLoading, setOverlayLoading] = useState(true);
 
-  // App context (overlayLoading and re-init are handled in LoadingPage)
-  const { authenticated, baseURL, setIsInitialized} = useAppContext();
+  // Auth context
+  const auth = useAuth();
+  const { authenticated, baseURL, contextLoading, setIsInitialized} = auth;
 
   // Config and initialization hook
   const { kcData, isInitializing, setKcData, setIsInitializing } = useTideConfig(authenticated);
 
   // Invite/link hook
-  const { isLinked, inviteLink, showLinkedMsg } = useTideLink(baseURL, setOverlayLoading);
+  const { isLinked, inviteLink, showLinkedMsg, checkingLink } = useTideLink(baseURL, setOverlayLoading);
 
   // Local UI state
   const [showLoginAccordion, setShowLoginAccordion] = useState(false);
@@ -156,8 +174,13 @@ export default function Login() {
 
   // Token-expired banner and port check
   useEffect(() => {
-    if (sessionStorage.getItem('tokenExpired')) {
+    // Don't show "session expired" message if showing "linked account" message
+    if (sessionStorage.getItem('tokenExpired') && !showLinkedMsg) {
       setShowError(true);
+    } else if (showLinkedMsg) {
+      // Clear the error and tokenExpired flag when showing linked message
+      setShowError(false);
+      sessionStorage.removeItem('tokenExpired');
     }
     if (baseURL && kcData && Object.keys(kcData).length > 0) {
       (async () => {
@@ -170,7 +193,7 @@ export default function Login() {
         }
       })();
     }
-  }, [baseURL, kcData]);
+  }, [baseURL, kcData, showLinkedMsg]);
 
   // Login / link handler
   const handleLogin = async () => {
@@ -182,7 +205,7 @@ export default function Login() {
       if (res.ok && data.inviteURL) {
         router.push(data.inviteURL);
       } else {
-        IAMService.doLogin();
+        auth.login();
       }
     } catch (err) {
       console.error('[Login] handleLogin error:', err);
@@ -190,6 +213,17 @@ export default function Login() {
   };
 
   // ── EARLY RETURNS ──
+
+  // Debug logging
+  console.log('[Login] State check:', {
+    kcData: kcData ? 'loaded' : kcData,
+    isInitializing,
+    isLinked,
+    overlayLoading,
+    hasInviteLink: !!inviteLink,
+    baseURL,
+    contextLoading
+  });
 
   // 1) Still fetching config
   if (kcData === undefined) {
@@ -210,12 +244,23 @@ export default function Login() {
   }
 
   // 3) Demo user needs to link account
-  if (!isLinked && !overlayLoading) {
+  if (!isLinked && !overlayLoading && !checkingLink) {
+    console.log('[Login] Showing EmailInvitation with link:', inviteLink);
     return <EmailInvitation inviteLink={inviteLink} />;
   }
 
-  // 4) Context overlay still loading
-  if (overlayLoading) {
+  // 4) Context overlay still loading or checking link status
+  if (overlayLoading || checkingLink || contextLoading) {
+    return <LoadingSquareFullPage />;
+  }
+
+  // 5) User is authenticated - show loader while redirecting
+  if (authenticated && kcData && Object.keys(kcData).length > 0) {
+    return <LoadingSquareFullPage />;
+  }
+
+  // 6) Safety: if authenticated without config, still show loader
+  if (authenticated) {
     return <LoadingSquareFullPage />;
   }
 

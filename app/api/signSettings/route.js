@@ -1,7 +1,8 @@
 
 import configs from "../apiConfigs";
-import settings from "/tidecloak-demo-realm.json";
 import apiService from "../apiService";
+import fs from "fs";
+import path from "path";
 
 /**
  * This custom Tide endpoint is only for signing the new IDP Settings each time there are major changes, or error will be thrown in the Tide Enclave.
@@ -9,6 +10,10 @@ import apiService from "../apiService";
  * @returns {Promise<Object>} - status response object based on signing was successful
  */
 export async function GET(){
+    // Read settings from tidecloak-demo-realm.json at runtime
+    const settingsPath = path.join(process.cwd(), "tidecloak-demo-realm.json");
+    const settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+
     // Shared variables from /api/apiConfigs.js
     const baseURL = configs.baseURL;
     const realm = settings.realm;

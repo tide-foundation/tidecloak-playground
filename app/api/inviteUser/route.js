@@ -19,21 +19,32 @@ export async function GET(){
         const demoUserResult = await apiService.getDemoUser(baseURL, realm, masterToken);
         const demoUser = demoUserResult.body;
 
+        console.log('[inviteUser] Demo user data:', {
+            id: demoUser.id,
+            username: demoUser.username,
+            hasAttributes: !!demoUser.attributes,
+            attributes: demoUser.attributes,
+            hasVuid: !!(demoUser.attributes && demoUser.attributes.vuid)
+        });
+
         // Check if demo user is already linked, if so don't generate a URL and proceed with login
-        if (demoUser.attributes.vuid){
-            return new Response(JSON.stringify({ok: true}), {status: 200}); 
+        if (demoUser.attributes && demoUser.attributes.vuid && demoUser.attributes.vuid.length > 0){
+            console.log('[inviteUser] User already linked with vuid:', demoUser.attributes.vuid);
+            return new Response(JSON.stringify({ok: true}), {status: 200});
         }
         else {
             const demoUserID = demoUserResult.body.id;
 
             // Generate an invite link to return to the client for the user to link their Tide account
+            console.log('[inviteUser] Generating invite for user:', demoUserID);
             const createInviteResult = await apiService.createTideInvite(baseURL, realm, demoUserID, masterToken);
-            console.log(createInviteResult.body);
+            console.log('[inviteUser] Generated invite URL:', createInviteResult.body);
 
-            return new Response(JSON.stringify({ok: true, inviteURL: createInviteResult.body}), {status: createInviteResult.status}); 
-        }  
-    } 
+            return new Response(JSON.stringify({ok: true, inviteURL: createInviteResult.body}), {status: createInviteResult.status});
+        }
+    }
     catch (error) {
-        return new Response(JSON.stringify({ok: false, error: "[createUsers Endpoint] " + error.message}), {status: 500});
+        console.error('[inviteUser] Error:', error);
+        return new Response(JSON.stringify({ok: false, error: "[inviteUser Endpoint] " + error.message}), {status: 500});
     }
 }

@@ -1,9 +1,8 @@
 "use client"
 import { useState, useEffect, useRef } from "react";
-import IAMService from "../../lib/IAMService";
 import appService from "../../lib/appService";
-import { useAppContext } from "../context/context";
-import { Heimdall } from "../../tide-modules/heimdall";
+import { useAuth } from "../context/AuthProvider";
+import { useApiWithTokenRefresh } from "../hooks/useApiWithTokenRefresh";
 import AccordionBox from "../components/accordionBox";
 import Button from "../components/button";
 import { FaCheckCircle, FaChevronRight } from "react-icons/fa";
@@ -22,7 +21,9 @@ export default function Admin() {
   // Navigator
   const router = useRouter();
   // Shared context data
-  const { baseURL, realm, authenticated, contextLoading } = useAppContext();
+  const auth = useAuth();
+  const { baseURL, realm, authenticated, contextLoading, getToken, hasRealmRole, hasClientRole, approveTideRequests, setBackgroundProcessing } = auth;
+  const { callWithRefresh } = useApiWithTokenRefresh(auth);
   // Admin state of the logged in demo user
   const [isTideAdmin, setIsTideAdmin] = useState(false);
   // Object representation of the logged in user
@@ -138,8 +139,8 @@ export default function Admin() {
 
   // Get current logged in user
   const getLoggedUser = async () => { 
-    const token = await IAMService.getToken();
-    const loggedVuid =  IAMService.getValueFromToken("vuid");
+    const token = await auth.getToken();
+    const loggedVuid =  auth.getValueFromToken("vuid");
     const users = await appService.getUsers(baseURL, realm, token);
     const loggedInUser = users.find(user => {
       if (user.attributes.vuid[0] === loggedVuid){
@@ -152,17 +153,17 @@ export default function Admin() {
   // Get the current user realm roles to prefill the boxes and for updating the permissions
   const setUserPermissions = async () => { 
     if (loggedUser){
-      setHasDobReadPerm(IAMService.hasOneRole("_tide_dob.selfdecrypt"));
-      setHasDobWritePerm(IAMService.hasOneRole("_tide_dob.selfencrypt"));
+      setHasDobReadPerm(auth.hasOneRole("_tide_dob.selfdecrypt"));
+      setHasDobWritePerm(auth.hasOneRole("_tide_dob.selfencrypt"));
 
-      setHasCcReadPerm(IAMService.hasOneRole("_tide_cc.selfdecrypt"));
-      setHasCcWritePerm(IAMService.hasOneRole("_tide_cc.selfencrypt"));
+      setHasCcReadPerm(auth.hasOneRole("_tide_cc.selfdecrypt"));
+      setHasCcWritePerm(auth.hasOneRole("_tide_cc.selfencrypt"));
     }
   };
 
   // On initial render check if logged user is admin to decide which components to show
   const checkAdminRole = async () => {
-      const token = await IAMService.getToken();
+      const token = await auth.getToken();
       // Get Realm Management default client's ID
       const clientID = await appService.getRealmManagementId(baseURL, realm, token);
       // Check if user already has the role
@@ -173,7 +174,7 @@ export default function Admin() {
   // Assign this initial user the tide-realm-admin client role managed by the default client Realm Management
   const confirmAdmin = async () => {
     setLoadingButton(true);
-    const token = await IAMService.getToken();
+    const token = await auth.getToken();
 
     if (!isTideAdmin){
         const RMClientID = await appService.getRealmManagementId(baseURL, realm, token);
@@ -188,12 +189,33 @@ export default function Admin() {
         const response = await fetch(`/api/commitAdminRole`);
 
         if (response.ok) {
-            // Force update of token without logging out
-           
-            await IAMService.updateToken();
-            setIsTideAdmin(true); 
-           
-            console.log("Admin Role Assigned");
+            // Force immediate token refresh to get updated token with admin role
+            console.log("Admin role committed. Force refreshing token...");
+            setBackgroundProcessing(true);
+
+            // Wait for backend to propagate changes
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Force refresh immediately (not just when expired)
+            await auth.forceUpdateToken();
+            console.log("First force refresh complete. Waiting for backend propagation...");
+
+            // Wait for backend to propagate
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Second force refresh
+            await auth.forceUpdateToken();
+            console.log("Second force refresh complete. Waiting...");
+
+            // Wait again
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Third force refresh to ensure we have the latest token
+            await auth.forceUpdateToken();
+
+            setBackgroundProcessing(false);
+            setIsTideAdmin(true);
+            console.log("Admin Role Assigned and token refreshed");
         }
     }
     else {
@@ -204,19 +226,34 @@ export default function Admin() {
 
   // Get latest change requests to display and update when pressing commit
   const getChangeRequests = async () => {
-    
-    const token = await IAMService.getToken();
-    const changeRequests = await appService.getUserRequests(baseURL, realm, token);
-    // Remove Denied Requests
-    const withoutDeniedReqs = changeRequests.filter((request) => 
-      (request.deleteStatus !== "DENIED" && request.status !== "DENIED")
-    )
-    setRequests(withoutDeniedReqs);
+    // Guard: ensure required values are available
+    if (!baseURL || !realm) {
+      console.warn("getChangeRequests: baseURL or realm not available yet");
+      return;
+    }
+
+    await callWithRefresh(async () => {
+      const token = await auth.getToken();
+      const changeRequests = await appService.getUserRequests(baseURL, realm, token);
+
+      // Safety check: ensure changeRequests is an array
+      if (!Array.isArray(changeRequests)) {
+        console.error("getUserRequests did not return an array:", changeRequests);
+        setRequests([]);
+        return;
+      }
+
+      // Remove Denied Requests
+      const withoutDeniedReqs = changeRequests.filter((request) =>
+        (request.deleteStatus !== "DENIED" && request.status !== "DENIED")
+      )
+      setRequests(withoutDeniedReqs);
+    }, "getChangeRequests");
   }
 
   // Fetch all realm role objects to assign to user based on check box states
   const getRealmRoles = async () => {
-    const token = await IAMService.getToken();
+    const token = await auth.getToken();
     setDobWriteRole(await appService.getRealmRole(baseURL, realm, "_tide_dob.selfencrypt", token));
     setDobReadRole(await appService.getRealmRole(baseURL, realm, "_tide_dob.selfdecrypt", token));
     setCcReadRole(await appService.getRealmRole(baseURL, realm, "_tide_cc.selfdecrypt", token));
@@ -230,7 +267,7 @@ export default function Admin() {
   const handleAdminPermissionSubmit = async (e) => {
     e.preventDefault();
 
-    const token = await IAMService.getToken();
+    const token = await auth.getToken();
 
     // Clear cached data of the demo admins who have approved for a reset
     localStorage.removeItem("approvals");
@@ -246,10 +283,10 @@ export default function Admin() {
     const rolesInfo = [dobReadRole, dobWriteRole, ccReadRole, ccWriteRole];
 
     for (let i = 0; i < checkBoxPerms.length; i++){
-      if (checkBoxPerms[i] && !IAMService.hasOneRole(roles[i])){      
+      if (checkBoxPerms[i] && !auth.hasOneRole(roles[i])){      
         await appService.assignRealmRole(baseURL, realm, loggedUser.id, rolesInfo[i], token);
       }
-      else if (!checkBoxPerms[i] && IAMService.hasOneRole(roles[i])){
+      else if (!checkBoxPerms[i] && auth.hasOneRole(roles[i])){
         await appService.unassignRealmRole(baseURL, realm, loggedUser.id, rolesInfo[i], token);
       }
     }
@@ -356,7 +393,7 @@ export default function Admin() {
       // POST /tideAdminResources/add-rejection
       // Add denied status to change request 
       const addRejection = async (action, draftId, type) => {
-        const token = await IAMService.getToken();    
+        const token = await auth.getToken();    
         
         // Key value pairs
         const formData = new FormData();
@@ -373,62 +410,73 @@ export default function Admin() {
         } 
       };
   
-      // POST /tideAdminResources/add-authorization
+      // POST /tideAdminResources/add-review
       // Add approve status to change request
-      const addApproval = async (action, draftId, type, authorizerApproval, authorizerAuthentication) => {
-        const token = await IAMService.getToken();
+      const addApproval = async (action, draftId, type, approvedRequest) => {
+        const token = await auth.getToken();
 
-        // Key value pairs
+        // Convert Uint8Array to base64
+        const bytesToBase64 = (bytes) => {
+          const binaryString = Array.from(bytes, (byte) => String.fromCharCode(byte)).join('');
+          return btoa(binaryString);
+        };
+
+        // Key value pairs for approval request
         const formData = new FormData();
-        formData.append("actionType", action);
         formData.append("changeSetId", draftId);
+        formData.append("actionType", action);
         formData.append("changeSetType", type);
-        formData.append("authorizerApproval", authorizerApproval);
-        formData.append("authorizerAuthentication", authorizerAuthentication);
-    
+        formData.append("requests", bytesToBase64(approvedRequest));
+
         const response = await appService.approveEnclave(baseURL, realm, formData, token);
 
         if (response.ok){
           // TideCloak keeps approved change requests so fetch new one and replace
           const updatedChangeReqs = await appService.getUserRequests(baseURL, realm, token);
-          
+
           const updatedChangeReq = updatedChangeReqs.find(req => req.draftRecordId === draftId);
-          requests[activeRequestIndex] = updatedChangeReq; 
-        
+          requests[activeRequestIndex] = updatedChangeReq;
+
           setApprovals([true, false, false, false, false]);
           setPending(true);
           setHasUserApproved(true);
         }
-        
+
       };
 
         
       // When user presses Review button to show the Tide Enclave popup
       const handleUserApprove = async (changeRequest) => {
-        const token = await IAMService.getToken();
-        // Get popup data for the change request to know that it requires the enclave and pass data to the popup
-        const response = await appService.reviewChangeRequest(baseURL, realm, changeRequest, token);
-        const popupData = await response.json();
-    
-        if (popupData.requiresApprovalPopup === "true") {
-          const vuid = IAMService.getValueFromToken("vuid");
-          const heimdall = new Heimdall(popupData.customDomainUri, [vuid]);
-          await heimdall.openEnclave();
-        
-          // Waiting user response for auth approval
-          const authorizerApproval = await heimdall.getAuthorizerApproval(popupData.changeSetRequests, "UserContext:1", popupData.expiry, "base64url");
-          
-          // If Deny is clicked
-          if (authorizerApproval.accepted === false) {
-            addRejection(changeRequest.actionType, changeRequest.draftRecordId, changeRequest.changeSetType);
-            heimdall.closeEnclave(); 
-          } else if (authorizerApproval.accepted === true) { // If Approve is clicked
-            const authorizerAuthentication = await heimdall.getAuthorizerAuthentication();
-            addApproval(changeRequest.actionType, changeRequest.draftRecordId, changeRequest.changeSetType, authorizerApproval.data, authorizerAuthentication);
-            heimdall.closeEnclave();
-           
+        try {
+          const token = await auth.getToken();
+
+          // Get raw change set request bytes for approval
+          const changeSetBytes = await appService.reviewChangeRequest(baseURL, realm, changeRequest, token);
+
+          if (!changeSetBytes) {
+            console.error("No data from reviewChangeRequest");
+            return;
           }
-        };
+
+          console.log("Change set bytes:", changeSetBytes);
+
+          // Request approval from Tide operator
+          const approvalResult = (await auth.approveTideRequests([{
+            id: "UserContext:1",
+            request: changeSetBytes
+          }]))[0]; // Only 1 request at a time for now
+
+          // Handle approval result
+          if (approvalResult.denied) {
+            addRejection(changeRequest.actionType, changeRequest.draftRecordId, changeRequest.changeSetType);
+          } else if (approvalResult.approved) {
+            // The approved request contains the signed request bytes
+            addApproval(changeRequest.actionType, changeRequest.draftRecordId, changeRequest.changeSetType, approvalResult.approved.request);
+          }
+          // If pending, do nothing (user closed the popup without deciding)
+        } catch (error) {
+          console.error("Error in handleUserApprove:", error);
+        }
       };
 
       return (
@@ -489,7 +537,7 @@ export default function Admin() {
       
       try{
 
-        const token = await IAMService.getToken();
+        const token = await auth.getToken();
 
         const body = JSON.stringify({
           "actionType": request.actionType,
@@ -510,11 +558,35 @@ export default function Admin() {
 
           // Clear the locally stored approved users array
           localStorage.removeItem("approvals");
-          
-          // Get a new token to have check the currently assigned roles to the logged in user
-          await IAMService.updateToken();
 
-          
+          // Force immediate token refresh to get updated roles
+          console.log("Change committed. Force refreshing token...");
+          setBackgroundProcessing(true);
+
+          // Wait for backend to propagate changes
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          // Force refresh immediately (not just when expired)
+          await auth.forceUpdateToken();
+          console.log("First force refresh complete. Waiting for backend propagation...");
+
+          // Wait for backend to propagate
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          // Second force refresh
+          await auth.forceUpdateToken();
+          console.log("Second force refresh complete. Waiting...");
+
+          // Wait again
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          // Third force refresh to ensure we have the latest token
+          await auth.forceUpdateToken();
+          console.log("Token force refresh complete with updated roles");
+
+          setBackgroundProcessing(false);
+
+
           // Reset states for next change request
           setApprovals([false, false, false, false, false]);
           setTotalApproved(1);
@@ -534,7 +606,7 @@ export default function Admin() {
 
     // If submit button is pressed again, cancel all the change requests
     const cancelRequests = async (requests) => {
-      const token = await IAMService.getToken();
+      const token = await auth.getToken();
         
       for (let i = 0; i < requests.length; i++) {
           const request = requests[i];

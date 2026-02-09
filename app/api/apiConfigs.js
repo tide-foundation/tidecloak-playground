@@ -1,6 +1,11 @@
 // This file shares the common API parameters across the endpoints to conveniently change values such as the base URL.
 // Default values are used for local hosting TideCloak when .env isn't provided.
-import settings from "/tidecloak-demo-realm.json";
+import fs from "fs";
+import path from "path";
+
+// Read settings from tidecloak-demo-realm.json at runtime
+const settingsPath = path.join(process.cwd(), "tidecloak-demo-realm.json");
+const settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
 
 const envConfig = {
   BASEURL: process.env.BASE_URL ?? (() =>{

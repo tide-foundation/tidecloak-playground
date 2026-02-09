@@ -1,8 +1,7 @@
 "use client";
-import IAMService from "../../lib/IAMService";
 import { useState, useEffect } from "react";
 import Button from "../components/button";
-import {useAppContext} from '../context/context'
+import { useAuth } from "../context/AuthProvider";
 import appService from "../../lib/appService";
 import AccordionBox from "../components/accordionBox";
 import { LoadingSquareFullPage } from "../components/loadingSquare";
@@ -45,7 +44,7 @@ function DecryptingText({ text, speed = 30 }) {
  * @param {string} cc - encrypted string to be decrypted and displayed on each card 
  * @returns {JSX.Element} - HTML for each card to be decrypted
  */
-function DecryptedRow({ isUser, user, username, dob, cc }) {
+function DecryptedRow({ isUser, user, username, dob, cc, auth }) {
     // State variable for handling Decrypt Button
     const [decrypted, setDecrypted] = useState(false);
     // State variable for handling Decrypt Button's spinner
@@ -61,9 +60,9 @@ function DecryptedRow({ isUser, user, username, dob, cc }) {
     // If new user data arrives reset to potentially decrypt again
     useEffect(() => {
         setDecrypted(false);
-        setCanReadDob(IAMService.hasOneRole("_tide_dob.selfdecrypt"));
-        setCanReadCc(IAMService.hasOneRole("_tide_cc.selfdecrypt"));
-    }, [user])
+        setCanReadDob(auth.hasOneRole("_tide_dob.selfdecrypt"));
+        setCanReadCc(auth.hasOneRole("_tide_cc.selfdecrypt"));
+    }, [user, auth])
 
     // Calls on Decrypt button being selected to update the fields
     const handleDecrypt = async () => {
@@ -103,7 +102,7 @@ function DecryptedRow({ isUser, user, username, dob, cc }) {
 
             if (encryptedData.length > 0){
                 setLoadingButton(true);
-                const decryptedData = await IAMService.doDecrypt(encryptedData);
+                const decryptedData = await auth.doDecrypt(encryptedData);
                 // Set data to show at roughly same time, only decrypt the attributes user has read permissions to
                 if (encryptedData.length === 2){                // Yes DoB Read permission, Yes CC Read Permission
                     setDecryptedDob(decryptedData[0]); 
@@ -183,8 +182,9 @@ function DecryptedRow({ isUser, user, username, dob, cc }) {
  * @returns {JSX.Element} - HTML parent containing decryptable cards for each user
  */
 export default function DatabaseExposure() {
-    
-    const {baseURL, realm, contextLoading, overlayLoading} = useAppContext();
+
+    const auth = useAuth();
+    const {baseURL, realm, contextLoading, overlayLoading} = auth;
 
     const [users, setUsers] = useState([]);
 
@@ -205,7 +205,7 @@ export default function DatabaseExposure() {
 
     // Populate the Database Exposure cards, and set the current logged users
     const getAllUsers = async () => {
-      const token = await IAMService.getToken(); 
+      const token = await auth.getToken();
       const users = await appService.getUsers(baseURL, realm, token);
       setUsers(users);
     };
@@ -299,16 +299,17 @@ export default function DatabaseExposure() {
                         
                     <DecryptedRow key={i}
                     isUser={user.attributes?.vuid
-                        ? user.attributes.vuid[0] === IAMService.getValueFromToken("vuid") ? true : false
+                        ? user.attributes.vuid[0] === auth.getValueFromToken("vuid") ? true : false
                         : false}
                     user={user}
                     username={user.username}
                     dob={user.attributes?.vuid
-                        ? user.attributes.vuid[0] === IAMService.getValueFromToken("vuid") ? user.attributes.dob[0] : user.attributes.dob
+                        ? user.attributes.vuid[0] === auth.getValueFromToken("vuid") ? user.attributes.dob[0] : user.attributes.dob
                         : user.attributes?.dob}
                     cc={user.attributes?.vuid
-                        ? user.attributes.vuid[0] === IAMService.getValueFromToken("vuid") ? user.attributes.cc[0] : user.attributes.cc
+                        ? user.attributes.vuid[0] === auth.getValueFromToken("vuid") ? user.attributes.cc[0] : user.attributes.cc
                         : user.attributes?.cc}
+                    auth={auth}
                     />
                     ))
                     : null
