@@ -14,8 +14,8 @@
     "react-scripts": "^5.0.1",
     "sqlite": "5.1.1",
     "sqlite3": "5.1.7",
-    "@tidecloak/js": "0.13.14",
-    "@tidecloak/nextjs": "0.13.14"
+    "@tidecloak/js": "file:../mediquil/tidecloak-js/packages/tidecloak-js",
+    "@tidecloak/nextjs": "file:../mediquil/tidecloak-js/packages/tidecloak-nextjs"
   },
   "scripts": {
     "build:css": "tailwindcss -i ./app/styles/tailwind.css -o ./app/styles/generated.css --watch",
