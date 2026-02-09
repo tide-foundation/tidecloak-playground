@@ -16,11 +16,11 @@ export function AuthProvider({ children }) {
   const [configLoading, setConfigLoading] = useState(true);
   const [configError, setConfigError] = useState(null);
 
-  // Load config from tidecloak.json
+  // Load config from tidecloak.json via API
   useEffect(() => {
     const loadConfig = async () => {
       try {
-        const response = await fetch('/data/tidecloak.json');
+        const response = await fetch('/api/tidecloakConfig');
         if (!response.ok) {
           throw new Error(`Failed to load config: ${response.status}`);
         }
@@ -41,49 +41,16 @@ export function AuthProvider({ children }) {
     return <div>Loading configuration...</div>;
   }
 
-  // If config is empty or not initialized (no realm), render children without TideCloakProvider
-  // This allows the app to go through the initialization process
-  if (!config || !config.realm) {
-    return <MinimalAuthProvider>{children}</MinimalAuthProvider>;
-  }
+  // If config is empty or not initialized (no realm), provide empty config to TideCloakProvider
+  // TideCloakProvider will handle uninitialized state appropriately
+  const tideCloakConfig = config && config.realm ? config : {};
 
   return (
-    <TideCloakProvider config={config}>
+    <TideCloakProvider config={tideCloakConfig}>
       <AuthContextProvider>
         {children}
       </AuthContextProvider>
     </TideCloakProvider>
-  );
-}
-
-/**
- * Minimal auth provider for uninitialized state.
- * Provides basic context values so components don't crash during initialization.
- */
-function MinimalAuthProvider({ children }) {
-  const contextValue = {
-    authenticated: false,
-    isInitializing: true,
-    contextLoading: true,
-    realm: "",
-    baseURL: "",
-    getToken: async () => null,
-    login: () => {},
-    logout: () => {},
-    hasRealmRole: () => false,
-    hasOneRole: () => false,
-    refreshToken: async () => null,
-    updateToken: async () => null,
-    getConfig: () => ({}),
-    approveTideRequests: async () => {
-      throw new Error("TideCloak not initialized. Please complete initialization first.");
-    },
-  };
-
-  return (
-    <AuthContext.Provider value={contextValue}>
-      {children}
-    </AuthContext.Provider>
   );
 }
 
@@ -97,9 +64,14 @@ function AuthContextProvider({ children }) {
   // Extract realm from config when context is initialized
   useEffect(() => {
     if (!tideCloakContext.isInitializing) {
-      const config = tideCloakContext.getConfig();
-      if (config?.realm) {
-        setRealm(config.realm);
+      try {
+        const config = tideCloakContext.getConfig();
+        if (config?.realm) {
+          setRealm(config.realm);
+        }
+      } catch (error) {
+        // Config not yet loaded - this is fine during initialization
+        console.debug("[AuthContextProvider] Config not yet available:", error.message);
       }
     }
   }, [tideCloakContext.isInitializing, tideCloakContext]);
@@ -171,6 +143,43 @@ function AuthContextProvider({ children }) {
     return results;
   }, []);
 
+  /**
+   * Get value from access token (wraps IAMService for backward compatibility).
+   * @param {string} key - The claim name to retrieve
+   * @returns {*} The claim value or null
+   */
+  const getValueFromToken = useCallback((key) => {
+    return IAMService.getValueFromToken(key);
+  }, []);
+
+  /**
+   * Get value from ID token (wraps IAMService for backward compatibility).
+   * Note: IAMService uses capital ID in method name.
+   * @param {string} key - The claim name to retrieve
+   * @returns {*} The claim value or null
+   */
+  const getValueFromIdToken = useCallback((key) => {
+    return IAMService.getValueFromIDToken(key);
+  }, []);
+
+  /**
+   * Encrypt data using TideCloak (wraps IAMService for backward compatibility).
+   * @param {Array<{data: string | Uint8Array, tags: string[]}>} data - Array of data to encrypt
+   * @returns {Promise<Array<string | Uint8Array>>} Array of encrypted values
+   */
+  const doEncrypt = useCallback(async (data) => {
+    return await IAMService.doEncrypt(data);
+  }, []);
+
+  /**
+   * Decrypt data using TideCloak (wraps IAMService for backward compatibility).
+   * @param {Array<{encrypted: string | Uint8Array, tags: string[]}>} data - Array of data to decrypt
+   * @returns {Promise<Array<string | Uint8Array>>} Array of decrypted values
+   */
+  const doDecrypt = useCallback(async (data) => {
+    return await IAMService.doDecrypt(data);
+  }, []);
+
   // Combine TideCloak context with custom methods
   const contextValue = {
     ...tideCloakContext,
@@ -180,6 +189,12 @@ function AuthContextProvider({ children }) {
     // Backward compatibility aliases
     hasOneRole,
     updateToken: tideCloakContext.refreshToken,
+    // Token value getters
+    getValueFromToken,
+    getValueFromIdToken,
+    // Encryption/decryption
+    doEncrypt,
+    doDecrypt,
     // Custom methods
     approveTideRequests,
   };

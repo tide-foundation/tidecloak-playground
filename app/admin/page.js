@@ -372,33 +372,38 @@ export default function Admin() {
         } 
       };
   
-      // POST /tideAdminResources/add-authorization
+      // POST /tideAdminResources/add-review
       // Add approve status to change request
-      const addApproval = async (action, draftId, type, authorizerApproval, authorizerAuthentication) => {
+      const addApproval = async (action, draftId, type, approvedRequest) => {
         const token = await auth.getToken();
 
-        // Key value pairs
+        // Convert Uint8Array to base64
+        const bytesToBase64 = (bytes) => {
+          const binaryString = Array.from(bytes, (byte) => String.fromCharCode(byte)).join('');
+          return btoa(binaryString);
+        };
+
+        // Key value pairs for approval request
         const formData = new FormData();
-        formData.append("actionType", action);
         formData.append("changeSetId", draftId);
+        formData.append("actionType", action);
         formData.append("changeSetType", type);
-        formData.append("authorizerApproval", authorizerApproval);
-        formData.append("authorizerAuthentication", authorizerAuthentication);
-    
+        formData.append("requests", bytesToBase64(approvedRequest));
+
         const response = await appService.approveEnclave(baseURL, realm, formData, token);
 
         if (response.ok){
           // TideCloak keeps approved change requests so fetch new one and replace
           const updatedChangeReqs = await appService.getUserRequests(baseURL, realm, token);
-          
+
           const updatedChangeReq = updatedChangeReqs.find(req => req.draftRecordId === draftId);
-          requests[activeRequestIndex] = updatedChangeReq; 
-        
+          requests[activeRequestIndex] = updatedChangeReq;
+
           setApprovals([true, false, false, false, false]);
           setPending(true);
           setHasUserApproved(true);
         }
-        
+
       };
 
         
@@ -407,7 +412,7 @@ export default function Admin() {
         try {
           const token = await auth.getToken();
 
-          // Get raw change set request bytes (matching ideed-SWARM's GetRawChangeSetRequest)
+          // Get raw change set request bytes for approval
           const changeSetBytes = await appService.reviewChangeRequest(baseURL, realm, changeRequest, token);
 
           if (!changeSetBytes) {
@@ -417,18 +422,18 @@ export default function Admin() {
 
           console.log("Change set bytes:", changeSetBytes);
 
-          // Use auth.approveTideRequests method (matching ideed-SWARM's approveTideRequests)
+          // Request approval from Tide operator
           const approvalResult = (await auth.approveTideRequests([{
             id: "UserContext:1",
             request: changeSetBytes
           }]))[0]; // Only 1 request at a time for now
 
-          // If Deny is clicked
+          // Handle approval result
           if (approvalResult.denied) {
             addRejection(changeRequest.actionType, changeRequest.draftRecordId, changeRequest.changeSetType);
-          } else if (approvalResult.approved) { // If Approve is clicked
-            // The approved request includes both approval and authentication data
-            addApproval(changeRequest.actionType, changeRequest.draftRecordId, changeRequest.changeSetType, approvalResult.approved.request, approvalResult.approved.request);
+          } else if (approvalResult.approved) {
+            // The approved request contains the signed request bytes
+            addApproval(changeRequest.actionType, changeRequest.draftRecordId, changeRequest.changeSetType, approvalResult.approved.request);
           }
           // If pending, do nothing (user closed the popup without deciding)
         } catch (error) {
