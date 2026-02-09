@@ -41,9 +41,10 @@ export function AuthProvider({ children }) {
     return <div>Loading configuration...</div>;
   }
 
-  // Show error state if config failed to load
-  if (configError || !config) {
-    return <div>Failed to load configuration</div>;
+  // If config is empty or not initialized (no realm), render children without TideCloakProvider
+  // This allows the app to go through the initialization process
+  if (!config || !config.realm) {
+    return <MinimalAuthProvider>{children}</MinimalAuthProvider>;
   }
 
   return (
@@ -52,6 +53,37 @@ export function AuthProvider({ children }) {
         {children}
       </AuthContextProvider>
     </TideCloakProvider>
+  );
+}
+
+/**
+ * Minimal auth provider for uninitialized state.
+ * Provides basic context values so components don't crash during initialization.
+ */
+function MinimalAuthProvider({ children }) {
+  const contextValue = {
+    authenticated: false,
+    isInitializing: true,
+    contextLoading: true,
+    realm: "",
+    baseURL: "",
+    getToken: async () => null,
+    login: () => {},
+    logout: () => {},
+    hasRealmRole: () => false,
+    hasOneRole: () => false,
+    refreshToken: async () => null,
+    updateToken: async () => null,
+    getConfig: () => ({}),
+    approveTideRequests: async () => {
+      throw new Error("TideCloak not initialized. Please complete initialization first.");
+    },
+  };
+
+  return (
+    <AuthContext.Provider value={contextValue}>
+      {children}
+    </AuthContext.Provider>
   );
 }
 
