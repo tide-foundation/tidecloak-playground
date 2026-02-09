@@ -14,7 +14,6 @@ const AuthContext = createContext();
 export function AuthProvider({ children }) {
   const [config, setConfig] = useState(null);
   const [configLoading, setConfigLoading] = useState(true);
-  const [configError, setConfigError] = useState(null);
 
   // Load config from tidecloak.json via API
   useEffect(() => {
@@ -29,25 +28,23 @@ export function AuthProvider({ children }) {
         setConfigLoading(false);
       } catch (err) {
         console.error("Failed to load TideCloak config:", err);
-        setConfigError(err);
+        setConfig({});
         setConfigLoading(false);
       }
     };
     loadConfig();
   }, []);
 
-  // Show loading state while config is loading
-  if (configLoading) {
-    return <div>Loading configuration...</div>;
-  }
-
   // If config is empty or not initialized (no realm), provide empty config to TideCloakProvider
   // TideCloakProvider will handle uninitialized state appropriately
-  const tideCloakConfig = config && config.realm ? config : {};
+  // Don't block rendering - let the app initialize silently like og-pg
+  const tideCloakConfig = (config && config.realm) ? config : {};
 
+  // Always render children, even while loading config (matching og-pg behavior)
+  // The LoadingPage component will handle initialization UI
   return (
     <TideCloakProvider config={tideCloakConfig}>
-      <AuthContextProvider>
+      <AuthContextProvider configLoading={configLoading}>
         {children}
       </AuthContextProvider>
     </TideCloakProvider>
@@ -57,7 +54,7 @@ export function AuthProvider({ children }) {
 /**
  * Internal provider that adds custom methods on top of TideCloak context
  */
-function AuthContextProvider({ children }) {
+function AuthContextProvider({ children, configLoading }) {
   const tideCloakContext = useTideCloak();
   const [realm, setRealm] = useState("");
 
@@ -185,7 +182,8 @@ function AuthContextProvider({ children }) {
     ...tideCloakContext,
     realm,
     // Map isInitializing to contextLoading for backward compatibility
-    contextLoading: tideCloakContext.isInitializing,
+    // Also consider config loading state
+    contextLoading: tideCloakContext.isInitializing || configLoading,
     // Backward compatibility aliases
     hasOneRole,
     updateToken: tideCloakContext.refreshToken,

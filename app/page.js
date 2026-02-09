@@ -132,7 +132,7 @@ function useTideLink(baseURL, setOverlayLoading) {
     return () => {
       cancelled = true;
     };
-  }, [baseURL, updateDomain, setOverlayLoading]);
+  }, [baseURL, updateDomain]);
 
   return { isLinked, inviteLink, showLinkedMsg };
 }
@@ -150,14 +150,6 @@ export default function Login() {
 
   // Invite/link hook
   const { isLinked, inviteLink, showLinkedMsg } = useTideLink(baseURL, setOverlayLoading);
-
-  // If TideCloak context is still initializing, turn off overlay loading once it's done
-  useEffect(() => {
-    if (!contextLoading && overlayLoading && !baseURL) {
-      // Context finished loading but no baseURL (shouldn't happen, but handle gracefully)
-      setOverlayLoading(false);
-    }
-  }, [contextLoading, overlayLoading, baseURL]);
 
   // Local UI state
   const [showLoginAccordion, setShowLoginAccordion] = useState(false);
