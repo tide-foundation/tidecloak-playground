@@ -47,7 +47,8 @@
     "CHOKIDAR_USEPOLLING": "true",
     "WATCHPACK_POLLING": "true",
     "CODESPACES": "${localEnv:CODESPACES}",
-    "CODESPACE_NAME": "${localEnv:CODESPACE_NAME}"
+    "CODESPACE_NAME": "${localEnv:CODESPACE_NAME}",
+    "GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN": "${localEnv:GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}"
   },
 
   "postCreateCommand": ".devcontainer/setup.sh",
