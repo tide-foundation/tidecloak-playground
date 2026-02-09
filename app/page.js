@@ -174,8 +174,13 @@ export default function Login() {
 
   // Token-expired banner and port check
   useEffect(() => {
-    if (sessionStorage.getItem('tokenExpired')) {
+    // Don't show "session expired" message if showing "linked account" message
+    if (sessionStorage.getItem('tokenExpired') && !showLinkedMsg) {
       setShowError(true);
+    } else if (showLinkedMsg) {
+      // Clear the error and tokenExpired flag when showing linked message
+      setShowError(false);
+      sessionStorage.removeItem('tokenExpired');
     }
     if (baseURL && kcData && Object.keys(kcData).length > 0) {
       (async () => {
@@ -188,7 +193,7 @@ export default function Login() {
         }
       })();
     }
-  }, [baseURL, kcData]);
+  }, [baseURL, kcData, showLinkedMsg]);
 
   // Login / link handler
   const handleLogin = async () => {
