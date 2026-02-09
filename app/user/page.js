@@ -65,12 +65,10 @@ export default function User(){
 
     // Runs first, once context verifies user is authenticated populate all users' demo data
     useEffect(() => {
-      if (!contextLoading){
-        if (authenticated){
-          getAllUsers();
-        }
+      if (!contextLoading && authenticated && baseURL && realm){
+        getAllUsers();
       }
-    }, [authenticated])
+    }, [contextLoading, authenticated, baseURL, realm])
 
     // Runs second, perform only when the context receives the logged user details to decrypt
     useEffect(() => {
@@ -86,6 +84,12 @@ export default function User(){
 
     // Populate the Database Exposure cards, and set the current logged users
     const getAllUsers = async () => {
+      // Guard: ensure required values are available
+      if (!baseURL || !realm) {
+        console.warn("getAllUsers: baseURL or realm not available yet");
+        return;
+      }
+
       setDataLoading(true);
 
       try {

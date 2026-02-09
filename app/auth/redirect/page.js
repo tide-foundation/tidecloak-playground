@@ -69,8 +69,19 @@ export default function RedirectPage() {
     }
 
     const response = await appService.updateUser(baseURL, realm, user[0], token);
+
     // Force token refresh to get updated ID token with encrypted values
+    // Refresh multiple times to ensure we get the latest token with encrypted data
+    console.log("Refreshing token to get encrypted data in ID token...");
     await auth.refreshToken();
+
+    // Wait a bit for backend to propagate changes
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Refresh again to ensure we have the latest
+    await auth.refreshToken();
+
+    console.log("Token refreshed. New ID token dob:", auth.getValueFromIdToken("dob")?.substring(0, 50) + "...");
   }
 
 }

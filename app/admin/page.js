@@ -203,11 +203,24 @@ export default function Admin() {
 
   // Get latest change requests to display and update when pressing commit
   const getChangeRequests = async () => {
-    
+    // Guard: ensure required values are available
+    if (!baseURL || !realm) {
+      console.warn("getChangeRequests: baseURL or realm not available yet");
+      return;
+    }
+
     const token = await auth.getToken();
     const changeRequests = await appService.getUserRequests(baseURL, realm, token);
+
+    // Safety check: ensure changeRequests is an array
+    if (!Array.isArray(changeRequests)) {
+      console.error("getUserRequests did not return an array:", changeRequests);
+      setRequests([]);
+      return;
+    }
+
     // Remove Denied Requests
-    const withoutDeniedReqs = changeRequests.filter((request) => 
+    const withoutDeniedReqs = changeRequests.filter((request) =>
       (request.deleteStatus !== "DENIED" && request.status !== "DENIED")
     )
     setRequests(withoutDeniedReqs);
