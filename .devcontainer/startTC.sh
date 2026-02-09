@@ -53,6 +53,12 @@ sed -i "s|http://localhost:3000|${CODESPACE_URL_NEXT}|g" ./tidecloak-demo-realm.
 sed -i "s|https://[^/]*-3000\.app\.github\.dev|${CODESPACE_URL_NEXT}|g" ./tidecloak-demo-realm.json
 sed -i "s|http://localhost:3000|${CODESPACE_URL_NEXT}|g" ./DevReadMe.md
 
+# Also update apiConfigs.js directly (in addition to .env)
+sed -i "s|http://localhost:3000|${CODESPACE_URL_NEXT}|g" ./app/api/apiConfigs.js
+sed -i "s|https://[^/]*-3000\.app\.github\.dev|${CODESPACE_URL_NEXT}|g" ./app/api/apiConfigs.js
+sed -i "s|http://localhost:8080|${CODESPACE_URL_TC}|g" ./app/api/apiConfigs.js
+sed -i "s|https://[^/]*-8080\.app\.github\.dev|${CODESPACE_URL_TC}|g" ./app/api/apiConfigs.js
+
 # Create or update .env file with environment variables
 if [ ! -f .env ]; then
   # If .env doesn't exist, copy from .env.overrides
@@ -90,32 +96,24 @@ if [ ! -d "./Uploads" ]; then
 else
   echo "Uploads directory already exists."
 fi
+# Use KC_HOSTNAME with the appropriate URL (full URL for Codespaces, hostname for local)
 if [ "$IS_CODESPACE" = "true" ]; then
-  # Codespaces: Use full URL to avoid port in generated URLs
-  echo "   Using KC_HOSTNAME_URL: ${CODESPACE_URL_TC}"
-  docker run -d \
-    --name tidecloak \
-    -p 8080:8080 \
-    -v .:/opt/keycloak/data/h2 \
-    -v ./Uploads:/opt/keycloak/Uploads \
-    -e KC_HOSTNAME_URL=${CODESPACE_URL_TC} \
-    -e KC_HTTP_ENABLED=true \
-    -e KC_BOOTSTRAP_ADMIN_USERNAME=admin \
-    -e KC_BOOTSTRAP_ADMIN_PASSWORD=password \
-    tideorg/tidecloak-dev:latest
+  KC_HOSTNAME_ARG=${CODESPACE_URL_TC}
 else
-  # Local: Use hostname with port
-  docker run -d \
-    --name tidecloak \
-    -p 8080:8080 \
-    -v .:/opt/keycloak/data/h2 \
-    -v ./Uploads:/opt/keycloak/Uploads \
-    -e KC_HOSTNAME=${KC_HOSTNAME_VALUE} \
-    -e KC_HTTP_ENABLED=true \
-    -e KC_BOOTSTRAP_ADMIN_USERNAME=admin \
-    -e KC_BOOTSTRAP_ADMIN_PASSWORD=password \
-    tideorg/tidecloak-dev:latest
+  KC_HOSTNAME_ARG=${KC_HOSTNAME_VALUE}
 fi
+
+echo "   Using KC_HOSTNAME: ${KC_HOSTNAME_ARG}"
+docker run -d \
+  --name tidecloak \
+  -p 8080:8080 \
+  -v .:/opt/keycloak/data/h2 \
+  -v ./Uploads:/opt/keycloak/Uploads \
+  -e KC_HOSTNAME=${KC_HOSTNAME_ARG} \
+  -e KC_HTTP_ENABLED=true \
+  -e KC_BOOTSTRAP_ADMIN_USERNAME=admin \
+  -e KC_BOOTSTRAP_ADMIN_PASSWORD=password \
+  tideorg/tidecloak-dev:latest
 
 if [ -d ".next" ]; then
   echo "Removing previous .next directory..."
