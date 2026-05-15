@@ -33,12 +33,9 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setKcDa
 
     useEffect(() => {
         if (isInitializing) {
-            try {
-                initialize();
-            }
-            catch (error) {
-                console.log(error);
-            }
+            initialize().catch((error) => {
+                console.log("[LoadingPage] initialization gave up:", error);
+            });
         }
     }, []);
 
@@ -233,10 +230,12 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setKcDa
 
         }
         catch (error) {
-            // Delete IDP then realm if an error occurs in initialisation in preparation for restarting the process
-            console.log(error);
-            await deleteIDP();
-            await deleteRealm();
+            // Delete IDP then realm if an error occurs in initialisation in preparation for restarting the process.
+            // Cleanup is best-effort: the IDP/realm may not have been created yet (depending on which step failed),
+            // so swallow cleanup errors and continue with the retry.
+            console.log("[LoadingPage] initialize() failed:", error);
+            try { await deleteIDP(); } catch (e) { console.log("[LoadingPage] deleteIDP cleanup skipped:", e?.message || e); }
+            try { await deleteRealm(); } catch (e) { console.log("[LoadingPage] deleteRealm cleanup skipped:", e?.message || e); }
             // Reset steps
             setCurrentStep(0);
 
@@ -245,12 +244,13 @@ export default function LoadingPage({ isInitializing, setIsInitializing, setKcDa
 
             console.log("Times restarted: " + restartCounter);
 
-            // If it fails on step 1 (createRealm) restart initalizer 
+            // If it fails on step 1 (createRealm) restart initalizer
             if (restartCounter < 2) {
                 await initialize();
             }
             else {
                 restartCounter = 0;
+                throw error;
             }
 
         }
