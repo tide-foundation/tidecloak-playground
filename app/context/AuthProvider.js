@@ -142,24 +142,6 @@ function AuthContextProvider({ children, configLoading }) {
   }, []);
 
   /**
-   * Encrypt data using TideCloak (wraps IAMService for backward compatibility).
-   * @param {Array<{data: string | Uint8Array, tags: string[]}>} data - Array of data to encrypt
-   * @returns {Promise<Array<string | Uint8Array>>} Array of encrypted values
-   */
-  const doEncrypt = useCallback(async (data) => {
-    return await IAMService.doEncrypt(data);
-  }, []);
-
-  /**
-   * Decrypt data using TideCloak (wraps IAMService for backward compatibility).
-   * @param {Array<{encrypted: string | Uint8Array, tags: string[]}>} data - Array of data to decrypt
-   * @returns {Promise<Array<string | Uint8Array>>} Array of decrypted values
-   */
-  const doDecrypt = useCallback(async (data) => {
-    return await IAMService.doDecrypt(data);
-  }, []);
-
-  /**
    * Force token update immediately (wraps IAMService forceUpdateToken).
    * Unlike refreshToken which only refreshes if expired, this forces an immediate refresh.
    * @returns {Promise<void>}
@@ -204,9 +186,6 @@ function AuthContextProvider({ children, configLoading }) {
     hasOneRole,
     updateToken: tideCloakContext.refreshToken,
     forceUpdateToken,
-    // Encryption/decryption
-    doEncrypt,
-    doDecrypt,
     // Custom methods
     approveTideRequests,
   };
