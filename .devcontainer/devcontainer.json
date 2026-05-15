@@ -52,5 +52,5 @@
   },
 
   "postCreateCommand": ".devcontainer/setup.sh",
-  "postStartCommand": ".devcontainer/startTC.sh && if [ \"$CODESPACES\" = \"true\" ]; then echo 'Setting port 8080 to public...'; gh codespace ports visibility 8080:public --codespace $CODESPACE_NAME; fi && npm run dev"
+  "postStartCommand": ".devcontainer/startTC.sh && { if [ \"$CODESPACES\" = \"true\" ]; then echo 'Setting port 8080 to public...'; gh codespace ports visibility 8080:public --codespace \"$CODESPACE_NAME\" || echo '⚠️  Could not auto-set port 8080 public (gh CLI missing the codespace scope). Open the Ports tab → right-click 8080 → Port Visibility → Public.'; fi; } && npm run dev"
 }

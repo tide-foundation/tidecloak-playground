@@ -142,25 +142,6 @@ function AuthContextProvider({ children, configLoading }) {
   }, []);
 
   /**
-   * Get value from access token (wraps IAMService for backward compatibility).
-   * @param {string} key - The claim name to retrieve
-   * @returns {*} The claim value or null
-   */
-  const getValueFromToken = useCallback((key) => {
-    return IAMService.getValueFromToken(key);
-  }, []);
-
-  /**
-   * Get value from ID token (wraps IAMService for backward compatibility).
-   * Note: IAMService uses capital ID in method name.
-   * @param {string} key - The claim name to retrieve
-   * @returns {*} The claim value or null
-   */
-  const getValueFromIdToken = useCallback((key) => {
-    return IAMService.getValueFromIDToken(key);
-  }, []);
-
-  /**
    * Encrypt data using TideCloak (wraps IAMService for backward compatibility).
    * @param {Array<{data: string | Uint8Array, tags: string[]}>} data - Array of data to encrypt
    * @returns {Promise<Array<string | Uint8Array>>} Array of encrypted values
@@ -223,9 +204,6 @@ function AuthContextProvider({ children, configLoading }) {
     hasOneRole,
     updateToken: tideCloakContext.refreshToken,
     forceUpdateToken,
-    // Token value getters
-    getValueFromToken,
-    getValueFromIdToken,
     // Encryption/decryption
     doEncrypt,
     doDecrypt,
