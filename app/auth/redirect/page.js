@@ -25,9 +25,31 @@ export default function RedirectPage() {
   const [encryptionComplete, setEncryptionComplete] = useState(false);
 
   const startUserInfoEncryption = async () => {
-  const token = await auth.getToken();
-  const loggedVuid = auth.getValueFromToken("vuid");
-  const user = await appService.getUserByVuid(baseURL, realm, token, loggedVuid);
+  // On first login the vuid token claim and/or the user record can still be
+  // propagating, which left `user` undefined the first time (it only resolved
+  // on a later login). Mirror the getUsers()+filter pattern the other pages use
+  // (the keycloak `?q=vuid:` attribute search is unreliable), and force-refresh
+  // the token + retry until the user resolves so first-time login works.
+  let token = await auth.getToken();
+  let loggedVuid = auth.getValueFromToken("vuid");
+  let user;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    if (loggedVuid) {
+      const users = await appService.getUsers(baseURL, realm, token);
+      user = users.find((u) => u.attributes?.vuid?.[0] === loggedVuid);
+      if (user) break;
+    }
+    await auth.forceUpdateToken();
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    token = await auth.getToken();
+    loggedVuid = auth.getValueFromToken("vuid");
+  }
+
+  if (!user) {
+    console.warn("[auth/redirect] Could not resolve the logged-in user by vuid after retries; skipping first-login encryption.");
+    return;
+  }
+
   const tokenDoB = auth.getValueFromIdToken("dob");
   const tokenCC = auth.getValueFromIdToken("cc");
 
@@ -62,13 +84,13 @@ export default function RedirectPage() {
     for (let i = 0; i < arrayToEncrypt.length; i++) {
       const tag = arrayToEncrypt[i].tags[0];
       if (tag === "dob") {
-        user[0].attributes.dob = encryptedData[i];
+        user.attributes.dob = encryptedData[i];
       } else if (tag === "cc") {
-        user[0].attributes.cc = encryptedData[i];
+        user.attributes.cc = encryptedData[i];
       }
     }
 
-    const response = await appService.updateUser(baseURL, realm, user[0], token);
+    const response = await appService.updateUser(baseURL, realm, user, token);
 
     // Force immediate token refresh to get updated ID token with encrypted values
     console.log("Force refreshing token to get encrypted data in ID token...");
