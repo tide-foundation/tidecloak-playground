@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useCallback, useState, useEffect } from "react";
 import { TideCloakProvider, useTideCloak } from "@tidecloak/nextjs";
+import appService from "../../lib/appService";
 
 const AuthContext = createContext();
 
@@ -43,6 +44,12 @@ function AuthContextProvider({ children, configLoading }) {
   const tideCloakContext = useTideCloak();
   const [realm, setRealm] = useState("");
   const [backgroundProcessing, setBackgroundProcessing] = useState(false);
+
+  // Route appService's keycloak calls through the SDK's DPoP-aware secureFetch.
+  // Set during render (not in an effect) so it is in place before child page
+  // effects fire their first appService call. secureFetch itself no-ops the DPoP
+  // rewrite while the SDK is still initializing, so this is safe to set eagerly.
+  appService.setSecureFetch(tideCloakContext.secureFetch);
 
   useEffect(() => {
     if (!tideCloakContext.isInitializing) {
