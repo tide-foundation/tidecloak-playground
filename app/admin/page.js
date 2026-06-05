@@ -175,50 +175,58 @@ export default function Admin() {
   const confirmAdmin = async () => {
     setLoadingButton(true);
 
-    if (!isTideAdmin){
-        // The full elevation — resolve the realm-management client, assign the
-        // tide-realm-admin role, then sign + commit the change request — runs
-        // server-side with the master token. A not-yet-admin user can't perform
-        // these admin operations with their own token.
-        const response = await fetch(`/api/commitAdminRole`);
+    try {
+        if (!isTideAdmin){
+            // The full elevation — resolve the realm-management client, assign the
+            // tide-realm-admin role, then sign + commit the change request — runs
+            // server-side with the master token. A not-yet-admin user can't perform
+            // these admin operations with their own token.
+            const response = await fetch(`/api/commitAdminRole`);
 
-        if (response.ok) {
-            // Force immediate token refresh to get updated token with admin role
-            console.log("Admin role committed. Force refreshing token...");
-            setBackgroundProcessing(true);
+            if (response.ok) {
+                // Force immediate token refresh to get updated token with admin role
+                console.log("Admin role committed. Force refreshing token...");
+                setBackgroundProcessing(true);
 
-            // Wait for backend to propagate changes
-            await new Promise(resolve => setTimeout(resolve, 1000));
+                // Wait for backend to propagate changes
+                await new Promise(resolve => setTimeout(resolve, 1000));
 
-            // Force refresh immediately (not just when expired)
-            await auth.forceUpdateToken();
-            console.log("First force refresh complete. Waiting for backend propagation...");
+                // Force refresh immediately (not just when expired)
+                await auth.forceUpdateToken();
+                console.log("First force refresh complete. Waiting for backend propagation...");
 
-            // Wait for backend to propagate
-            await new Promise(resolve => setTimeout(resolve, 1000));
+                // Wait for backend to propagate
+                await new Promise(resolve => setTimeout(resolve, 1000));
 
-            // Second force refresh
-            await auth.forceUpdateToken();
-            console.log("Second force refresh complete. Waiting...");
+                // Second force refresh
+                await auth.forceUpdateToken();
+                console.log("Second force refresh complete. Waiting...");
 
-            // Wait again
-            await new Promise(resolve => setTimeout(resolve, 1000));
+                // Wait again
+                await new Promise(resolve => setTimeout(resolve, 1000));
 
-            // Third force refresh to ensure we have the latest token
-            await auth.forceUpdateToken();
+                // Third force refresh to ensure we have the latest token
+                await auth.forceUpdateToken();
 
-            setBackgroundProcessing(false);
+                setIsTideAdmin(true);
+                console.log("Admin Role Assigned and token refreshed");
+            } else {
+                console.error("[confirmAdmin] Failed to elevate user to admin:", await response.text());
+            }
+        }
+        else {
             setIsTideAdmin(true);
-            console.log("Admin Role Assigned and token refreshed");
-        } else {
-            setBackgroundProcessing(false);
-            console.error("[confirmAdmin] Failed to elevate user to admin:", await response.text());
         }
     }
-    else {
-        setIsTideAdmin(true);
+    catch (error) {
+        console.error("[confirmAdmin] error:", error);
     }
-    setLoadingButton(false);
+    finally {
+        // Always clear the busy flags so a failure doesn't leave the nav
+        // buttons permanently disabled (backgroundProcessing).
+        setBackgroundProcessing(false);
+        setLoadingButton(false);
+    }
   };
 
   // Get latest change requests to display and update when pressing commit
@@ -263,41 +271,52 @@ export default function Admin() {
    */
   const handleAdminPermissionSubmit = async (e) => {
     e.preventDefault();
+    // Show the full-page loader for the whole submit (cancel old requests +
+    // assign/unassign roles + refetch all take a few seconds). It was only ever
+    // turned off, never on, so no indicator showed.
+    setLoadingOverlay(true);
 
-    const token = await auth.getToken();
+    try {
+      const token = await auth.getToken();
 
-    // Clear cached data of the demo admins who have approved for a reset
-    localStorage.removeItem("approvals");
+      // Clear cached data of the demo admins who have approved for a reset
+      localStorage.removeItem("approvals");
 
-    // Get all then cancel all requests before assigning new ones
-    const allRequests = await appService.getUserRequests(baseURL, realm, token); // Including the denied requests
-    await cancelRequests(allRequests);
-  
-    // Compare the current checkbox state with the current permissions. Note: token roles only update when a role change request commits.
-    // If the states don't match, a change request is required and made.
-    const checkBoxPerms = [hasDobReadPerm, hasDobWritePerm, hasCcReadPerm, hasCcWritePerm];
-    const roles = ["_tide_dob.selfdecrypt", "_tide_dob.selfencrypt", "_tide_cc.selfdecrypt", "_tide_cc.selfencrypt"];
-    const rolesInfo = [dobReadRole, dobWriteRole, ccReadRole, ccWriteRole];
+      // Get all then cancel all requests before assigning new ones
+      const allRequests = await appService.getUserRequests(baseURL, realm, token); // Including the denied requests
+      await cancelRequests(allRequests);
 
-    for (let i = 0; i < checkBoxPerms.length; i++){
-      if (checkBoxPerms[i] && !auth.hasOneRole(roles[i])){      
-        await appService.assignRealmRole(baseURL, realm, loggedUser.id, rolesInfo[i], token);
+      // Compare the current checkbox state with the current permissions. Note: token roles only update when a role change request commits.
+      // If the states don't match, a change request is required and made.
+      const checkBoxPerms = [hasDobReadPerm, hasDobWritePerm, hasCcReadPerm, hasCcWritePerm];
+      const roles = ["_tide_dob.selfdecrypt", "_tide_dob.selfencrypt", "_tide_cc.selfdecrypt", "_tide_cc.selfencrypt"];
+      const rolesInfo = [dobReadRole, dobWriteRole, ccReadRole, ccWriteRole];
+
+      for (let i = 0; i < checkBoxPerms.length; i++){
+        if (checkBoxPerms[i] && !auth.hasOneRole(roles[i])){
+          await appService.assignRealmRole(baseURL, realm, loggedUser.id, rolesInfo[i], token);
+        }
+        else if (!checkBoxPerms[i] && auth.hasOneRole(roles[i])){
+          await appService.unassignRealmRole(baseURL, realm, loggedUser.id, rolesInfo[i], token);
+        }
       }
-      else if (!checkBoxPerms[i] && auth.hasOneRole(roles[i])){
-        await appService.unassignRealmRole(baseURL, realm, loggedUser.id, rolesInfo[i], token);
-      }
+
+      // Get the latest change requests
+      const newRequests = await appService.getUserRequests(baseURL, realm, token);
+      setRequests(newRequests);
+
+      // Set first change request as the one currently opened
+      setActiveRequestIndex(0);
+      setExpandedIndex(0);
+      // Reset form state
+      setHasChanges(false);
     }
-
-    // Get the latest change requests
-    const newRequests = await appService.getUserRequests(baseURL, realm, token);
-    setRequests(newRequests);
-
-    // Set first change request as the one currently opened
-    setActiveRequestIndex(0);
-    setExpandedIndex(0);
-    // Reset form state
-    setHasChanges(false);
-    setLoadingOverlay(false);
+    catch (error) {
+      console.error("[handleAdminPermissionSubmit] error:", error);
+    }
+    finally {
+      setLoadingOverlay(false);
+    }
   }
 
   /**
@@ -726,7 +745,7 @@ export default function Admin() {
                       </div>
                     </div>
 
-                    <Button className="hover:bg-red-700" type="submit" disabled={!hasChanges}>Submit Changes</Button>
+                    <Button className="hover:bg-red-700" type="submit" disabled={!hasChanges || loadingOverlay}>Submit Changes</Button>
                   </form>
 
                   {requests[0] && (

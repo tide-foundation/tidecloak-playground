@@ -202,12 +202,15 @@ export default function User(){
 
     // On Save changes button clicked, encrypt the updated data and store in TideCloak
     const handleFormSubmit = async (e) => {
+        // Don't perform regular browser operations for this form
+        e.preventDefault();
         setLoadingButton(true);
+        // Save takes a few seconds (encrypt + updateUser + token refreshes), so
+        // show the full-page loader for the whole operation, not just a tiny
+        // spinner next to the button.
+        setOverlayLoading(true);
 
         try {
-            // Don't perform regular browser operations for this form
-            e.preventDefault();
-
             let arrayToEncrypt = [];
 
             if (formData.dob !== "" && auth.hasOneRole("_tide_dob.selfencrypt")){ 
@@ -288,21 +291,24 @@ export default function User(){
             await auth.forceUpdateToken();
             console.log("Token force refresh complete with updated user data");
 
-            setBackgroundProcessing(false);
-
             // Show the confirmation message
             if (response.ok){
                 setUserFeedback("Changes saved!");
                 setTimeout(() => setUserFeedback(""), 3000); // Clear after 3 seconds
                 getAllUsers();
             }
-            setDataLoading(false);
-            setLoadingButton(false);
         }
         catch (error) {
-          setLoadingButton(false);
           console.log(error);
-        } 
+        }
+        finally {
+          // Always clear the busy flags. Otherwise a failed save leaves the nav
+          // buttons permanently disabled (backgroundProcessing) and the page
+          // stuck on the loader (overlayLoading).
+          setBackgroundProcessing(false);
+          setOverlayLoading(false);
+          setLoadingButton(false);
+        }
     };
 
     return (
