@@ -600,9 +600,6 @@ export default function Admin() {
           await auth.forceUpdateToken();
           console.log("Token force refresh complete with updated roles");
 
-          setBackgroundProcessing(false);
-
-
           // Reset states for next change request
           setApprovals([false, false, false, false, false]);
           setTotalApproved(1);
@@ -611,12 +608,14 @@ export default function Admin() {
             setExpandedIndex(prev => prev + 1);
           }
         }
-        
-        setLoadingButton(false);
       }catch(e){
-    
+        console.error("[addCommit] error:", e);
+      }finally{
+        // Always clear the busy flags, otherwise a failed commit (e.g. a token
+        // refresh throwing) leaves the nav buttons permanently disabled
+        // (backgroundProcessing) — which blocks going to /user after committing.
+        setBackgroundProcessing(false);
         setLoadingButton(false);
-        throw e;
       }
     };
 
