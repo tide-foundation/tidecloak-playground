@@ -248,6 +248,67 @@ async function getRealmManagement(baseURL, realm, token) {
 }
 
 /**
+ * Get the tide-realm-admin client role available to assign to the user.
+ * Runs with the master token because a not-yet-admin user has no permission to
+ * read client role-mappings themselves.
+ * @param {string} baseURL - url body provided in the apiConfigs.js
+ * @param {string} realm - the realm name provided in the apiConfigs.js
+ * @param {string} userId - the user to receive the role
+ * @param {string} clientId - the realm-management client's ID
+ * @param {string} token - master token
+ * @returns {Promise<Object>} - response object; body is the role or undefined if not available
+ */
+async function getTideRealmAdminRole(baseURL, realm, userId, clientId, token) {
+    const response = await fetch(`${baseURL}/admin/realms/${realm}/users/${userId}/role-mappings/clients/${clientId}/available`, {
+        method: 'GET',
+        headers: {
+            "Content-Type": "application/json",
+            "authorization": `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error("Unable to get available client roles.");
+    }
+
+    const availableRoles = await response.json();
+    const tideAdminRole = availableRoles.find((role) => role.name === "tide-realm-admin");
+
+    return { ok: true, status: response.status, body: tideAdminRole };
+}
+
+/**
+ * Assign a client role to the user (creates an IGA change request under IGA).
+ * Runs with the master token for the same reason as getTideRealmAdminRole.
+ * @param {string} baseURL - url body provided in the apiConfigs.js
+ * @param {string} realm - the realm name provided in the apiConfigs.js
+ * @param {string} userId - the user to receive the role
+ * @param {string} clientId - the realm-management client's ID
+ * @param {object} role - representation of the client role to assign
+ * @param {string} token - master token
+ * @returns {Promise<Object>} - status response
+ */
+async function assignClientRole(baseURL, realm, userId, clientId, role, token) {
+    const response = await fetch(`${baseURL}/admin/realms/${realm}/users/${userId}/role-mappings/clients/${clientId}`, {
+        method: 'POST',
+        headers: {
+            "Content-Type": "application/json",
+            "authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify([{
+            "id": role.id,
+            "name": role.name
+        }])
+    });
+
+    if (!response.ok) {
+        throw new Error("Unable to assign the client role to user.");
+    }
+
+    return { ok: true, status: response.status };
+}
+
+/**
  * Get all realm roles that can be assigned to the demo user
  * @param {string} baseURL - url body provided in the apiConfigs.js
  * @param {string} realm - the realm name provided in the apiConfigs.js
@@ -717,6 +778,8 @@ const apiService = {
     getDemoUser,
     createTideInvite,
     getRealmManagement,
+    getTideRealmAdminRole,
+    assignClientRole,
     getAvailableRealmRoles,
     assignRealmRole,
     getClientsChangeRequests,

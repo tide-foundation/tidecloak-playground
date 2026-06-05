@@ -174,28 +174,12 @@ export default function Admin() {
   // Assign this initial user the tide-realm-admin client role managed by the default client Realm Management
   const confirmAdmin = async () => {
     setLoadingButton(true);
-    const token = await auth.getToken();
 
     if (!isTideAdmin){
-        const RMClientID = await appService.getRealmManagementId(baseURL, realm, token);
-
-        // Get the tide-realm-admin role to assign
-        const tideAdminRole = await appService.getTideAdminRole(baseURL, realm, loggedUser.id, RMClientID, token);
-
-        // A not-yet-admin user has no permission to read/assign client roles, so
-        // RMClientID or tideAdminRole can come back undefined. Bail cleanly here
-        // instead of crashing on role.id, and surface what happened.
-        if (!RMClientID || !tideAdminRole) {
-            console.error("[confirmAdmin] Could not resolve the realm-management client or tide-realm-admin role with the current user's token (expected before the user is an admin). This step needs to run server-side with the master token.");
-            setBackgroundProcessing(false);
-            setLoadingButton(false);
-            return;
-        }
-
-        // Assign the tide-realm-admin role to the logged in user
-        const assignResponse = await appService.assignClientRole(baseURL, realm, loggedUser.id, RMClientID, tideAdminRole, token);
-
-        // Back end functionality required to approve and commit user with tide-realm-admin role using a master token
+        // The full elevation — resolve the realm-management client, assign the
+        // tide-realm-admin role, then sign + commit the change request — runs
+        // server-side with the master token. A not-yet-admin user can't perform
+        // these admin operations with their own token.
         const response = await fetch(`/api/commitAdminRole`);
 
         if (response.ok) {
@@ -226,6 +210,9 @@ export default function Admin() {
             setBackgroundProcessing(false);
             setIsTideAdmin(true);
             console.log("Admin Role Assigned and token refreshed");
+        } else {
+            setBackgroundProcessing(false);
+            console.error("[confirmAdmin] Failed to elevate user to admin:", await response.text());
         }
     }
     else {

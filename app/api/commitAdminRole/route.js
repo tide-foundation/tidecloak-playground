@@ -2,8 +2,19 @@ import configs from "../apiConfigs";
 import apiService from "../apiService";
 
 /**
- * This endpoint is called in the client's /admin page to assign "tide-realm-admin" client role to the user "demouser". 
- * @returns {Promise<Object>} - response object based on whether elevating demo user with Tide admin privileges was successful.
+ * Called from the client's /admin page to elevate the demo user to the
+ * "tide-realm-admin" client role.
+ *
+ * The whole flow runs server-side with the master token because a not-yet-admin
+ * user has no permission to read/assign client roles with their own token (the
+ * client-side attempt failed with "Could not resolve the realm-management
+ * client or tide-realm-admin role"). Steps:
+ *   1. find the demo user and the realm-management client
+ *   2. assign the tide-realm-admin client role (creates an IGA change request)
+ *   3. sign + commit that change request
+ *
+ * @returns {Promise<Object>} - response object based on whether elevating the
+ *   demo user with Tide admin privileges was successful.
  */
 export async function GET(){
     // Shared variables from /api/apiConfigs.js
@@ -11,22 +22,35 @@ export async function GET(){
     const realm = configs.realm;
 
     try {
-        // Fetch a master token with the default admin and password (set in the command for setting up keycloak) from the default keycloak admin-cli client
-        // Master Token is only needed to assign the user the tide-realm-admin role
+        // Master Token is needed to read/assign the tide-realm-admin role and to
+        // sign + commit the resulting change request.
         const masterToken = await apiService.getMasterToken(baseURL);
-        // Get all user change requests, just the one created for tide-admin-role on the client side /admin page
-        const usersChangeRequestsResult = await apiService.getUsersChangeRequests(baseURL, realm, masterToken);
-        const usersChangeRequests = usersChangeRequestsResult.body;
-        
-        // Sign the change request to approve
-        const signChangeReqResult = await apiService.signChangeRequest(baseURL, realm, usersChangeRequests[0], masterToken);
 
-        // Commit the signed change request for the user to have tide-realm-admin role
-        const commitChangeReqResult = await apiService.commitChangeRequest(baseURL, realm, usersChangeRequests[0], masterToken);
+        // Resolve the demo user and the realm-management client that owns the role
+        const demoUser = (await apiService.getDemoUser(baseURL, realm, masterToken)).body;
+        const rmClient = (await apiService.getRealmManagement(baseURL, realm, masterToken)).body;
+        if (!rmClient) {
+            throw new Error("realm-management client not found.");
+        }
 
-        return new Response(JSON.stringify({ok: true}), {status: commitChangeReqResult.status});
-    } 
+        // Assign the tide-realm-admin role if it isn't already assigned. If it's
+        // not in the user's "available" roles it's already assigned, so skip.
+        const tideAdminRole = (await apiService.getTideRealmAdminRole(baseURL, realm, demoUser.id, rmClient.id, masterToken)).body;
+        if (tideAdminRole) {
+            await apiService.assignClientRole(baseURL, realm, demoUser.id, rmClient.id, tideAdminRole, masterToken);
+        }
+
+        // Sign + commit the change request the assignment created (if any). With
+        // no Tide admin in the realm yet, IGA takes it straight to committable.
+        const usersChangeRequests = (await apiService.getUsersChangeRequests(baseURL, realm, masterToken)).body;
+        if (Array.isArray(usersChangeRequests) && usersChangeRequests.length > 0) {
+            await apiService.signChangeRequest(baseURL, realm, usersChangeRequests[0], masterToken);
+            await apiService.commitChangeRequest(baseURL, realm, usersChangeRequests[0], masterToken);
+        }
+
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    }
     catch (error) {
-        return new Response(JSON.stringify({ok: false, error: "[commitAdminRole Endpoint]" + error.message}), {status: 500});
+        return new Response(JSON.stringify({ ok: false, error: "[commitAdminRole Endpoint] " + error.message }), { status: 500 });
     }
 }
