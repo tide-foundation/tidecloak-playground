@@ -111,6 +111,7 @@ docker run -d \
   -v ./Uploads:/opt/keycloak/Uploads \
   -e KC_HOSTNAME=${KC_HOSTNAME_ARG} \
   -e KC_HTTP_ENABLED=true \
+  -e KC_PROXY_HEADERS=xforwarded \
   -e KC_BOOTSTRAP_ADMIN_USERNAME=admin \
   -e KC_BOOTSTRAP_ADMIN_PASSWORD=password \
   tideorg/tidecloak-dev:latest
