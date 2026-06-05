@@ -1,0 +1,238 @@
+<html>
+
+<head>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: #f6f6f7;
+            font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        .status {
+            text-align: center;
+            opacity: 0;
+        }
+
+        .status.visible {
+            opacity: 1;
+        }
+
+        .checkmark-circle {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 16px;
+        }
+
+        .checkmark-circle circle {
+            fill: none;
+            stroke: #039855;
+            stroke-width: 3;
+            stroke-dasharray: 201;
+            stroke-dashoffset: 201;
+        }
+
+        .checkmark-circle path {
+            fill: none;
+            stroke: #039855;
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 50;
+            stroke-dashoffset: 50;
+        }
+
+        .status.visible .checkmark-circle circle {
+            animation: circle-draw 0.5s ease forwards;
+        }
+
+        .status.visible .checkmark-circle path {
+            animation: check-draw 0.3s 0.4s ease forwards;
+        }
+
+        .status.visible .status-text {
+            animation: fade-in 0.3s 0.6s ease forwards;
+        }
+
+        .status-text {
+            font-size: 15px;
+            color: #464647;
+            margin: 0;
+            opacity: 0;
+        }
+
+        @keyframes circle-draw {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        @keyframes check-draw {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        @keyframes fade-in {
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="status" id="status">
+        <svg class="checkmark-circle" viewBox="0 0 72 72">
+            <circle cx="36" cy="36" r="32" />
+            <path d="M22 36 l10 10 l18 -20" />
+        </svg>
+        <p class="status-text">Session verified</p>
+    </div>
+    <script>
+        const thisVersion = 1;
+
+        const hexToStr = (hex) => {
+            if (!hex || hex.length % 2 !== 0 || !/^[0-9a-fA-F]+$/.test(hex)) throw Error("Invalid hex string");
+            const bytes = new Uint8Array(hex.length / 2);
+            for (let i = 0; i < bytes.length; i++) bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
+            return new TextDecoder().decode(bytes);
+        };
+
+        const createDbName = async (issuer, clientId) => {
+            const encoder = new TextEncoder();
+            const issuerHash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(issuer))).slice(0, 8))
+                .map(b => b.toString(16).padStart(2, '0')).join('');
+            const clientHash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(clientId))).slice(0, 8))
+                .map(b => b.toString(16).padStart(2, '0')).join('');
+            return `dpop:${issuerHash}:${clientHash}`;
+        };
+
+        // Determine target window: popup has window.opener, iframe has window.parent
+        const isPopup = !!window.opener;
+        const targetWindow = window.opener || window.parent;
+
+        if (!targetWindow || targetWindow === window) {
+            document.body.textContent = "Error: No parent or opener window found.";
+            throw Error("No target window available for postMessage");
+        }
+
+        const urlParams = new URL(window.location.href).searchParams;
+        const enclaveVersion = urlParams.get("version");
+        if (!enclaveVersion) throw Error("No enclave version provided in url");
+        let openerOrigin = urlParams.get("openerOrigin");
+        if (!openerOrigin) throw Error("No opener origin provided in url");
+        openerOrigin = new URL(decodeURIComponent(openerOrigin)).origin;
+
+        const showSuccess = () => {
+            document.getElementById('status').classList.add('visible');
+        };
+
+        const version1Flow = async () => {
+            const paths = new URL(window.location.href).pathname.split("/");
+            const iss = hexToStr(paths[paths.indexOf("iss") + 1]);
+            const aud = hexToStr(paths[paths.indexOf("aud") + 1]);
+            const dbname = await createDbName(iss, aud);
+            let dpopKey;
+            try {
+                // Chrome 125+: requestStorageAccess({ indexedDB: true }) returns a handle
+                // whose .indexedDB factory points directly at the unpartitioned bucket.
+                // If permission was already granted (within 30 days) this resolves
+                // automatically with no prompt.
+                //
+                // In popup mode we have first-party context so we can access IndexedDB directly.
+                let idbFactory;
+                if (isPopup) {
+                    idbFactory = window.indexedDB;
+                } else {
+                    const handle = await document.requestStorageAccess({ indexedDB: true });
+                    idbFactory = handle.indexedDB;
+                }
+
+                const db = await new Promise((resolve, reject) => {
+                    const req = idbFactory.open(dbname);
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => reject(req.error);
+                });
+                dpopKey = await new Promise((resolve, reject) => {
+                    const tx = db.transaction("main", "readonly");
+                    const store = tx.objectStore("main");
+                    const req = store.get("dpopState");
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => reject(req.error);
+                });
+                db.close();
+                if (!dpopKey || !dpopKey.keys) throw Error("No DPoP key found in IndexedDB");
+            } catch (ex) {
+                const isStorageBlocked =
+                    ex?.name === "NotAllowedError" ||
+                    (ex instanceof DOMException && (
+                        ex.name === "SecurityError" ||
+                        ex.name === "UnknownError" ||
+                        ex.message?.includes("not a known object store name")
+                    ));
+                const detail = isStorageBlocked
+                    ? "Browser is blocking third-party storage. Please allow storage access or disable strict tracking protection."
+                    : "Failed to access DPoP key from IndexedDB.";
+                targetWindow.postMessage({ type: "error", message: "db failed", detail }, openerOrigin);
+                document.body.textContent = detail;
+                throw ex;
+            }
+
+            const challenge = () => new Promise((resolve) => {
+                const handler = (event) => {
+                    if (event.origin !== openerOrigin) return;
+                    if (event.data.type === "challenge") {
+                        resolve(event.data.challenge);
+                        window.removeEventListener("message", handler);
+                    }
+                };
+                window.addEventListener("message", handler, false);
+            });
+
+            const pre_challenge = challenge();
+
+            targetWindow.postMessage({ type: "pageLoaded", message: "yay" }, openerOrigin);
+
+            const challengeResp = await pre_challenge;
+            if (typeof challengeResp !== "string" || challengeResp?.length != 64) throw Error("Unexpect challenge format");
+
+            const te = new TextEncoder();
+            const signatureInput = te.encode("dpop-auth-challenge:" + challengeResp);
+            const algName = dpopKey.keys.privateKey.algorithm.name;
+            const signParams = algName === "ECDSA"
+                ? { name: "ECDSA", hash: { "P-256": "SHA-256", "P-384": "SHA-384", "P-521": "SHA-512" }[dpopKey.keys.privateKey.algorithm.namedCurve] }
+                : { name: algName };
+            const signature = await crypto.subtle.sign(signParams, dpopKey.keys.privateKey, signatureInput);
+
+            const publicJwk = await crypto.subtle.exportKey("jwk", dpopKey.keys.publicKey);
+
+            targetWindow.postMessage({
+                type: "challenge response",
+                message: {
+                    dpop_public: JSON.stringify({ crv: publicJwk.crv, kty: publicJwk.kty, x: publicJwk.x, y: publicJwk.y }),
+                    signature: btoa(String.fromCharCode(...new Uint8Array(signature)))
+                }
+            }, openerOrigin);
+
+            showSuccess();
+        };
+
+        const versionFlows = new Map([[1, version1Flow]]);
+        const latestFlow = version1Flow;
+
+        (async () => {
+            if (Number(enclaveVersion) >= thisVersion) await latestFlow();
+            else {
+                const flow = versionFlows.get(Number(enclaveVersion));
+                if (!flow) throw Error("Cannot find supported enclave version: " + enclaveVersion);
+                await flow();
+            }
+        })();
+    </script>
+</body>
+
+</html>
