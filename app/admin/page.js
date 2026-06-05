@@ -182,6 +182,16 @@ export default function Admin() {
         // Get the tide-realm-admin role to assign
         const tideAdminRole = await appService.getTideAdminRole(baseURL, realm, loggedUser.id, RMClientID, token);
 
+        // A not-yet-admin user has no permission to read/assign client roles, so
+        // RMClientID or tideAdminRole can come back undefined. Bail cleanly here
+        // instead of crashing on role.id, and surface what happened.
+        if (!RMClientID || !tideAdminRole) {
+            console.error("[confirmAdmin] Could not resolve the realm-management client or tide-realm-admin role with the current user's token (expected before the user is an admin). This step needs to run server-side with the master token.");
+            setBackgroundProcessing(false);
+            setLoadingButton(false);
+            return;
+        }
+
         // Assign the tide-realm-admin role to the logged in user
         const assignResponse = await appService.assignClientRole(baseURL, realm, loggedUser.id, RMClientID, tideAdminRole, token);
 
