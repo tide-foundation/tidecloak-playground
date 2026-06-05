@@ -144,27 +144,25 @@ export default function RedirectPage() {
   useEffect(() => {
     if (!contextLoading) {
       if (authenticated) {
-        // Show overlay loading briefly, then navigate while encryption continues
+        // Keep the full-page "Encrypting your data..." overlay up until the
+        // first-login encryption actually finishes, THEN navigate. Previously
+        // this navigated after 800ms while encryption ran in the background, so
+        // the user landed on /user before their data was encrypted and saved.
         setIsEncrypting(true);
         setBackgroundProcessing(true);
 
-        // Show loading screen for 800ms, then navigate to homepage
-        setTimeout(() => {
-          setIsEncrypting(false);
-          router.push("/home");
-        }, 800);
-
-        // Start encryption in background (continues after navigation)
         startUserInfoEncryption()
           .then(() => {
-            setEncryptionComplete(true);
-            setBackgroundProcessing(false);
-            console.log("Background encryption complete");
+            console.log("Encryption complete");
           })
           .catch(err => {
             console.error("Error encrypting user info:", err);
+          })
+          .finally(() => {
             setEncryptionComplete(true);
             setBackgroundProcessing(false);
+            setIsEncrypting(false);
+            router.push("/home");
           });
       }
       else {
