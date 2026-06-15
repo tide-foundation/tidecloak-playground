@@ -12,10 +12,81 @@ import "../styles/spinKit.css";
 import "../styles/spinner.css";
 
 /**
+ * Card shown once a change request is committed. The middleware guards /user and
+ * bounces unauthorized navigations back to "/", and immediately after a commit
+ * the freshly-refreshed token/cookie isn't always in place yet — which is why a
+ * first click used to land on the homepage and only the second worked. So probe
+ * /user until the middleware actually lets it through, showing a loader until
+ * then and only then revealing the "View on User Page" link.
+ * @param {Object} props
+ * @param {ReturnType<import("next/navigation").useRouter>} props.router - app router for navigation
+ * @returns {JSX.Element}
+ */
+function DoneCard({ router }) {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    let attempts = 0;
+
+    const probe = async () => {
+      try {
+        // A real navigation hits the middleware; redirect:"manual" surfaces its
+        // redirect-to-"/" as a non-ok opaqueredirect without following it. A 200
+        // means the middleware will let an actual navigation through.
+        const res = await fetch("/user", { redirect: "manual", cache: "no-store" });
+        if (!cancelled && res.ok) {
+          setReady(true);
+          return;
+        }
+      } catch {
+        // network/transient error — fall through and retry
+      }
+      if (!cancelled && attempts++ < 20) {
+        setTimeout(probe, 500);
+      }
+    };
+
+    probe();
+    return () => { cancelled = true; };
+  }, []);
+
+  if (!ready) {
+    return (
+      <div className="bg-white border rounded-lg p-6 shadow flex items-center gap-3 mt-8">
+        <div className="spinner--left" />
+        <span className="text-sm text-gray-600">Applying your changes…</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white border rounded-lg p-6 shadow space-y-4 mt-8">
+      <div className="mt-4">
+        <div className="text-sm text-gray-700 flex items-center gap-2">
+          <FaCheckCircle className="text-green-500" />
+          <span>Done! You can now explore the updated permissions.</span>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              router.push("/user");
+            }}
+            className="text-blue-600 hover:underline font-medium whitespace-nowrap"
+          >
+            View on User Page →
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
  * Admin page for elavating the demo user to a Tide admin and managing their read and write permissions for Date of Birth and Credit Card
  * @returns {JSX.Element} - HTML for the /admin path containing the permissions management via change requests
  */
-export default function Admin() { 
+export default function Admin() {
   // Current path
   const pathname = usePathname();
   // Navigator
@@ -337,30 +408,10 @@ export default function Admin() {
         requestStatus = request.status;
       }
     
-      // When committed
+      // When committed — show a loader until the middleware will actually let us
+      // navigate to /user, then reveal the link (see DoneCard).
       if (requestStatus === "COMMITTED" && requests.length === activeRequestIndex + 1 ) {
-        return (
-          <div className="bg-white border rounded-lg p-6 shadow space-y-4 mt-8">
-
-          <div className="mt-4">
-            <div className="text-sm text-gray-700 flex items-center gap-2">
-              <FaCheckCircle className="text-green-500" />
-              <span>Done! You can now explore the updated permissions.</span>
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  router.push("/user");
-                }}
-                className="text-blue-600 hover:underline font-medium whitespace-nowrap"
-              >
-                View on User Page →
-              </a>
-            </div>
-          </div>
-  
-        </div>
-        );
+        return <DoneCard router={router} />;
       }
       
       // Perform approval checks and commit checks everytime requests is updated from the enclave actions
@@ -640,7 +691,6 @@ export default function Admin() {
       !loading
       ?
       <main className="flex-grow w-full pt-6">
-      {loadingOverlay && <LoadingSquareFullPage />}
       <div className="w-full px-8 max-w-screen-md mx-auto flex flex-col items-start gap-8">
       <div className="w-full max-w-3xl">
         {pathname === "/admin" && (
@@ -744,7 +794,14 @@ export default function Admin() {
                       </div>
                     </div>
 
-                    <Button className="hover:bg-red-700" type="submit" disabled={!hasChanges || loadingOverlay}>Submit Changes</Button>
+                    <div className="flex items-center gap-x-2">
+                      <Button className="hover:bg-red-700" type="submit" disabled={!hasChanges || loadingOverlay}>Submit Changes</Button>
+                      {
+                        loadingOverlay
+                        ? <div className="spinner--left"/>
+                        : null
+                      }
+                    </div>
                   </form>
 
                   {requests[0] && (
