@@ -640,7 +640,7 @@ export default function Admin() {
       !loading
       ?
       <main className="flex-grow w-full pt-6">
-      {loadingOverlay && LoadingSquareFullPage()}
+      {loadingOverlay && <LoadingSquareFullPage />}
       <div className="w-full px-8 max-w-screen-md mx-auto flex flex-col items-start gap-8">
       <div className="w-full max-w-3xl">
         {pathname === "/admin" && (
