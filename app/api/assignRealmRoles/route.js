@@ -39,23 +39,13 @@ export async function GET(){
             const assignRoleResult = await apiService.assignRealmRole(baseURL, realm, userID, assignRole, masterToken);
         }
 
-        // Get all three user change requests
-        const usersChangeRequestsResults = await apiService.getUsersChangeRequests(baseURL, realm, masterToken);
-        const usersChangeRequests = usersChangeRequestsResults.body;
+        // Drain the PENDING change-requests the role assignments created via the
+        // native iga-core inbox. In firstAdmin / threshold-1 mode (no Tide admin
+        // granted yet) /approve records AND auto-commits. Once a Tide admin
+        // exists each request would instead need sequential enclave approval.
+        await apiService.drainChangeRequests(baseURL, realm);
 
-        // Approve and commit each of the user change requests
-        // This can only be achieved whilst there are no Tide Admins yet. Else, each of these requests must be sequentially approved and committed in TideCloak.
-        for (let i = 0; i < usersChangeRequests.length; i++) {
-            const changeRequest = usersChangeRequests[i];
-        
-            // Sign the change request to approve
-            const signChangeRequestResult = await apiService.signChangeRequest(baseURL, realm, changeRequest, masterToken);
-            
-            // Commit the signed change request for the role
-            const commitChangeRequestResult = await apiService.commitChangeRequest(baseURL, realm, changeRequest, masterToken);
-        }
-
-        return new Response(JSON.stringify({ok: true}), {status: 200}); 
+        return new Response(JSON.stringify({ok: true}), {status: 200});
     } 
     catch (error) {
         return new Response(JSON.stringify({ok: false, error: "[assignRealmRoles Endpoint] " + error.message}), {status: 500})
