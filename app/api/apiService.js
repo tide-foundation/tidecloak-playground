@@ -443,87 +443,87 @@ async function getUsers(baseURL, realm, token) {
 /* TIDE CUSTOM ENDPOINTS */
 
 /**
- * Get all USER change requests for realm roles
+ * List PENDING IGA change requests (current iga-core native governance inbox).
+ * Returns a bare JSON array; each item's id is `.id`. Replaces the legacy
+ * type-segregated tide-admin/change-set/{users,clients}/requests endpoints.
  * @param {string} baseURL - url body provided in the apiConfigs.js
- * @param {string} realm - the realm name provided in the apiConfigs.js 
+ * @param {string} realm - the realm name provided in the apiConfigs.js
  * @param {string} token - master token
- * @returns {Promise<Object>} - status response based on whether fetching the change requests succeeded
+ * @returns {Promise<Array>} - array of pending change requests
  */
-async function getUsersChangeRequests(baseURL, realm, token) {
-    const response = await fetch(`${baseURL}/admin/realms/${realm}/tide-admin/change-set/users/requests`, {
+async function listPendingChangeRequests(baseURL, realm, token) {
+    const response = await fetch(`${baseURL}/admin/realms/${realm}/iga/change-requests?status=PENDING`, {
         method: 'GET',
         headers: {
             "authorization": `Bearer ${token}`,
+            "Cache-Control": "no-store",
         },
     });
 
+    if (response.status === 401 || response.status === 403) {
+        // Never treat an auth failure as an empty inbox.
+        throw new Error(`Change-request LIST returned HTTP ${response.status} - admin auth failed.`);
+    }
     if (!response.ok) {
-        throw new Error("Failed to get Users change requests.");
+        throw new Error(`Unable to list change requests (HTTP ${response.status}).`);
     }
 
-    const usersChangeReq = await response.json();
-
-    return { ok: true, status: response.status, body: usersChangeReq };
+    const changeRequests = await response.json();
+    return Array.isArray(changeRequests) ? changeRequests : [];
 };
 
 /**
- * Approve the USER change request for realm roles
+ * Approve a single PENDING change request by id. In firstAdmin / threshold-1
+ * mode (the playground demo never flips to multiAdmin), /approve records AND
+ * auto-commits, so there is no separate commit call. Body is {} (JSON).
  * @param {string} baseURL - url body provided in the apiConfigs.js
- * @param {string} realm - the realm name provided in the apiConfigs.js 
- * @param {object} usersChangeReq - representation of the user change request 
+ * @param {string} realm - the realm name provided in the apiConfigs.js
+ * @param {string} id - the change request id
  * @param {string} token - master token
- * @returns {Promise<Object>} - status response of the approve on that change request
+ * @returns {Promise<number>} - HTTP status (caller tolerates 404/409/412)
  */
-async function signChangeRequest(baseURL, realm, usersChangeReq, token) {
-    const response = await fetch(`${baseURL}/admin/realms/${realm}/tide-admin/change-set/sign`, {
+async function approveChangeRequest(baseURL, realm, id, token) {
+    const response = await fetch(`${baseURL}/admin/realms/${realm}/iga/change-requests/${id}/approve`, {
         method: 'POST',
         headers: {
             "Content-Type": "application/json",
             "authorization": `Bearer ${token}`,
         },
-        body: JSON.stringify({
-            "actionType": usersChangeReq.actionType,
-            "changeSetId": usersChangeReq.draftRecordId,
-            "changeSetType": usersChangeReq.changeSetType
-
-        })
+        body: JSON.stringify({})
     });
 
-    if (!response.ok) {
-        throw new Error("Failed to sign change request for user.");
+    if (response.status === 401 || response.status === 403) {
+        throw new Error(`Change-request approve ${id} returned HTTP ${response.status} - admin auth failed.`);
     }
 
-    return { ok: true, status: response.status };
+    return response.status;
 };
 
 /**
- * Commit a USER change request for realm roles
+ * Drain the PENDING IGA change-request inbox until empty (loop-until-empty,
+ * because approving one CR can unblock its dependents). Refetches the master
+ * token each round since it is short-lived (~60s). Mirrors the canonical
+ * tcinit drain_change_requests helper.
  * @param {string} baseURL - url body provided in the apiConfigs.js
- * @param {string} realm - the realm name provided in the apiConfigs.js 
- * @param {object} usersChangeReq - representation of the user change request 
- * @param {string} token - master token
- * @returns {Promise<Object>} - status response of the Commit on that change request
+ * @param {string} realm - the realm name provided in the apiConfigs.js
+ * @returns {Promise<Object>} - status response once the inbox is empty
  */
-async function commitChangeRequest(baseURL, realm, usersChangeReq, token) {
-    const response = await fetch(`${baseURL}/admin/realms/${realm}/tide-admin/change-set/commit`, {
-        method: 'POST',
-        headers: {
-            "Content-Type": "application/json",
-            "authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-            "actionType": usersChangeReq.actionType,
-            "changeSetId": usersChangeReq.draftRecordId,
-            "changeSetType": usersChangeReq.changeSetType
-
-        })
-    });
-
-    if (!response.ok) {
-        throw new Error(": Unable to commit change request for user.");
+async function drainChangeRequests(baseURL, realm) {
+    const MAX_ROUNDS = 12;
+    for (let round = 0; round < MAX_ROUNDS; round++) {
+        const token = await getMasterToken(baseURL);
+        const pending = await listPendingChangeRequests(baseURL, realm, token);
+        const ids = pending.map((cr) => cr.id).filter(Boolean);
+        if (ids.length === 0) {
+            return { ok: true, status: 200 };
+        }
+        for (let i = 0; i < ids.length; i++) {
+            // 404/409/412 are benign here (already-committed / superseded / not-yet-approvable);
+            // approveChangeRequest throws on 401/403 so an auth failure is never swallowed.
+            await approveChangeRequest(baseURL, realm, ids[i], token);
+        }
     }
-
-    return { ok: true, status: response.status };
+    return { ok: true, status: 200 };
 };
 
 /** TIDE CUSTOM ENDPOINT
@@ -538,10 +538,16 @@ async function activateIDPLicense(baseURL, realm, token) {
     const response = await fetch(`${baseURL}/admin/realms/${realm}/vendorResources/setUpTideRealm`, {
         method: 'POST',
         headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
             "authorization": `Bearer ${token}`,
         },
+        // setUpTideRealm mints the realm VRK on the Tide Cybersecurity Fabric.
+        // isRagnarokEnabled=true keeps the realm off-boardable; skipLicense=false
+        // performs the real license activation (matches the canonical tcinit flow).
         body: new URLSearchParams({
-            "email": "email=email@tide.org",
+            "email": "email@tide.org",
+            "isRagnarokEnabled": "true",
+            "skipLicense": "false",
         })
     });
 
@@ -564,19 +570,73 @@ async function toggleIGA(baseURL, realm, token) {
     const response = await fetch(`${baseURL}/admin/realms/${realm}/tide-admin/toggle-iga`, {
         method: 'POST',
         headers: {
+            "Content-Type": "application/json",
             "authorization": `Bearer ${token}`,
         },
-        body: new URLSearchParams({
-            "isIGAEnabled": true,
-        })
+        // Current iga-core expects a JSON body {"enabled":true}. The legacy
+        // urlencoded `isIGAEnabled` form is no longer accepted. A 409 means IGA
+        // is already enabled, which is fine for an idempotent re-run.
+        body: JSON.stringify({ "enabled": true })
     });
 
-    if (!response.ok) {
+    if (!response.ok && response.status !== 409) {
         throw new Error("Failed to toggle IGA on.")
     }
 
     return { ok: true, status: response.status };
 };
+
+/**
+ * GET - /admin/realms/{realm}
+ * Fetch the realm representation (used to stamp iga.attestor before enabling IGA)
+ * @param {string} baseURL - url body provided in the apiConfigs.js
+ * @param {string} realm - the realm name provided in the apiConfigs.js
+ * @param {string} token - master token
+ * @returns {Promise<Object>} - status response with the realm representation
+ */
+async function getRealmRepresentation(baseURL, realm, token) {
+    const response = await fetch(`${baseURL}/admin/realms/${realm}`, {
+        method: 'GET',
+        headers: {
+            "Content-Type": "application/json",
+            "authorization": `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error("Failed to fetch realm representation.");
+    }
+
+    const settings = await response.json();
+    return { ok: true, status: response.status, body: settings };
+}
+
+/**
+ * PUT - /admin/realms/{realm}
+ * Update the realm representation. Used to stamp iga.attestor=tide on the realm
+ * BEFORE toggling IGA on, which the Tide enclave requires.
+ * @param {string} baseURL - url body provided in the apiConfigs.js
+ * @param {string} realm - the realm name provided in the apiConfigs.js
+ * @param {Object} settings - the (mutated) realm representation to persist
+ * @param {string} token - master token
+ * @returns {Promise<Object>} - status response
+ */
+async function updateRealmRepresentation(baseURL, realm, settings, token) {
+    const response = await fetch(`${baseURL}/admin/realms/${realm}`, {
+        method: 'PUT',
+        headers: {
+            "Content-Type": "application/json",
+            "authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify(settings)
+    });
+
+    if (!response.ok) {
+        throw new Error("Failed to update realm representation.");
+    }
+
+    return { ok: true, status: response.status };
+}
 
 /** TIDE CUSTOM ENDPOINT
  * POST - /admin/realms/{realm}/tideAdminResources/get-required-action-link
@@ -606,32 +666,6 @@ async function createTideInvite(baseURL, realm, userID, token) {
     return { ok: true, status: response.status, body: url }
 
 };
-
-/** TIDE CUSTOM ENDPOINT
- * GET - /admin/realms/{realm}/tide-admin/change-set/clients/requests
- * Get the change requests for clients to approve them with IGA
- * @param {string} baseURL - url body provided in the apiConfigs.js
- * @param {string} realm - the realm name provided in the apiConfigs.js 
- * @param {string} token - master token
- * @returns {Promise<Object>} - status response with an array of change requests
- */
-async function getClientsChangeRequests(baseURL, realm, token) {
-    const response = await fetch(`${baseURL}/admin/realms/${realm}/tide-admin/change-set/clients/requests`, {
-        method: 'GET',
-        headers: {
-            "authorization": `Bearer ${token}`,
-        },
-    });
-
-    if (!response.ok) {
-        throw new Error(": Unable to get client change requests.");
-    }
-
-    const changeRequests = await response.json()
-
-    return { ok: true, status: response.status, body: changeRequests };
-}
-
 
 /** TIDE CUSTOM ENDPOINT
  * GET /admin/realms/{realm}/identity-provider/instances/tide
@@ -766,14 +800,16 @@ async function deleteImage(baseURL, realm, token, type) {
 
 const apiService = {
     getMasterToken,
-    getUsersChangeRequests,
-    signChangeRequest,
-    commitChangeRequest,
+    listPendingChangeRequests,
+    approveChangeRequest,
+    drainChangeRequests,
     createDefaultRealm,
     deleteIDP,
     deleteRealm,
     activateIDPLicense,
     toggleIGA,
+    getRealmRepresentation,
+    updateRealmRepresentation,
     createUser,
     getDemoUser,
     createTideInvite,
@@ -782,7 +818,6 @@ const apiService = {
     assignClientRole,
     getAvailableRealmRoles,
     assignRealmRole,
-    getClientsChangeRequests,
     getIDPSettings,
     updateIDPSettings,
     signSettings,

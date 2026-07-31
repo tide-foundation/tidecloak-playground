@@ -63,9 +63,22 @@
       ],
       "standardFlowEnabled": true,
       "implicitFlowEnabled": false,
-          "publicClient": true,
+      "publicClient": true,
       "fullScopeAllowed": true,
+      "attributes": {
+        "tide.createdViaConsole": "true"
+      },
       "protocolMappers": [
+        {
+          "name": "audience (self): myclient",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.client.audience": "myclient",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        },
         {
           "name": "Tide User Key",
           "protocol": "openid-connect",
@@ -80,16 +93,6 @@
             "access.token.claim": "true",
             "claim.name": "tideuserkey",
             "jsonType.label": "String"
-          }
-        },
-        {
-          "name": "Tide IGA Role Mapper",
-          "protocol": "openid-connect",
-          "protocolMapper": "tide-roles-mapper",
-          "consentRequired": false,
-          "config": {
-            "lightweight.claim": "true",
-            "access.token.claim": "true"
           }
         },
         {

@@ -14,11 +14,22 @@ export async function GET(){
     const masterToken = await apiService.getMasterToken(baseURL);
 
     try {
+        // The Tide enclave requires iga.attestor=tide to be stamped on the realm
+        // BEFORE IGA is enabled. Fetch the realm representation, merge the
+        // attribute in, and persist it, then toggle IGA on.
+        const realmRep = (await apiService.getRealmRepresentation(baseURL, realm, masterToken)).body;
+        realmRep.attributes = { ...(realmRep.attributes || {}), "iga.attestor": "tide" };
+        await apiService.updateRealmRepresentation(baseURL, realm, realmRep, masterToken);
+
         // Toggle IGA to be true and it should remain true for the demo.
         const result = await apiService.toggleIGA(baseURL, realm, masterToken);
 
-        return new Response(JSON.stringify({...result}), {status: result.status}); 
-    } 
+        // Drain the ADOPT change-requests raised by enabling IGA (firstAdmin
+        // threshold-1 auto-commits on approve).
+        await apiService.drainChangeRequests(baseURL, realm);
+
+        return new Response(JSON.stringify({...result}), {status: result.status});
+    }
     catch (error) {
         return new Response(JSON.stringify({ok: false, error: "[toggleIGA Endpoint] " + error.message}), {status: 500});
     }

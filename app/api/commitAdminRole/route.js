@@ -40,13 +40,10 @@ export async function GET(){
             await apiService.assignClientRole(baseURL, realm, demoUser.id, rmClient.id, tideAdminRole, masterToken);
         }
 
-        // Sign + commit the change request the assignment created (if any). With
-        // no Tide admin in the realm yet, IGA takes it straight to committable.
-        const usersChangeRequests = (await apiService.getUsersChangeRequests(baseURL, realm, masterToken)).body;
-        if (Array.isArray(usersChangeRequests) && usersChangeRequests.length > 0) {
-            await apiService.signChangeRequest(baseURL, realm, usersChangeRequests[0], masterToken);
-            await apiService.commitChangeRequest(baseURL, realm, usersChangeRequests[0], masterToken);
-        }
+        // Drain the change request the assignment created (if any) via the
+        // native iga-core inbox. With no Tide admin in the realm yet, IGA takes
+        // it straight to committable (firstAdmin threshold-1 auto-commit).
+        await apiService.drainChangeRequests(baseURL, realm);
 
         return new Response(JSON.stringify({ ok: true }), { status: 200 });
     }
