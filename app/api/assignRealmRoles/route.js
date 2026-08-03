@@ -31,19 +31,21 @@ export async function GET(){
         const availableRealmRolesResult = await apiService.getAvailableRealmRoles(baseURL, realm, userID, masterToken);
         const availableRealmRoles = availableRealmRolesResult.body;
 
-        // Find object representation for each of the three default realm roles and assign them to the demo user.
-        // This creates three user change requests in IGA
+        // Assign the three default realm roles to the demo user ONE AT A TIME,
+        // draining the change-request inbox after each. Under IGA every role
+        // POST parks a PENDING GRANT_ROLES change request on the user and any
+        // further role POST on that user 409s (PENDING_CHANGE_REQUEST_CONFLICT)
+        // until it resolves — batching in one POST hits the same conflict
+        // against its own first change request, so assign-then-drain it is.
         for (let i = 0; i < assignRealmRoles.length; i++) {
             const roleName = assignRealmRoles[i];
             const assignRole = availableRealmRoles.find((role) => role.name === roleName);
-            const assignRoleResult = await apiService.assignRealmRole(baseURL, realm, userID, assignRole, masterToken);
+            if (!assignRole) {
+                throw new Error(`Realm role not available to assign: ${roleName}`);
+            }
+            await apiService.assignRealmRole(baseURL, realm, userID, assignRole, masterToken);
+            await apiService.drainChangeRequests(baseURL, realm);
         }
-
-        // Drain the PENDING change-requests the role assignments created via the
-        // native iga-core inbox. In firstAdmin / threshold-1 mode (no Tide admin
-        // granted yet) /approve records AND auto-commits. Once a Tide admin
-        // exists each request would instead need sequential enclave approval.
-        await apiService.drainChangeRequests(baseURL, realm);
 
         return new Response(JSON.stringify({ok: true}), {status: 200});
     } 
