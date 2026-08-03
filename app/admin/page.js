@@ -327,13 +327,21 @@ export default function Admin() {
     }, "getChangeRequests");
   }
 
-  // Fetch all realm role objects to assign to user based on check box states
+  // Fetch all realm role objects to assign to user based on check box states.
+  // Fetched server-side (master token): this runs before the visitor becomes
+  // an admin, and under the new IGA ordinary users hold no view-realm.
   const getRealmRoles = async () => {
-    const token = await auth.getToken();
-    setDobWriteRole(await appService.getRealmRole(baseURL, realm, "_tide_dob.selfencrypt", token));
-    setDobReadRole(await appService.getRealmRole(baseURL, realm, "_tide_dob.selfdecrypt", token));
-    setCcReadRole(await appService.getRealmRole(baseURL, realm, "_tide_cc.selfdecrypt", token));
-    setCcWriteRole(await appService.getRealmRole(baseURL, realm, "_tide_cc.selfencrypt", token));
+    const names = ["_tide_dob.selfencrypt", "_tide_dob.selfdecrypt", "_tide_cc.selfdecrypt", "_tide_cc.selfencrypt"];
+    const response = await fetch(`/api/getRealmRoles?names=${encodeURIComponent(names.join(","))}`);
+    if (!response.ok) {
+      console.error("getRealmRoles failed:", response.status);
+      return;
+    }
+    const { roles } = await response.json();
+    setDobWriteRole(roles["_tide_dob.selfencrypt"]);
+    setDobReadRole(roles["_tide_dob.selfdecrypt"]);
+    setCcReadRole(roles["_tide_cc.selfdecrypt"]);
+    setCcWriteRole(roles["_tide_cc.selfencrypt"]);
   }
 
   /**

@@ -203,11 +203,18 @@ export default function DatabaseExposure() {
     }, [contextLoading])
 
 
-    // Populate the Database Exposure cards, and set the current logged users
+    // Populate the Database Exposure cards, and set the current logged users.
+    // Listed server-side (master token): under the new IGA browser users hold
+    // no realm-management roles (MF2 guard), so they cannot list users.
     const getAllUsers = async () => {
-      const token = await auth.getToken();
-      const users = await appService.getUsers(baseURL, realm, token);
-      setUsers(users);
+      const response = await fetch(`/api/getUsers`);
+      if (!response.ok) {
+        console.error("getUsers failed:", response.status);
+        setUsers([]);
+        return;
+      }
+      const data = await response.json();
+      setUsers(Array.isArray(data.users) ? data.users : []);
     };
 
     return (
