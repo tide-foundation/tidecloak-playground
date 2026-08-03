@@ -25,18 +25,7 @@
       {
         "name": "default-roles-tidecloak-demo",
         "description": "${role_default-roles}",
-        "composite": true,
-        "composites": {
-          "realm": [],
-          "client": {
-            "realm-management": [
-              "view-users",
-              "manage-users",
-              "view-clients",
-              "view-realm"
-            ]
-          }
-        }
+        "composite": false
       }
     ],
     "client": {
