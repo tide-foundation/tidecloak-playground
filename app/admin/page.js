@@ -627,29 +627,25 @@ export default function Admin() {
           // Clear the locally stored approved users array
           localStorage.removeItem("approvals");
 
-          // Force immediate token refresh to get updated roles
+          // Committing re-signs this user's identity, so the tokens (and the
+          // kcToken cookie the middleware verifies) must be re-minted to carry
+          // the new roles. Bounded + non-throwing: a refresh that hangs or is
+          // rejected must not wedge this handler.
           console.log("Change committed. Force refreshing token...");
           setBackgroundProcessing(true);
 
-          // Wait for backend to propagate changes
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          const refreshed = await appService.refreshTokensAfterCommit(auth);
 
-          // Force refresh immediately (not just when expired)
-          await auth.forceUpdateToken();
-          console.log("First force refresh complete. Waiting for backend propagation...");
+          if (!refreshed) {
+            // Every refresh failed: the old session cannot be carried across
+            // the re-signed identity. Log out so the user gets a clean login
+            // instead of bouncing between the login page and a stale token
+            // the middleware keeps rejecting.
+            console.warn("[addCommit] Session could not be refreshed after the commit; signing out for a clean re-login.");
+            auth.logout();
+            return;
+          }
 
-          // Wait for backend to propagate
-          await new Promise(resolve => setTimeout(resolve, 1000));
-
-          // Second force refresh
-          await auth.forceUpdateToken();
-          console.log("Second force refresh complete. Waiting...");
-
-          // Wait again
-          await new Promise(resolve => setTimeout(resolve, 1000));
-
-          // Third force refresh to ensure we have the latest token
-          await auth.forceUpdateToken();
           console.log("Token force refresh complete with updated roles");
 
           // Reset states for next change request
