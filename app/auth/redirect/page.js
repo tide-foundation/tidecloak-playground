@@ -7,6 +7,7 @@ import { useAuth } from "../../context/AuthProvider";
 import { useRouter } from "next/navigation";
 
 import { LoadingSquareFullPage } from "../../components/loadingSquare";
+import appService from "../../../lib/appService";
 
 /**
  * Manages which path the demo should go down depending on token validity
@@ -99,28 +100,11 @@ export default function RedirectPage() {
       console.error("[auth/redirect] updateUser failed:", await response.text());
     }
 
-    // Force immediate token refresh to get updated ID token with encrypted values
+    // Refresh so the ID token carries the freshly encrypted values. Bounded +
+    // non-throwing: a refresh that hangs must not leave the user stuck on the
+    // "Encrypting your data..." screen (the navigation below depends on it).
     console.log("Force refreshing token to get encrypted data in ID token...");
-
-    // Wait a bit for backend to propagate changes
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Force refresh immediately (not just when expired)
-    await auth.forceUpdateToken();
-    console.log("First force refresh complete. Waiting for backend propagation...");
-
-    // Wait for backend to propagate
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Second force refresh
-    await auth.forceUpdateToken();
-    console.log("Second force refresh complete. Waiting...");
-
-    // Wait again
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Third force refresh to ensure we have the latest token
-    await auth.forceUpdateToken();
+    await appService.refreshTokensAfterCommit(auth);
 
     const updatedDob = auth.getValueFromIdToken("dob");
     const updatedCc = auth.getValueFromIdToken("cc");
@@ -158,7 +142,16 @@ export default function RedirectPage() {
         setIsEncrypting(true);
         setBackgroundProcessing(true);
 
-        startUserInfoEncryption()
+        // Hard ceiling on the whole first-login ceremony: if the enclave or a
+        // token refresh stalls, still navigate instead of stranding the user
+        // on the overlay with no way forward but a manual page refresh.
+        Promise.race([
+          startUserInfoEncryption(),
+          new Promise((resolve) => setTimeout(() => {
+            console.warn("[auth/redirect] First-login encryption timed out; continuing to the app.");
+            resolve();
+          }, 60000)),
+        ])
           .then(() => {
             console.log("Encryption complete");
           })
