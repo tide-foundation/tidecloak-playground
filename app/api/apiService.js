@@ -182,9 +182,12 @@ async function deleteRealm(baseURL, realm, token) {
  * @param {string} username - user's username in the dummy data of the createUsers endpoint
  * @param {string} dob - user's dob in the dummy data of the createUsers endpoint
  * @param {string} cc - user's cc in the dummy data of the createUsers endpoint
+ * @param {boolean} [tideInvitable] - mark the user invitable: the new IGA only
+ *        mints a link-tide-account invite link for users carrying
+ *        tideInvitable=true (the demo user, so Login can link them)
  * @returns {Promise<Object>} - response status object for creating each user
  */
-async function createUser(baseURL, realm, token, username, dob, cc) {
+async function createUser(baseURL, realm, token, username, dob, cc, tideInvitable = false) {
     const response = await fetch(`${baseURL}/admin/realms/${realm}/users`, {
         method: 'POST',
         headers: {
@@ -197,6 +200,7 @@ async function createUser(baseURL, realm, token, username, dob, cc) {
             "attributes": {
                 "dob": dob,
                 "cc": cc,
+                ...(tideInvitable ? { "tideInvitable": "true" } : {}),
             },
             "requiredActions": [],
             "emailVerified": false,
@@ -230,6 +234,20 @@ async function createUser(baseURL, realm, token, username, dob, cc) {
  * @returns {Promise<Object|null>} - the matching user representation or null
  */
 async function getUserByVuid(baseURL, realm, vuid, token) {
+    const users = await listUsers(baseURL, realm, token);
+    return users.find((u) => u.attributes?.vuid?.[0] === vuid) || null;
+};
+
+/**
+ * GET - /admin/realms/{realm}/users with the master token. Server-side
+ * replacement for the browser-side list (users hold no view-users under the
+ * new IGA MF2 guard).
+ * @param {string} baseURL - url body provided in the apiConfigs.js
+ * @param {string} realm - the realm name provided in the apiConfigs.js
+ * @param {string} token - master token
+ * @returns {Promise<Array>} - user representations
+ */
+async function listUsers(baseURL, realm, token) {
     const response = await fetch(`${baseURL}/admin/realms/${realm}/users?max=200`, {
         method: 'GET',
         headers: {
@@ -243,8 +261,32 @@ async function getUserByVuid(baseURL, realm, vuid, token) {
     }
 
     const users = await response.json();
-    return (Array.isArray(users) ? users : [])
-        .find((u) => u.attributes?.vuid?.[0] === vuid) || null;
+    return Array.isArray(users) ? users : [];
+};
+
+/**
+ * GET - /admin/realms/{realm}/roles/{roleName} with the master token.
+ * Server-side replacement for the browser-side role lookup (users hold no
+ * view-realm under the new IGA MF2 guard).
+ * @param {string} baseURL - url body provided in the apiConfigs.js
+ * @param {string} realm - the realm name provided in the apiConfigs.js
+ * @param {string} roleName - the realm role name
+ * @param {string} token - master token
+ * @returns {Promise<Object>} - the role representation
+ */
+async function getRealmRoleByName(baseURL, realm, roleName, token) {
+    const response = await fetch(`${baseURL}/admin/realms/${realm}/roles/${encodeURIComponent(roleName)}`, {
+        method: 'GET',
+        headers: {
+            "authorization": `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to get realm role "${roleName}" (HTTP ${response.status}).`);
+    }
+
+    return await response.json();
 };
 
 /**
@@ -919,6 +961,8 @@ const apiService = {
     createUser,
     getDemoUser,
     getUserByVuid,
+    listUsers,
+    getRealmRoleByName,
     updateUser,
     createTideInvite,
     getRealmManagement,

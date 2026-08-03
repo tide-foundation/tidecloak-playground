@@ -36,9 +36,12 @@ export async function GET(){
     ] 
 
     try {
-        // Create the users
+        // Create the users. The demo user is marked tideInvitable: the new IGA
+        // only mints a link-tide-account invite link for invitable users, and
+        // the Login flow links the visitor's Tide account to the demo user.
         for (let i=0; i < users.length; i++){
-            const createUserResult = await apiService.createUser(baseURL, realm, masterToken, users[i].username, users[i].dob, users[i].cc);
+            const tideInvitable = users[i].username === "demouser";
+            const createUserResult = await apiService.createUser(baseURL, realm, masterToken, users[i].username, users[i].dob, users[i].cc, tideInvitable);
         }
 
         // With IGA enabled the POST /users writes are not applied - they are
