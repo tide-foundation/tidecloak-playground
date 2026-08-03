@@ -109,7 +109,17 @@ async function deleteIDP(baseURL, realm, token) {
         else {
             return { ok: true, status: deleteRealmResp.status };
         }
-    } else if (!response.ok) {
+    }
+
+    // With IGA enabled the delete is not applied - it is captured as a PENDING
+    // change request (HTTP 202). Drain the inbox so the IDP is really gone
+    // before the realm delete runs (firstAdmin / threshold-1 auto-commits).
+    if (response.status === 202) {
+        await drainChangeRequests(baseURL, realm);
+        return { ok: true, status: 204 };
+    }
+
+    if (!response.ok) {
         throw new Error("Failed to delete IDP. Manual deletion of IDP then realm via Keycloak required.");
     };
 
@@ -138,8 +148,26 @@ async function deleteRealm(baseURL, realm, token) {
         return { ok: true, status: 200 };
     }
 
+    // With IGA enabled the delete is not applied - it is captured as a PENDING
+    // DELETE_REALM change request (HTTP 202). Approve it (firstAdmin /
+    // threshold-1 auto-commits) so the realm is actually removed, then verify.
+    if (response.status === 202) {
+        const pending = await listPendingChangeRequests(baseURL, realm, token);
+        const deleteCR = pending.find((cr) => cr.actionType === "DELETE_REALM");
+        if (deleteCR) {
+            await approveChangeRequest(baseURL, realm, deleteCR.id, token);
+        }
+        const check = await fetch(`${baseURL}/admin/realms/${realm}`, {
+            headers: { "authorization": `Bearer ${token}` },
+        });
+        if (check.status !== 404) {
+            return { ok: false, status: check.status };
+        }
+        return { ok: true, status: 204 };
+    }
+
     if (!response.ok) {
-        return new Error("Failed to delete the realm. Manual deletion of realm required via Keycloak.");
+        return { ok: false, status: response.status };
     }
 
     return { ok: true, status: response.status };
