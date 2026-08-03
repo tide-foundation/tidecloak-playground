@@ -208,17 +208,19 @@ export default function Admin() {
       }
   }, [isTideAdmin])
 
-  // Get current logged in user
-  const getLoggedUser = async () => { 
-    const token = await auth.getToken();
-    const loggedVuid =  auth.getValueFromToken("vuid");
-    const users = await appService.getUsers(baseURL, realm, token);
-    const loggedInUser = users.find(user => {
-      if (user.attributes.vuid[0] === loggedVuid){
-          return user;
-      }
-    });
-    setLoggedUser(loggedInUser);
+  // Get current logged in user. Resolved server-side (master token): under
+  // the new IGA browser users hold no view-users before becoming admin.
+  const getLoggedUser = async () => {
+    const loggedVuid = auth.getValueFromToken("vuid");
+    if (!loggedVuid) {
+      return;
+    }
+    const response = await fetch(`/api/getUserByVuid?vuid=${encodeURIComponent(loggedVuid)}`);
+    if (!response.ok) {
+      console.error("getUserByVuid failed:", response.status);
+      return;
+    }
+    setLoggedUser((await response.json()).user);
   };
   
   // Get the current user realm roles to prefill the boxes and for updating the permissions
@@ -232,13 +234,18 @@ export default function Admin() {
     }
   };
 
-  // On initial render check if logged user is admin to decide which components to show
+  // On initial render check if logged user is admin to decide which components
+  // to show. Checked server-side (master token): this runs before the visitor
+  // becomes an admin, and under the new IGA ordinary users hold no
+  // view-users/view-clients.
   const checkAdminRole = async () => {
-      const token = await auth.getToken();
-      // Get Realm Management default client's ID
-      const clientID = await appService.getRealmManagementId(baseURL, realm, token);
-      // Check if user already has the role
-      setIsTideAdmin(await appService.checkUserAdminRole(baseURL, realm, loggedUser.id, clientID, token));
+      const loggedVuid = auth.getValueFromToken("vuid");
+      const response = await fetch(`/api/checkAdminRole?vuid=${encodeURIComponent(loggedVuid)}`);
+      if (response.ok) {
+        setIsTideAdmin((await response.json()).isAdmin);
+      } else {
+        console.error("checkAdminRole failed:", response.status);
+      }
       setLoading(false);
   }
 
