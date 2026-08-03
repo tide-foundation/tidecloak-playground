@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthProvider";
 import { useApiWithTokenRefresh } from "../hooks/useApiWithTokenRefresh";
-import appService from "../../lib/appService";
 import { usePathname } from "next/navigation";
 import AccordionBox from "../components/accordionBox";
 import Button from "../components/button";
@@ -97,23 +96,19 @@ export default function User(){
       try {
         await callWithRefresh(async () => {
           // This is for the Accordion - it shows data directly from the database as is, not from id token.
-          const token = await auth.getToken();
-          const users = await appService.getUsers(baseURL, realm, token);
-          const loggedVuid =  auth.getValueFromToken("vuid");
-
-          // Safety check: ensure users is an array
-          if (!Array.isArray(users)) {
-            console.error("getUsers did not return an array:", users);
-            setDataLoading(false);
-            setOverlayLoading(false);
-            return;
-          }
-
-          const loggedInUser = users.find(user => {
-            if (user.attributes?.vuid[0] === loggedVuid){
-                return user;
+          // Resolved server-side (master token): under the new IGA the browser
+          // user holds no realm-management roles (MF2 guard), so it cannot
+          // list users itself.
+          const loggedVuid = auth.getValueFromToken("vuid");
+          let loggedInUser = null;
+          if (loggedVuid) {
+            const response = await fetch(`/api/getUserByVuid?vuid=${encodeURIComponent(loggedVuid)}`);
+            if (response.ok) {
+              loggedInUser = (await response.json()).user;
+            } else {
+              console.error("getUserByVuid failed:", response.status);
             }
-          });
+          }
           setLoggedUser(loggedInUser);
 
           // Use the encrypted DoB and CC from the identity token for this Users Page
@@ -262,9 +257,17 @@ export default function User(){
 
             }
 
-            // Store the data
-            const token = await auth.getToken();
-            const response = await appService.updateUser(baseURL, realm, loggedUser, token);
+            // Store the data server-side (master token) - the browser user
+            // holds no manage-users under the new IGA, and the captured
+            // change request needs draining before the write is live.
+            const response = await fetch(`/api/updateUser`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ user: loggedUser }),
+            });
+            if (!response.ok) {
+              console.error("updateUser failed:", await response.text());
+            }
 
             // Force immediate token refresh to get updated ID token with new encrypted values
             console.log("User data updated. Force refreshing token...");

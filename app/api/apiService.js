@@ -218,10 +218,72 @@ async function createUser(baseURL, realm, token, username, dob, cc) {
 };
 
 /**
+ * GET - /admin/realms/{realm}/users then filter by the vuid attribute.
+ * Server-side lookup of the logged-in user (the `?q=vuid:` attribute search is
+ * unreliable, so list-and-filter like the pages used to do client-side).
+ * Exists so browser users no longer need view-users: under the new IGA the
+ * default-role composite must not carry realm-management roles (MF2 guard).
+ * @param {string} baseURL - url body provided in the apiConfigs.js
+ * @param {string} realm - the realm name provided in the apiConfigs.js
+ * @param {string} vuid - the Tide vuid attribute value to match
+ * @param {string} token - master token
+ * @returns {Promise<Object|null>} - the matching user representation or null
+ */
+async function getUserByVuid(baseURL, realm, vuid, token) {
+    const response = await fetch(`${baseURL}/admin/realms/${realm}/users?max=200`, {
+        method: 'GET',
+        headers: {
+            "authorization": `Bearer ${token}`,
+            "Cache-Control": "no-store",
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to list users (HTTP ${response.status}).`);
+    }
+
+    const users = await response.json();
+    return (Array.isArray(users) ? users : [])
+        .find((u) => u.attributes?.vuid?.[0] === vuid) || null;
+};
+
+/**
+ * PUT - /admin/realms/{realm}/users/{id} with the master token, then drain the
+ * change-request inbox: under IGA the PUT returns 204 but parks a
+ * SET_USER_ATTRIBUTE change request, and browser users can neither perform the
+ * PUT (no manage-users under the new MF2 guard) nor approve the CR (needs
+ * manage-realm). firstAdmin / threshold-1 auto-commits on approve.
+ * @param {string} baseURL - url body provided in the apiConfigs.js
+ * @param {string} realm - the realm name provided in the apiConfigs.js
+ * @param {object} user - full user representation to store
+ * @param {string} token - master token
+ * @returns {Promise<Object>} - status response object
+ */
+async function updateUser(baseURL, realm, user, token) {
+    const response = await fetch(`${baseURL}/admin/realms/${realm}/users/${user.id}`, {
+        method: 'PUT',
+        headers: {
+            "Content-Type": "application/json",
+            "authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify(user)
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to update user (HTTP ${response.status}).`);
+    }
+
+    // Commit the captured SET_USER_ATTRIBUTE change request so the write is live.
+    await drainChangeRequests(baseURL, realm);
+
+    return { ok: true, status: response.status };
+};
+
+/**
  * GET - /admin/realms/${realm}/users
  * Get the demo user object via parameter search
  * @param {string} baseURL - url body provided in the apiConfigs.js
- * @param {String} realm - the realm name provided in the apiConfigs.js 
+ * @param {String} realm - the realm name provided in the apiConfigs.js
  * @param {string} token - master token
  * @returns {Promise<Object>} - response status with demo user's object
  */
@@ -856,6 +918,8 @@ const apiService = {
     updateRealmRepresentation,
     createUser,
     getDemoUser,
+    getUserByVuid,
+    updateUser,
     createTideInvite,
     getRealmManagement,
     getTideRealmAdminRole,

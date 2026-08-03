@@ -7,7 +7,6 @@ import { useAuth } from "../../context/AuthProvider";
 import { useRouter } from "next/navigation";
 
 import { LoadingSquareFullPage } from "../../components/loadingSquare";
-import appService from "../../../lib/appService";
 
 /**
  * Manages which path the demo should go down depending on token validity
@@ -27,21 +26,22 @@ export default function RedirectPage() {
   const startUserInfoEncryption = async () => {
   // On first login the vuid token claim and/or the user record can still be
   // propagating, which left `user` undefined the first time (it only resolved
-  // on a later login). Mirror the getUsers()+filter pattern the other pages use
-  // (the keycloak `?q=vuid:` attribute search is unreliable), and force-refresh
+  // on a later login). Resolve the user via the server (master token): under
+  // the new IGA the default-role composite carries no realm-management roles
+  // (MF2 guard), so the browser user cannot list users itself. Force-refresh
   // the token + retry until the user resolves so first-time login works.
-  let token = await auth.getToken();
   let loggedVuid = auth.getValueFromToken("vuid");
   let user;
   for (let attempt = 0; attempt < 5; attempt++) {
     if (loggedVuid) {
-      const users = await appService.getUsers(baseURL, realm, token);
-      user = users.find((u) => u.attributes?.vuid?.[0] === loggedVuid);
+      const response = await fetch(`/api/getUserByVuid?vuid=${encodeURIComponent(loggedVuid)}`);
+      if (response.ok) {
+        user = (await response.json()).user;
+      }
       if (user) break;
     }
     await auth.forceUpdateToken();
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    token = await auth.getToken();
     loggedVuid = auth.getValueFromToken("vuid");
   }
 
@@ -77,8 +77,6 @@ export default function RedirectPage() {
   if (arrayToEncrypt.length > 0) {
     // Encrypt the data for the first time
     const encryptedData = await auth.doEncrypt(arrayToEncrypt);
-    // Save the updated user object to TideCloak
-    const token = await auth.getToken();
 
     // Map encrypted data back to correct attributes based on tags
     for (let i = 0; i < arrayToEncrypt.length; i++) {
@@ -90,7 +88,16 @@ export default function RedirectPage() {
       }
     }
 
-    const response = await appService.updateUser(baseURL, realm, user, token);
+    // Save server-side (master token) - the browser user holds no manage-users
+    // under the new IGA, and the captured change request needs draining too.
+    const response = await fetch(`/api/updateUser`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user }),
+    });
+    if (!response.ok) {
+      console.error("[auth/redirect] updateUser failed:", await response.text());
+    }
 
     // Force immediate token refresh to get updated ID token with encrypted values
     console.log("Force refreshing token to get encrypted data in ID token...");
