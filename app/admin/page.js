@@ -472,18 +472,12 @@ export default function Admin() {
         }
       }, [hasUserApproved])
     
-      // POST /tideAdminResources/add-rejection
-      // Add denied status to change request 
+      // POST /iga/change-requests/{id}/deny
+      // Add denied status to change request
       const addRejection = async (action, draftId, type) => {
-        const token = await auth.getToken();    
-        
-        // Key value pairs
-        const formData = new FormData();
-        formData.append("actionType", action);
-        formData.append("changeSetId", draftId);
-        formData.append("changeSetType", type);
-  
-        const response = await appService.denyEnclave(baseURL, realm, formData, token);
+        const token = await auth.getToken();
+
+        const response = await appService.denyEnclave(baseURL, realm, draftId, token);
         if (response.ok){
           setRequests(await appService.getUserRequests(baseURL, realm, token));
           setHasUserApproved(false);
@@ -492,7 +486,7 @@ export default function Admin() {
         } 
       };
   
-      // POST /tideAdminResources/add-review
+      // POST /iga/change-requests/{id}/approve (phase 2 - the signed doken)
       // Add approve status to change request
       const addApproval = async (action, draftId, type, approvedRequest) => {
         const token = await auth.getToken();
@@ -503,21 +497,15 @@ export default function Admin() {
           return btoa(binaryString);
         };
 
-        // Key value pairs for approval request
-        const formData = new FormData();
-        formData.append("changeSetId", draftId);
-        formData.append("actionType", action);
-        formData.append("changeSetType", type);
-        formData.append("requests", bytesToBase64(approvedRequest));
-
-        const response = await appService.approveEnclave(baseURL, realm, formData, token);
+        const response = await appService.approveEnclave(baseURL, realm, draftId, bytesToBase64(approvedRequest), token);
 
         if (response.ok){
-          // TideCloak keeps approved change requests so fetch new one and replace
+          // The native /approve auto-commits at quorum, so the request may no
+          // longer be PENDING - keep the local card and lift its status.
           const updatedChangeReqs = await appService.getUserRequests(baseURL, realm, token);
-
           const updatedChangeReq = updatedChangeReqs.find(req => req.draftRecordId === draftId);
-          requests[activeRequestIndex] = updatedChangeReq;
+          requests[activeRequestIndex] = updatedChangeReq
+            ?? { ...requests[activeRequestIndex], status: "APPROVED" };
 
           setApprovals([true, false, false, false, false]);
           setPending(true);
@@ -532,19 +520,23 @@ export default function Admin() {
         try {
           const token = await auth.getToken();
 
-          // Get raw change set request bytes for approval
+          // Phase 1 of the native /approve ceremony - returns the enclave
+          // carrier bytes, or null when the server recorded (and committed)
+          // inline without needing the enclave (firstAdmin/Tideless lane).
           const changeSetBytes = await appService.reviewChangeRequest(baseURL, realm, changeRequest, token);
 
           if (!changeSetBytes) {
-            console.error("No data from reviewChangeRequest");
+            console.log("Approval recorded inline (no enclave step needed).");
+            requests[activeRequestIndex] = { ...requests[activeRequestIndex], status: "APPROVED" };
+            setApprovals([true, false, false, false, false]);
+            setPending(true);
+            setHasUserApproved(true);
             return;
           }
 
-          console.log("Change set bytes:", changeSetBytes);
-
           // Request approval from Tide operator
           const approvalResult = (await auth.approveTideRequests([{
-            id: "UserContext:1",
+            id: changeRequest.draftRecordId,
             request: changeSetBytes
           }]))[0]; // Only 1 request at a time for now
 
@@ -621,13 +613,7 @@ export default function Admin() {
 
         const token = await auth.getToken();
 
-        const body = JSON.stringify({
-          "actionType": request.actionType,
-          "changeSetId": request.draftRecordId,
-          "changeSetType": request.changeSetType
-        });
-        
-        const response = await appService.commitChange(baseURL, realm, body, token);
+        const response = await appService.commitChange(baseURL, realm, request.draftRecordId, token);
         
         if (response.ok){
           // Hard code the change, because keycloak removes committed change requests
@@ -688,17 +674,9 @@ export default function Admin() {
     // If submit button is pressed again, cancel all the change requests
     const cancelRequests = async (requests) => {
       const token = await auth.getToken();
-        
-      for (let i = 0; i < requests.length; i++) {
-          const request = requests[i];
-          
-          const body = JSON.stringify({
-            actionType: request.actionType,
-            changeSetId: request.draftRecordId,
-            changeSetType: request.changeSetType
-          });
 
-        const response = await appService.cancelChange(baseURL, realm, body, token);
+      for (let i = 0; i < requests.length; i++) {
+        const response = await appService.cancelChange(baseURL, realm, requests[i].draftRecordId, token);
       }
     };
 
