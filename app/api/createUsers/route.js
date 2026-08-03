@@ -41,7 +41,13 @@ export async function GET(){
             const createUserResult = await apiService.createUser(baseURL, realm, masterToken, users[i].username, users[i].dob, users[i].cc);
         }
 
-        return new Response(JSON.stringify({ok: true}), {status: 201}); 
+        // With IGA enabled the POST /users writes are not applied - they are
+        // captured as PENDING change requests (HTTP 202). Drain the inbox
+        // (firstAdmin / threshold-1 auto-commits) so the users actually exist
+        // before assignRealmRoles looks the demo user up.
+        await apiService.drainChangeRequests(baseURL, realm);
+
+        return new Response(JSON.stringify({ok: true}), {status: 201});
         
     } 
     catch (error) {

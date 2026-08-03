@@ -363,7 +363,13 @@ async function getAvailableRealmRoles(baseURL, realm, userId, token) {
 }
 
 /**
- * Assign the realm role to the demo user
+ * Assign ONE realm role to the demo user. With IGA enabled the POST is
+ * captured as a PENDING GRANT_ROLES change request (HTTP 202) on the user,
+ * and any further role POST on the same user 409s with
+ * PENDING_CHANGE_REQUEST_CONFLICT until that request resolves. Batching roles
+ * in one POST does NOT help: the capture seam files one change request per
+ * role and the request conflicts with its own first change request. So the
+ * caller MUST drain the change-request inbox between assignments.
  * @param {string} baseURL - url body provided in the apiConfigs.js
  * @param {string} realm - the realm name provided in the apiConfigs.js
  * @param {string} userId - demo user's ID
@@ -385,7 +391,7 @@ async function assignRealmRole(baseURL, realm, userId, role, token) {
     });
 
     if (!response.ok) {
-        throw new Error("Failed to assign realm role to user.");
+        throw new Error(`Failed to assign realm role "${role?.name}" to user (HTTP ${response.status}).`);
     }
 
     return { ok: true, status: response.status };
@@ -538,6 +544,7 @@ async function approveChangeRequest(baseURL, realm, id, token) {
  */
 async function drainChangeRequests(baseURL, realm) {
     const MAX_ROUNDS = 12;
+    let previousIds = null;
     for (let round = 0; round < MAX_ROUNDS; round++) {
         const token = await getMasterToken(baseURL);
         const pending = await listPendingChangeRequests(baseURL, realm, token);
@@ -545,6 +552,15 @@ async function drainChangeRequests(baseURL, realm) {
         if (ids.length === 0) {
             return { ok: true, status: 200 };
         }
+        // No-progress guard: if a round resolved nothing (same pending set as
+        // last round - e.g. a change request whose replay permanently fails),
+        // stop instead of burning the remaining rounds on it.
+        const key = ids.slice().sort().join(",");
+        if (key === previousIds) {
+            console.log(`[drainChangeRequests] ${ids.length} change request(s) not resolving in realm ${realm}; giving up early.`);
+            return { ok: true, status: 200, stuck: ids };
+        }
+        previousIds = key;
         for (let i = 0; i < ids.length; i++) {
             // 404/409/412 are benign here (already-committed / superseded / not-yet-approvable);
             // approveChangeRequest throws on 401/403 so an auth failure is never swallowed.
