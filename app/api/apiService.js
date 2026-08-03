@@ -410,6 +410,35 @@ async function getTideRealmAdminRole(baseURL, realm, userId, clientId, token) {
 }
 
 /**
+ * GET - /admin/realms/{realm}/users/{userId}/role-mappings/clients/{clientId}
+ * True when the user already holds the named client role (direct mapping).
+ * Used by the admin page's pre-admin check, server-side with the master token,
+ * since browser users hold no view-users under the new IGA MF2 guard.
+ * @param {string} baseURL - url body provided in the apiConfigs.js
+ * @param {string} realm - the realm name provided in the apiConfigs.js
+ * @param {string} userId - the user's id
+ * @param {string} clientId - the client's uuid (e.g. realm-management)
+ * @param {string} roleName - the client role name to look for
+ * @param {string} token - master token
+ * @returns {Promise<boolean>} - whether the user holds the role
+ */
+async function userHasClientRole(baseURL, realm, userId, clientId, roleName, token) {
+    const response = await fetch(`${baseURL}/admin/realms/${realm}/users/${userId}/role-mappings/clients/${clientId}`, {
+        method: 'GET',
+        headers: {
+            "authorization": `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error(`Unable to get assigned client roles (HTTP ${response.status}).`);
+    }
+
+    const roles = await response.json();
+    return (Array.isArray(roles) ? roles : []).some((role) => role.name === roleName);
+}
+
+/**
  * Assign a client role to the user (creates an IGA change request under IGA).
  * Runs with the master token for the same reason as getTideRealmAdminRole.
  * @param {string} baseURL - url body provided in the apiConfigs.js
@@ -966,6 +995,7 @@ const apiService = {
     updateUser,
     createTideInvite,
     getRealmManagement,
+    userHasClientRole,
     getTideRealmAdminRole,
     assignClientRole,
     getAvailableRealmRoles,
